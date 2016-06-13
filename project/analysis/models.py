@@ -28,10 +28,9 @@ from async_messages import messages
 
 from .import tasks
 
-from .workflow.matrix import BedMatrix
-from .workflow.matrixByMatrix import MatrixByMatrix
-from .workflow import validators
-
+from orio.matrix import BedMatrix
+from orio.matrixByMatrix import MatrixByMatrix
+from orio import validators
 
 logger = logging.getLogger(__name__)
 
