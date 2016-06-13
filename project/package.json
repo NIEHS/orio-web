@@ -1,8 +1,8 @@
 {
-  "name": "genomics",
+  "name": "orio-web",
   "version": "1.0.0",
-  "description": "genomics web content",
-  "repository": "https://github.com/shapiromatron/genomics",
+  "description": "orio-web content",
+  "repository": "https://github.com/shapiromatron/orio-web",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

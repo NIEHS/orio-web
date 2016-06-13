@@ -11,7 +11,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'genomics',
+        'NAME': 'orio',
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
@@ -108,8 +108,8 @@ INSTALLED_APPS = (
 AUTH_USER_MODEL = 'myuser.User'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_SUBJECT_PREFIX = '[genomics] '
-DEFAULT_FROM_EMAIL = 'webmaster@genomics.com'
+EMAIL_SUBJECT_PREFIX = '[orio] '
+DEFAULT_FROM_EMAIL = 'webmaster@orio.com'
 
 LOGGING = {
     'version': 1,
@@ -139,7 +139,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'basic',
-            'filename': os.path.join(PROJECT_ROOT, 'genomics.log'),
+            'filename': os.path.join(PROJECT_ROOT, 'orio.log'),
             'maxBytes': 100 * 1024 * 1024,  # 10 MB
             'backupCount': 10,
         },

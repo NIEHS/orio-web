@@ -1041,7 +1041,7 @@ class Analysis(GenomicBinSettings):
             'domain': Site.objects.get_current().domain
         }
         send_mail(
-            subject='Genomics: analysis complete',
+            subject='[ORIO]: analysis complete',
             message=render_to_string(
                 'analysis/analysis_complete_email.txt', context),
             from_email=settings.DEFAULT_FROM_EMAIL,

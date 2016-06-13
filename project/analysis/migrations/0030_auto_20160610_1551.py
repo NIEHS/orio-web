@@ -53,17 +53,17 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='encodedataset',
             name='data_ambiguous',
-            field=models.FileField(blank=True, help_text='Coverage data for which strand is ambiguous or unknown', max_length=256, storage=utils.models.ReadOnlyFileSystemStorage(location='/Users/shapiroaj4/dev/genomics/data/encode'), upload_to=''),
+            field=models.FileField(blank=True, help_text='Coverage data for which strand is ambiguous or unknown', max_length=256, storage=utils.models.ReadOnlyFileSystemStorage(location='/path/to/orio/data/encode'), upload_to=''),
         ),
         migrations.AlterField(
             model_name='encodedataset',
             name='data_minus',
-            field=models.FileField(blank=True, help_text='Coverage data for which strand is minus', max_length=256, storage=utils.models.ReadOnlyFileSystemStorage(location='/Users/shapiroaj4/dev/genomics/data/encode'), upload_to=''),
+            field=models.FileField(blank=True, help_text='Coverage data for which strand is minus', max_length=256, storage=utils.models.ReadOnlyFileSystemStorage(location='/path/to/orio/data/encode'), upload_to=''),
         ),
         migrations.AlterField(
             model_name='encodedataset',
             name='data_plus',
-            field=models.FileField(blank=True, help_text='Coverage data for which strand is plus', max_length=256, storage=utils.models.ReadOnlyFileSystemStorage(location='/Users/shapiroaj4/dev/genomics/data/encode'), upload_to=''),
+            field=models.FileField(blank=True, help_text='Coverage data for which strand is plus', max_length=256, storage=utils.models.ReadOnlyFileSystemStorage(location='/path/to/orio/data/encode'), upload_to=''),
         ),
         migrations.AlterField(
             model_name='encodedataset',
