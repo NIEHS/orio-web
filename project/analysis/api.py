@@ -205,6 +205,22 @@ class FeatureListCountMatrixViewset(AnalysisObjectMixin, viewsets.ReadOnlyModelV
         self.check_object_permissions(request, flcm)
         return Response(flcm.get_dataset())
 
+    @detail_route(methods=['get'])
+    def sorted_render(self, request, pk=None):
+        flcm = get_object_or_404(models.FeatureListCountMatrix, pk=int(pk))
+        self.check_object_permissions(request, flcm)
+
+        dim_x = tryParseInt(self.request.GET.get('dim_x'))
+        dim_y = tryParseInt(self.request.GET.get('dim_y'))
+        analysis_sort = (self.request.GET.get('analysis_sort') == '1')
+        sort_matrix_id = self.request.GET.get('sort_id')
+        if (self.request.GET.get('sort_id') == '0'):
+            sort_matrix_id = None
+
+        return Response(flcm.get_sorted_data(
+            dim_x, dim_y, analysis_sort, sort_matrix_id
+        ))
+
     def get_serializer_class(self):
         return serializers.FeatureListCountMatrixSerializer
 
