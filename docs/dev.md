@@ -23,9 +23,13 @@ Requires the following software before beginning:
 - PostgreSQL 9.4+
 - Python virtualenv and virtualenvwrapper
 
-Create a new python virtual environment, we'll use the virtual environment name `genomics` throughout the documentation. If you you have [virtualenvwrapper](https://pypi.python.org/pypi/virtualenvwrapper/) installed, you can create a new environment using the command below (note that this requires you to specify the path for python 3, which is not the default python with many installations):
+Create a new python virtual environment, we'll use the virtual environment name `genomics` throughout the documentation. If you have [virtualenvwrapper](https://pypi.python.org/pypi/virtualenvwrapper/) installed, you can create a new environment using the command below (note that this requires you to specify the path for python 3, which is not the default python with many installations):
 
     mkvirtualenv genomics --python=/usr/local/bin/python3
+
+If instead you are using [conda](http://conda.pydata.org/docs/), you can create a new environment using the following command:
+
+    conda create --name genomics python=3
 
 Next, change paths to the root-path of this project. Then, we'll install all python requirements by running the command:
 
@@ -35,10 +39,32 @@ Next, change directories into the `/project` path (relative to the root). Copy d
 
     cp django_project/settings/local.example.py django_project/settings/local.py
 
-Setup commands to start when activating the virtual environment:
+If the virtual environment was created using [virtualenv](https://virtualenv.pypa.io/en/stable/), use the following to set commands to start when activating the virtual environment:
 
     echo "export DJANGO_SETTINGS_MODULE=django_project.settings.local" >> $VIRTUAL_ENV/bin/postactivate
     echo "unset DJANGO_SETTINGS_MODULE" >> $VIRTUAL_ENV/bin/postdeactivate
+
+If using [conda](http://conda.pydata.org/docs/), use the following commands to properly set up environment variables. First, locate and enter the directory set up for the conda environment, such as `/home/smorrissey/anaconda/envs/genomics`. Then create the following subdirectories and files:
+
+    cd /home/smorrissey/anaconda/envs/genomics
+    mkdir -p ./etc/conda/activate.d
+    mkdir -p ./etc/conda/deactivate.d
+    touch ./etc/conda/activate.d/env_vars.sh
+    touch ./etc/conda/deactivate.d/env_vars.sh
+
+Edit the two files. `./etc/conda/activate.d/env_vars.sh` should include this:
+
+    #!/bin/sh
+
+    export DJANGO_SETTINGS_MODULE=django_project.settings.local
+    export DYLD_FALLBACK_LIBRARY_PATH=$HOME/anaconda/lib/:$DYLD_FALLBACK_LIBRARY_PATH
+
+`./etc/conda/activate.d/env_vars.sh` should include this:
+
+    #!/bin/sh
+
+    unset DJANGO_SETTINGS_MODULE
+    unset DYLD_FALLBACK_LIBRARY_PATH
 
 ## Database setup
 
