@@ -193,7 +193,7 @@ class SortVectorForm(BaseFormMixin, forms.ModelForm):
 class DatasetField(forms.CharField):
 
     def get_datasets(self, value):
-        d = json.loads(value)
+        d = self.clean(value)
         return {
             'userDatasets': d.get('userDatasets', []),
             'encodeDatasets': d.get('encodeDatasets', []),
@@ -219,9 +219,8 @@ class DatasetField(forms.CharField):
     def clean(self, value):
         # ensure valid JSON
         try:
-            json.loads(value)
-            return value
-        except json.decoder.JSONDecodeError:
+            return json.loads(value)
+        except (TypeError, json.decoder.JSONDecodeError):
             raise forms.ValidationError('JSON format required.')
 
 
@@ -251,7 +250,7 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        ds = cleaned_data['datasets_json']
+        ds = cleaned_data.get('datasets_json')
         if not self.fields['datasets_json'].is_valid(ds):
             raise forms.ValidationError("Improper dataset specification")
 
