@@ -11,7 +11,7 @@ The development instructions here list setup for both the backend (a Python djan
 
 To begin, clone this repository:
 
-    git clone git@github.com:shapiromatron/genomics.git
+    git clone git@github.com:shapiromatron/orio-web.git
 
 The path where this repository is found on your computer will be the project-root path, referred to frequently in the rest of this documentation.
 
@@ -23,9 +23,9 @@ Requires the following software before beginning:
 - PostgreSQL 9.4+
 - Python virtualenv and virtualenvwrapper
 
-Create a new python virtual environment, we'll use the virtual environment name `genomics` throughout the documentation. If you you have [virtualenvwrapper](https://pypi.python.org/pypi/virtualenvwrapper/) installed, you can create a new environment using the command below (note that this requires you to specify the path for python 3, which is not the default python with many installations):
+Create a new python virtual environment, we'll use the virtual environment name `orio-web` throughout the documentation. If you you have [virtualenvwrapper](https://pypi.python.org/pypi/virtualenvwrapper/) installed, you can create a new environment using the command below (note that this requires you to specify the path for python 3, which is not the default python with many installations):
 
-    mkvirtualenv genomics --python=/usr/local/bin/python3
+    mkvirtualenv orio-web --python=/usr/local/bin/python3
 
 Next, change paths to the root-path of this project. Then, we'll install all python requirements by running the command:
 
@@ -44,11 +44,11 @@ Setup commands to start when activating the virtual environment:
 
 Next, create a database:
 
-    createdb -E UTF-8 genomics
+    createdb -E UTF-8 orio
 
 ## Webserver database sync
 
-Restart your virtual environment (`deactivate`, then `workon genomics`). Navigate
+Restart your virtual environment (`deactivate`, then `workon orio-web`). Navigate
 to the `/project` path in the repository.
 
     python manage.py migrate
@@ -71,7 +71,6 @@ References:
 
 - [Webpack and django](http://owaislone.org/blog/webpack-plus-reactjs-and-django/)
 - [React for beginners](https://reactforbeginners.com/)
-
 
 ## Loading ENCODE data
 
@@ -112,13 +111,13 @@ Whenever we want to start coding, we'll need to start the django backend applica
 
 Start the backend python client in one terminal window:
 
-    workon genomics
-    cd /path/to/genomics/project/
+    workon orio-web
+    cd /path/to/orio-web/project/
     python manage.py runserver 9000
 
 Start the javascript bundler in another terminal window:
 
-    cd /path/to/genomics/project/
+    cd /path/to/orio-web/project/
     node webpack.devserver.js
 
 Navigate to [localhost:9000](http://127.0.0.1:9000/), and start developing!
@@ -131,19 +130,19 @@ On the production server, celery tasks are used to run long-running tasks asynch
 
 To use celery, you'll need to spawn a new celery process:
 
-    workon genomics
+    workon orio-web
     celery worker -A django_project -l info
 
 In addition, modify your environment variables:
 
-    workon genomics
+    workon orio-web
     echo "export \"USE_CELERY_IN_DEV=True\"" >> $VIRTUAL_ENV/bin/postactivate
 
 ## IPython/Jupyter notebooks (optional)
 
 If interested in the [ipython/jupyter notebooks](http://jupyter.org/) , you can run the notebook server using this command:
 
-    workon genomics
+    workon orio-web
     python manage.py shell_plus --notebook
 
 Then, navigate to [localhost:8888](http://127.0.0.1:8888/) to view the notebooks.

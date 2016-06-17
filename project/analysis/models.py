@@ -10,7 +10,7 @@ import itertools
 import pandas as pd
 import math
 import numpy
-from scipy import stats
+from scipy import stats, ndimage
 
 from django.db import models
 from django.conf import settings
@@ -28,10 +28,9 @@ from async_messages import messages
 
 from .import tasks
 
-from .workflow.matrix import BedMatrix
-from .workflow.matrixByMatrix import MatrixByMatrix
-from .workflow import validators
-
+from orio.matrix import BedMatrix
+from orio.matrixByMatrix import MatrixByMatrix
+from orio import validators
 
 logger = logging.getLogger(__name__)
 
@@ -1042,7 +1041,7 @@ class Analysis(GenomicBinSettings):
             'domain': Site.objects.get_current().domain
         }
         send_mail(
-            subject='Genomics: analysis complete',
+            subject='[ORIO]: analysis complete',
             message=render_to_string(
                 'analysis/analysis_complete_email.txt', context),
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -1156,3 +1155,87 @@ class FeatureListCountMatrix(GenomicBinSettings):
                 obj = f.read()
             cache.set(key, obj)
         return obj
+
+    def get_sorted_data(self, dim_x, dim_y, analysis_sort, sort_matrix_id):
+        # TODO: refactor so we don't load self.matrix.path twice; cache?
+        # TODO: move to orio instead of orio-web?
+        with open(self.matrix.path, 'r') as f:
+            bin_labels = f.readline().split('\t')[1:]
+            ncols = len(bin_labels)
+
+        flcm_data = numpy.loadtxt(
+            self.matrix.path, delimiter='\t', skiprows=1,
+            usecols=range(1, ncols+1))
+
+        if analysis_sort and sort_matrix_id:
+            raise ValueError('Two sort procedures specifed')
+
+        elif analysis_sort:
+            sorted_flcm = []
+            sort_list = self.analysisdatasets_set.get()\
+                .analysis.output_json['sort_vector']
+            for i in numpy.argsort(sort_list)[::-1]:
+                sorted_flcm.append(flcm_data[i])
+            sorted_flcm = numpy.array(sorted_flcm)
+
+        elif sort_matrix_id:
+            sorted_flcm = []
+            sort_matrix = FeatureListCountMatrix.objects\
+                .filter(id=sort_matrix_id).first()
+            with open(sort_matrix.matrix.path, 'r') as f:
+                ncols = len(f.readline().split('\t')[1:])
+            sort_data = numpy.loadtxt(
+                sort_matrix.matrix.path, delimiter='\t', skiprows=1,
+                usecols=range(1, ncols+1)
+            )
+            for i in numpy.argsort(numpy.sum(sort_data, axis=1))[::-1]:
+                sorted_flcm.append(flcm_data[i])
+            sorted_flcm = numpy.array(sorted_flcm)
+
+        else:
+            sorted_flcm = flcm_data
+
+        nrows = len(sorted_flcm[0])
+        ncols = len(sorted_flcm)
+        zoom_x = dim_x/nrows
+        zoom_y = dim_y/ncols
+
+        quartiles = numpy.array_split(sorted_flcm, 4)
+        quartile_averages = []
+        quartile_vector_sums = [[] for i in range(4)]
+        for i, quartile in enumerate(quartiles):
+            quartile_averages.append(numpy.mean(quartile, axis=0))
+
+            if quartile_vector_sums[i] is None:
+                quartile_vector_sums[i] = []
+            for vector in quartile:
+                quartile_vector_sums[i].append(
+                    numpy.sum(vector)
+                )
+
+        ad_results = dict()
+        for key, value in zip(['test_statistic', 'critical_values', 'pvalue'],
+                              stats.anderson_ksamp(quartile_vector_sums)):
+            ad_results[key] = value
+
+        zoomed_data = ndimage.zoom(
+            sorted_flcm, (zoom_y, zoom_x), order=5, prefilter=False)
+        smoothed_data = ndimage.median_filter(zoomed_data, size=(1, 5))
+
+        return {
+            'bin_labels': bin_labels,
+            'quartile_averages': quartile_averages,
+            'bin_averages': numpy.mean(sorted_flcm, axis=0),
+            'norm_val': {
+                'lower_quartile': numpy.percentile(smoothed_data, 25),
+                'median': numpy.percentile(smoothed_data, 50),
+                'upper_quartile': numpy.percentile(smoothed_data, 75),
+                'max': numpy.max(smoothed_data),
+                'min': numpy.min(smoothed_data),
+                'average': numpy.mean(smoothed_data),
+                'stddev': numpy.std(smoothed_data),
+                'variance': numpy.var(smoothed_data),
+            },
+            'smoothed_data': smoothed_data,
+            'ad_results': ad_results,
+        }
