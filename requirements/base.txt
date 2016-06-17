@@ -20,4 +20,4 @@ runipy==0.1.5
 matplotlib==1.4.3
 
 # companion project
-git+https://github.com/shapiromatron/orio@master  # TODO: update when stabilized
+# git+https://github.com/shapiromatron/orio@master  # TODO: update when stabilized
