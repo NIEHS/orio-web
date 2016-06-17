@@ -203,8 +203,12 @@ class DatasetDownload(models.Model):
     @staticmethod
     def check_valid_url(url):
         # ensure URL is valid and doesn't raise a 400/500 error
-        resp = requests.head(url)
-        return resp.ok, "{}: {}".format(resp.status_code, resp.reason)
+        try:
+            resp = requests.head(url)
+        except requests.exceptions.ConnectionError:
+            return False, '{} not found.'.format(url)
+        else:
+            return resp.ok, "{}: {}".format(resp.status_code, resp.reason)
 
     def show_download_retry(self):
         return self.status_code == self.FINISHED_ERROR
