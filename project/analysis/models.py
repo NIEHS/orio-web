@@ -1157,21 +1157,23 @@ class FeatureListCountMatrix(GenomicBinSettings):
         return obj
 
     def get_sorted_data(self, dim_x, dim_y, analysis_sort, sort_matrix_id):
+        # TODO: refactor so we don't load self.matrix.path twice; cache?
+        # TODO: move to orio instead of orio-web?
         with open(self.matrix.path, 'r') as f:
             bin_labels = f.readline().split('\t')[1:]
             ncols = len(bin_labels)
+
         flcm_data = numpy.loadtxt(
             self.matrix.path, delimiter='\t', skiprows=1,
-            usecols=range(1, ncols+1)
-        )
+            usecols=range(1, ncols+1))
 
         if analysis_sort and sort_matrix_id:
             raise ValueError('Two sort procedures specifed')
 
         elif analysis_sort:
             sorted_flcm = []
-            sort_list = self.analysisdatasets_set.get().analysis.output_json[
-                'sort_vector']
+            sort_list = self.analysisdatasets_set.get()\
+                .analysis.output_json['sort_vector']
             for i in numpy.argsort(sort_list)[::-1]:
                 sorted_flcm.append(flcm_data[i])
             sorted_flcm = numpy.array(sorted_flcm)

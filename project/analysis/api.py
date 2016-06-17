@@ -217,6 +217,7 @@ class FeatureListCountMatrixViewset(AnalysisObjectMixin, viewsets.ReadOnlyModelV
         if (self.request.GET.get('sort_id') == '0'):
             sort_matrix_id = None
 
+        # TODO: throw errors if values aren't given or are not numeric?
         return Response(flcm.get_sorted_data(
             dim_x, dim_y, analysis_sort, sort_matrix_id
         ))
