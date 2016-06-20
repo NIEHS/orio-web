@@ -16,7 +16,7 @@ urlpatterns = [
         include('analysis.urls',
                 namespace='analysis')),
 
-    url(r'^admin/',
+    url(r'^batcave/',
         include(admin.site.urls)),
 
     url(r'^accounts/',

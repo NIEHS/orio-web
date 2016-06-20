@@ -4,16 +4,17 @@ from django.core.urlresolvers import reverse_lazy
 from django.contrib.auth import views as auth_views
 
 from . import forms, views
+from utils.views import never_cache
 
 
 urlpatterns = [
 
     url(r'^register/$',
-        views.Register.as_view(),
+        never_cache(views.Register.as_view()),
         name='register'),
 
     url(r'^login/$',
-        auth_views.login,
+        never_cache(auth_views.login),
         {'authentication_form': forms.LoginForm},
         name='login'),
 
@@ -23,7 +24,7 @@ urlpatterns = [
         name='logout'),
 
     url(r'^reset-password/$',
-        auth_views.password_reset,
+        never_cache(auth_views.password_reset),
         {
             'post_reset_redirect': reverse_lazy('user:password_reset_done'),
             'password_reset_form': forms.ResetPasswordEmailForm,
