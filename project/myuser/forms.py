@@ -1,6 +1,7 @@
 from django import forms
 from django.core.urlresolvers import reverse
-from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm,\
+         SetPasswordForm
 
 from crispy_forms import layout as cfl
 from crispy_forms import bootstrap as cfb
@@ -25,11 +26,11 @@ class RegistrationForm(forms.ModelForm):
 
     password1 = forms.CharField(
         label='Password',
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'off'}),
         help_text=PASSWORD_HELP)
     password2 = forms.CharField(
         label='Password confirmation',
-        widget=forms.PasswordInput)
+        widget=forms.PasswordInput(attrs={'autocomplete': 'off'}))
 
     class Meta:
         model = models.User
@@ -86,6 +87,7 @@ class LoginForm(AuthenticationForm):
 
     def __init__(self, *args, **kwargs):
         super(LoginForm, self).__init__(*args, **kwargs)
+        self.fields['password'].widget.attrs['autocomplete'] = 'off'
         self.helper = self.setHelper()
 
     def setHelper(self):
@@ -143,6 +145,8 @@ class ResetPasswordForm(SetPasswordForm):
     def __init__(self, *args, **kwargs):
         super(ResetPasswordForm, self).__init__(*args, **kwargs)
         self.fields['new_password1'].help_text = PASSWORD_HELP
+        self.fields['new_password1'].widget.attrs['autocomplete'] = 'off'
+        self.fields['new_password2'].widget.attrs['autocomplete'] = 'off'
         self.helper = self.setHelper()
 
     def clean_new_password1(self):
@@ -162,7 +166,7 @@ class ResetPasswordForm(SetPasswordForm):
             self,
             horizontal=False,
             legend_text='Update your password',
-               help_text=help_text,
+            help_text=help_text,
             buttons=buttons,
         )
         helper.form_class = 'loginForm'
