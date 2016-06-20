@@ -45,6 +45,16 @@ class FeatureClusteringOverview{
     }
 
     drawHeatmap(k) {
+        var clusterKUrl = function(id, k, dim_x, dim_y) {
+            return (
+                `/dashboard/api/`+
+                `analysis/${id}/`+
+                `k_clust_heatmap/`+
+                `?k=${k}`+
+                `&dim_x=${dim_x}`+
+                `&dim_y=${dim_y}`
+            );
+        };
         var colors = this.colors;
 
         // remove existing heatmap
@@ -63,42 +73,6 @@ class FeatureClusteringOverview{
             })
             .appendTo(this.el_1);
 
-        var k_values = [];
-        for(var i=0; i<k; i++){
-            k_values.push([]);
-        }
-        for(i=0; i<this.feature_clusters[k]['labels'].length; i++){
-            var label = this.feature_clusters[k]['labels'][i];
-            k_values[label].push(this.feature_vectors[i]);
-        }
-
-        // draw heatmap
-        var row_number = this.feature_clusters[k]['labels'].length,
-            col_number = k_values[0][0].length,
-            height = heatmap.height(),
-            width = heatmap.width(),
-            context = document.getElementById('heatmap').getContext('2d');
-
-        var colorScale = d3.scale.linear()
-            .domain([0, 1])
-            .range(['white', 'red']);
-
-        var scale_x = width/col_number,
-            scale_y = height/row_number;
-
-        context.scale(scale_x, scale_y);
-
-        var row_count = 0;
-        for (var cluster = 0; cluster < k_values.length; cluster++) {
-            for (i = 0; i < k_values[cluster].length; i++) {
-                for (var j = 0; j < k_values[cluster][i].length; j++) {
-                    context.fillStyle=colorScale(k_values[cluster][i][j]);
-                    context.fillRect(j,row_count,1,1);
-                }
-                row_count += 1;
-            }
-        }
-
         // add column tooltips
         this.el_1.find('#heatmap_col_tooltips').remove();
 
@@ -110,46 +84,6 @@ class FeatureClusteringOverview{
                 'left': '40%',
                 'top': '20%',
             }).appendTo(this.el_1);
-
-        height = heatmap_col_tooltips.height();
-        width = heatmap_col_tooltips.width();
-        col_number = this.col_names.length;
-
-        var cell_width = width/col_number;
-        var svg = d3.select(heatmap_col_tooltips.get(0))
-            .append('svg')
-            .attr('height', height)
-            .attr('width', width);
-
-        svg.append('g')
-            .selectAll('rect')
-            .data(this.col_names)
-            .enter()
-            .append('rect')
-            .text( function(d) { return d; } )
-            .attr('x', function(d,i,j) { return (i * cell_width); })
-            .attr('y', 0)
-            .attr('width', function(d) { return cell_width; })
-            .attr('height', height)
-            .style('fill', 'transparent')
-            .on('mouseover', function (d, i, j) {
-                d3.select(this)
-                    .style('stroke', 'black')
-                    .style('stroke-width', '1');
-
-                $(this).tooltip({
-                    container: 'body',
-                    title: d,
-                    html: true,
-                    animation: false,
-                }).tooltip('show');
-            })
-            .on('mouseout', function () {
-                d3.select(this)
-                    .style('stroke', 'none');
-            });
-
-        $('[data-toggle="tooltip"]').tooltip();
 
         // remove existing cluster bars
         this.el_1.find('#heatmap_clusters').remove();
@@ -164,49 +98,106 @@ class FeatureClusteringOverview{
                 'top': '20%',
             }).appendTo(this.el_1);
 
-        var cluster_sizes = [];
-        var total_entries = this.feature_clusters[k]['labels'].length;
-        var entry_count = 0;
+        var context = document.getElementById('heatmap').getContext('2d');
 
-        for (i = 0; i < k_values.length; i++) {
-            cluster_sizes.push({'entry':k_values[i].length, 'cume':entry_count});
-            entry_count += k_values[i].length;
-        }
+        var colorScale = d3.scale.linear()
+            .domain([0, 1])
+            .range(['white', 'red']);
 
-        svg = d3.select(heatmap_clusters.get(0))
-            .append('svg')
-            .attr('height', heatmap_clusters.height())
-            .attr('width', heatmap_clusters.width());
+        var self = this;
+        $.get(clusterKUrl(window.analysisObjectID, k, heatmap.width(), heatmap.height()),
+            function(data) {
 
-        svg.append('g')
-            .selectAll('rect')
-            .data(cluster_sizes)
-            .enter()
-            .append('rect')
-            .attr('x', 0)
-            .attr('y', function(d) { return (d.cume/total_entries)*heatmap_clusters.height(); })
-            .attr('width', heatmap_clusters.width())
-            .attr('height', function(d) { return (d.entry/total_entries)*heatmap_clusters.height(); })
-            .style('fill', function(d, i) { return colors[i]; })
-            .on('mouseover', function (d, i) {
-                d3.select(this)
-                    .style('stroke', 'black')
-                    .style('stroke-width', '1');
+                for (var i in data['display_data']) {
+                    for (var j in data['display_data'][i]) {
+                        context.fillStyle=colorScale(data['display_data'][i][j]);
+                        context.fillRect(j,i,1,1);
+                    }
+                }
 
-                var content = ('Cluster ' + (i+1) + '<br/>' + d.entry + ' entries<br/>');
+                var height = heatmap_col_tooltips.height(),
+                    width = heatmap_col_tooltips.width(),
+                    col_number = self.col_names.length;
 
-                $(this).tooltip({
-                    container: 'body',
-                    title: content,
-                    html: true,
-                    animation: false,
-                }).tooltip('show');
+                var cell_width = width/col_number;
+                var svg = d3.select(heatmap_col_tooltips.get(0))
+                    .append('svg')
+                    .attr('height', height)
+                    .attr('width', width);
 
-            })
-            .on('mouseout', function () {
-                d3.select(this)
-                    .style('stroke', 'none');
-            });
+                svg.append('g')
+                    .selectAll('rect')
+                    .data(self.col_names)
+                    .enter()
+                    .append('rect')
+                    .text( function(d) { return d; } )
+                    .attr('x', function(d,i,j) { return (i * cell_width); })
+                    .attr('y', 0)
+                    .attr('width', function(d) { return cell_width; })
+                    .attr('height', height)
+                    .style('fill', 'transparent')
+                    .on('mouseover', function (d, i, j) {
+                        d3.select(this)
+                            .style('stroke', 'black')
+                            .style('stroke-width', '1');
+
+                        $(this).tooltip({
+                            container: 'body',
+                            title: d,
+                            html: true,
+                            animation: false,
+                        }).tooltip('show');
+                    })
+                    .on('mouseout', function () {
+                        d3.select(this)
+                            .style('stroke', 'none');
+                    });
+
+                $('[data-toggle="tooltip"]').tooltip();
+
+                var cluster_sizes = [];
+                var entry_count = 0;
+
+                for (var i in data['cluster_sizes']) {
+                    cluster_sizes.push({'entry':data['cluster_sizes'][i], 'cume':entry_count});
+                    entry_count += data['cluster_sizes'][i];
+                }
+
+                svg = d3.select(heatmap_clusters.get(0))
+                    .append('svg')
+                    .attr('height', heatmap_clusters.height())
+                    .attr('width', heatmap_clusters.width());
+
+                svg.append('g')
+                    .selectAll('rect')
+                    .data(cluster_sizes)
+                    .enter()
+                    .append('rect')
+                    .attr('x', 0)
+                    .attr('y', function(d) { return (d.cume/entry_count)*heatmap_clusters.height(); })
+                    .attr('width', heatmap_clusters.width())
+                    .attr('height', function(d) { return (d.entry/entry_count)*heatmap_clusters.height(); })
+                    .style('fill', function(d, i) { return colors[i]; })
+                    .on('mouseover', function (d, i) {
+                        d3.select(this)
+                            .style('stroke', 'black')
+                            .style('stroke-width', '1');
+
+                        var content = ('Cluster ' + (i+1) + '<br/>' + d.entry + ' entries<br/>');
+
+                        $(this).tooltip({
+                            container: 'body',
+                            title: content,
+                            html: true,
+                            animation: false,
+                        }).tooltip('show');
+
+                    })
+                    .on('mouseout', function () {
+                        d3.select(this)
+                            .style('stroke', 'none');
+                    });
+        });
     }
 
     drawDendrogram() {

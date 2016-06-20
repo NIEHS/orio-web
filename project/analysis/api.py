@@ -151,6 +151,17 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         return Response(an.get_summary_plot())
 
     @detail_route(methods=['get'])
+    def k_clust_heatmap(self, request, pk=None):
+        k_value = tryParseInt(self.request.GET.get('k'), -1)
+        if k_value == -1:
+            raise NotAcceptable("k value `id` parameter required")
+        dim_x = tryParseInt(self.request.GET.get('dim_x'))
+        dim_y = tryParseInt(self.request.GET.get('dim_y'))
+        an = get_object_or_404(models.Analysis, pk=int(pk))
+        self.check_object_permissions(request, an)
+        return Response(an.get_k_clust_heatmap(k_value, dim_x, dim_y))
+
+    @detail_route(methods=['get'])
     def sort_vector(self, request, pk=None):
         sort_vector_id = tryParseInt(self.request.GET.get('id'), -1)
         if sort_vector_id == -1:

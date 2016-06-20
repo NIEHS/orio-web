@@ -42,7 +42,8 @@
         "scatterplotURL": "{% url 'analysis:api:analysis-scatterplot' object.id %}",
         "binNamesUrl": "{% url 'analysis:api:analysis-bin-names' object.id %}",
         "userSortKsURL": "{% url 'analysis:api:analysis-user-sort-ks' object.id %}",
-        "sortVectorScatterplotURL": "{% url 'analysis:api:analysis-sortvectorscatterplot' object.id %}"
+        "sortVectorScatterplotURL": "{% url 'analysis:api:analysis-sortvectorscatterplot' object.id %}",
+        "analysisObjectID": "{{object.id}}"
     }
 </script>
 {% render_bundle 'main' %}

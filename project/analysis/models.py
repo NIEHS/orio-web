@@ -881,6 +881,46 @@ class Analysis(GenomicBinSettings):
             'bin_parameters': output['bin_parameters'],
         }
 
+    def get_k_clust_heatmap(self, k_value, dim_x, dim_y):
+        cluster_values = [[] for i in range(k_value)]
+        cluster_sizes = dict()
+        for k in range(k_value):
+            cluster_sizes[k] = 0
+
+        labels = self.output_json['feature_clusters'][str(k_value)]['labels']
+        vectors = self.output_json['feature_vectors']
+        for i, label in enumerate(labels):
+            cluster_sizes[label] += 1
+            # Because cols are often few, add duplicate values to limit
+            # border effects
+            _vector = []
+            for val in vectors[i]:
+                for _ in range(10):
+                    _vector.append(val)
+            cluster_values[label].append(_vector)
+
+        display_values = []
+
+        for _list in cluster_values:
+            for vector in _list:
+                display_values.append(vector)
+
+        display_values = numpy.array(display_values)
+        display_values = display_values.astype(float)
+
+        ncols = len(display_values[0])
+        nrows = len(display_values)
+        zoom_x = dim_x/ncols
+        zoom_y = dim_y/nrows
+
+        zoomed_data = ndimage.zoom(
+            display_values, (zoom_y, zoom_x), order=0),
+
+        return {
+            'display_data': zoomed_data,
+            'cluster_sizes': cluster_sizes,
+        }
+
     def get_ks(self, vector_id, matrix_id):
         if not self.output:
             return False
