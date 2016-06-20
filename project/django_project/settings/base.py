@@ -21,10 +21,13 @@ DATABASES = {
 
 SITE_ID = 1
 
+CSRF_COOKIE_HTTPONLY = True
+# currently disabled; would prefer consistent cookies for better UX
+# CSRF_COOKIE_AGE = None
+# SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 LANGUAGE_CODE = 'en-us'
 USE_I18N = True
-
-
 USE_TZ = True
 USE_L10N = True
 TIME_ZONE = 'America/New_York'
