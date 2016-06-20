@@ -2,6 +2,27 @@ from django.contrib import messages
 
 from django.core.exceptions import PermissionDenied
 
+from functools import wraps
+from django.utils.cache import add_never_cache_headers
+from django.utils.decorators import available_attrs
+
+
+def never_cache(view_func):
+    """
+    Revised django.views.decorators.cache.never_cache to include a few extra
+    headers to ensure no client-side caching.
+    """
+    @wraps(view_func, assigned=available_attrs(view_func))
+    def _wrapped_view_func(request, *args, **kwargs):
+        response = view_func(request, *args, **kwargs)
+        add_never_cache_headers(response)
+        if not response.has_header('Pragma'):
+            response['Pragma'] = 'no-Cache'
+        if not response.has_header('Cache-Control'):
+            response['Cache-Control'] = 'no-Store, no-Cache'
+        return response
+    return _wrapped_view_func
+
 
 class UserCanEdit(object):
 
