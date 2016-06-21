@@ -192,34 +192,28 @@ class SortVectorForm(BaseFormMixin, forms.ModelForm):
 
 class DatasetField(forms.CharField):
 
-    def get_datasets(self, value):
-        d = self.clean(value)
-        return {
-            'userDatasets': d.get('userDatasets', []),
-            'encodeDatasets': d.get('encodeDatasets', []),
-        }
-
     def get_dataset_ids(self, value):
-        ds = self.get_datasets(value)
         return [
             d['dataset'] for d in
-            itertools.chain(ds['userDatasets'], ds['encodeDatasets'])]
+            itertools.chain(value['userDatasets'], value['encodeDatasets'])]
 
-    def is_valid(self, cleaned):
-        d = self.get_datasets(cleaned)
-        if len(d['userDatasets']) + len(d['encodeDatasets']) < 2:
+    def validate(self, cleaned):
+        if len(cleaned['userDatasets']) + len(cleaned['encodeDatasets']) < 2:
             raise forms.ValidationError("At least two datasets are required.")
 
-        for obj in itertools.chain(d['userDatasets'], d['encodeDatasets']):
+        for obj in itertools.chain(cleaned['userDatasets'], cleaned['encodeDatasets']):
             if 'dataset' not in obj or 'display_name' not in obj:
                 raise forms.ValidationError("At least two datasets are required.")
 
         return True
 
-    def clean(self, value):
-        # ensure valid JSON
+    def to_python(self, value):
         try:
-            return json.loads(value)
+            value = json.loads(value)
+            return {
+                'userDatasets': value.get('userDatasets', []),
+                'encodeDatasets': value.get('encodeDatasets', []),
+            }
         except (TypeError, json.decoder.JSONDecodeError):
             raise forms.ValidationError('JSON format required.')
 
@@ -248,12 +242,6 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
         if self.instance.id:
             self.fields['datasets_json'].initial = self.instance.get_form_datasets()
 
-    def clean(self):
-        cleaned_data = super().clean()
-        ds = cleaned_data.get('datasets_json')
-        if not self.fields['datasets_json'].is_valid(ds):
-            raise forms.ValidationError("Improper dataset specification")
-
     def save(self, commit=True):
         if commit:
             dsIds = self.fields['datasets_json']\
@@ -268,8 +256,7 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
             return
 
         logger.info("Resetting analysis m2m relations")
-        ds = self.fields['datasets_json']\
-                .get_datasets(self.cleaned_data['datasets_json'])
+        ds = self.cleaned_data['datasets_json']
 
         # out with the old
         models.AnalysisDatasets.objects\

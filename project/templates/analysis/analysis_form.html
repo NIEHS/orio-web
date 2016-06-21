@@ -22,6 +22,11 @@
 
 
 {% block mid_content %}
+    {%if form.errors.datasets_json %}
+        <div class='alert alert-danger'>
+            {{form.errors.datasets_json}}
+        </div>
+    {% endif %}
     <div id='analysis_form' style='display: none'>
         {% crispy form %}
     </div>
