@@ -914,7 +914,7 @@ class Analysis(GenomicBinSettings):
         zoom_y = dim_y/nrows
 
         zoomed_data = ndimage.zoom(
-            display_values, (zoom_y, zoom_x), order=0),
+            display_values, (zoom_y, zoom_x), order=0)
 
         return {
             'display_data': zoomed_data,
