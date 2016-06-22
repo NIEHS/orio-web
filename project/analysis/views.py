@@ -12,7 +12,7 @@ from . import models, forms, tasks
 
 
 class Home(TemplateView):
-    template_name = 'analysis/home.html'
+    template_name = 'niehs/base.html'
 
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated():

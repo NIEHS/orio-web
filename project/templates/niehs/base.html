@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <meta name="viewport" content="user-scalable=yes, initial-scale=1.0, width=device-width"/>
+        <meta name="apple-mobile-web-app-capable" content="yes"/>
+        <title>{% block title %}ORIO{% endblock %}</title>
+        <meta name="Description" content=""/>
+        <meta name="Keywords" content=""/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        {% include "niehs/assets.html" %}
+    </head>
+
+    <body data-site-type="//www.niehs.nih.gov">
+        <!--[if IE 9]><div id="IE9"><![endif]-->
+        <!--[if IE 8]><div id="IE8"><![endif]-->
+        <!--[if IE 7]><div id="IE7"><![endif]-->
+        {% include "niehs/header.html" %}
+
+    <div id="anchor-top">
+    <a name="skip-navigation" id="skip-navigation"></a>
+    </div>
+
+    <div id="content-wrapper">
+        <div id="inner-wrapper">
+            <div id="print-logo">
+                <img class="print-logo" src="//www.niehs.nih.gov/resources/images/NIH_NIEHS_Print_logo.gif"
+                alt="National Institute of Environmental Health Sciences (NIEHS)" width="300"
+                height="56"/>
+            </div>
+
+            {% include "niehs/menu.html" %}
+            <article class="content">
+                {% block mid_content %}
+                    {% include "niehs/content.html" %}
+                {% endblock mid_content %}
+            </article>
+            {% include "niehs/footer.html" %}
+    </body>
+    {% block extra_js %}
+    {% endblock extra_js %}
+</html>

@@ -7,6 +7,11 @@ public
 *celerybeat.pid
 notebooks/.ipynb_checkpoints/*
 
+project/templates/niehs/header.html
+project/templates/niehs/footer.html
+project/templates/niehs/assets.html
+project/templates/niehs/menu.html
+
 project/.cache/*
 project/node_modules/*
 project/static/bundles*
