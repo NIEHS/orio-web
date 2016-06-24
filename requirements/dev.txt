@@ -1,6 +1,7 @@
 -r base.txt
 
 django-debug-toolbar==1.4
+https://github.com/omarish/django-cprofile-middleware/tarball/0.2
 
 # Mac/OSX only
 bpython==0.15.0

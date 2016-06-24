@@ -1,10 +1,14 @@
 import os
 import sys
-from django_project.settings.base import *
+from django_project.settings.base import *  # noqa
 
 
 INSTALLED_APPS += (
     'debug_toolbar',
+)
+
+MIDDLEWARE_CLASSES += (
+    'django_cprofile_middleware.middleware.ProfilerMiddleware',
 )
 
 INTERNAL_IPS = ('127.0.0.1', )
