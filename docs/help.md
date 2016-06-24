@@ -157,7 +157,11 @@ After all fields and options are specified, the analysis may be saved.  Upon sav
 
 ##### Modify existing analysis
 
+An analysis may be modified from the dashboard by clicking on a completed or pending analysis and selecting 'Update' from the 'Actions' drop-down on the analysis page.  From there, the analysis parameters may be modified.  An analysis may also be deleted by selecting 'Delete' from the 'Actions' drop-down menu and confirming the selection.
+
 #### Analysis visualization
+
+`ORIO-web` provides an intuitive interface for investigating analysis results.  The visualization interface may be accessed for a completed analysis by selecting that analysis on the dashboard and clicking 'View visualization' on the analysis page.  The results of an `ORIO` analysis may also be downloaded as a zip file by selecting 'Download zip' from the 'Actions' drop-down on an analysis page.
 
 ##### Data set clustering
 
