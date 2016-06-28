@@ -210,7 +210,6 @@ class FeatureClusteringOverview{
 
         // globally enable tooltips
         $('[data-toggle="tooltip"]').tooltip();
-
     }
 
     drawDendrogram() {
@@ -332,7 +331,6 @@ class FeatureClusteringOverview{
             .css({
                 'height': '8%',
                 'width': '20%',
-                //'font-size': '12px',
                 'position': 'absolute',
                 'top': '20%',
                 'left': '0%',
@@ -346,7 +344,6 @@ class FeatureClusteringOverview{
             .css({
                 'height': '8%',
                 'width': '6%',
-                // 'font-size': '12px',
                 'position': 'absolute',
                 'top': '20%',
                 'left': '24%',
@@ -748,11 +745,6 @@ class FeatureClusteringOverview{
             .append('stop')
             .attr('offset', '0')
             .attr('stop-color', 'white');
-        //
-        // gradient
-        //     .append('stop')
-        //     .attr('offset', '0.5')
-        //     .attr('stop-color', 'white');
 
         gradient
             .append('stop')
