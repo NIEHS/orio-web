@@ -1,20 +1,12 @@
-from time import sleep
+from datetime import timedelta
 from celery.utils.log import get_task_logger
-from celery.decorators import task
+from celery.decorators import task, periodic_task
 from celery import group, chain
 from django.apps import apps
 from django.utils import timezone
 
 
 logger = get_task_logger(__name__)
-
-
-@task()
-def debug_task():
-    logger.info('Starting debug task...')
-    sleep(5)
-    logger.info('Finishing debug task...')
-    return True
 
 
 @task(bind=True)
@@ -98,3 +90,9 @@ def validate_user_dataset(id_):
 def validate_analysis(id_):
     obj = apps.get_model('analysis', 'Analysis').objects.get(id=id_)
     obj.validate_and_save()
+
+
+@periodic_task(run_every=timedelta(hours=1))
+def remove_expired_download_links(**kwargs):
+    TemporaryDownload = apps.get_model('analysis', 'TemporaryDownload')
+    TemporaryDownload.remove_expired()
