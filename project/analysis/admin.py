@@ -106,6 +106,15 @@ class FeatureListCountMatrixAdmin(admin.ModelAdmin):
     )
 
 
+class TemporaryDownloadAdmin(admin.ModelAdmin):
+    list_display = (
+        'file', 'owner', 'created', 'expiration_date',
+    )
+    search_fields = (
+        'owner__email',
+    )
+
+
 admin.site.register(models.UserDataset, UserDatasetAdmin)
 admin.site.register(models.EncodeDataset, EncodeDatasetAdmin)
 admin.site.register(models.FeatureList, FeatureListAdmin)
@@ -113,3 +122,4 @@ admin.site.register(models.SortVector, SortVectorAdmin)
 admin.site.register(models.AnalysisDatasets, AnalysisDatasetsAdmin)
 admin.site.register(models.Analysis, AnalysisAdmin)
 admin.site.register(models.FeatureListCountMatrix, FeatureListCountMatrixAdmin)
+admin.site.register(models.TemporaryDownload, TemporaryDownloadAdmin)
