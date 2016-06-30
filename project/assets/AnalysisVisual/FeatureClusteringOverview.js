@@ -45,18 +45,6 @@ class FeatureClusteringOverview{
     }
 
     drawHeatmap(k) {
-        var clusterKUrl = function(id, k, dim_x, dim_y) {
-            return (
-                `/dashboard/api/`+
-                `analysis/${id}/`+
-                `k_clust_heatmap/`+
-                `?k=${k}`+
-                `&dim_x=${dim_x}`+
-                `&dim_y=${dim_y}`
-            );
-        };
-        var colors = this.colors;
-
         // remove existing heatmap
         this.el_1.find('#heatmap').remove();
 
@@ -98,106 +86,130 @@ class FeatureClusteringOverview{
                 'top': '20%',
             }).appendTo(this.el_1);
 
-        var context = document.getElementById('heatmap').getContext('2d');
+        var clusterKUrl = function(id, k, dim_x, dim_y) {
+                let params = $.param({
+                    k, dim_x, dim_y,
+                });
+                return `/dashboard/api/analysis/${id}/k_clust_heatmap/?` + params;
+            },
+            url = clusterKUrl(window.analysisObjectID, k, heatmap.width(), heatmap.height());
 
-        var colorScale = d3.scale.linear()
-            .domain([0, 1])
-            .range(['white', 'red']);
+        $.get(url, this.drawHeatmapWithData.bind(this));
 
-        var self = this;
-        $.get(clusterKUrl(window.analysisObjectID, k, heatmap.width(), heatmap.height()),
-            function(data) {
-
-                for (var i in data['display_data']) {
-                    for (var j in data['display_data'][i]) {
-                        context.fillStyle=colorScale(data['display_data'][i][j]);
-                        context.fillRect(j,i,1,1);
-                    }
-                }
-
-                var height = heatmap_col_tooltips.height(),
-                    width = heatmap_col_tooltips.width(),
-                    col_number = self.col_names.length;
-
-                var cell_width = width/col_number;
-                var svg = d3.select(heatmap_col_tooltips.get(0))
-                    .append('svg')
-                    .attr('height', height)
-                    .attr('width', width);
-
-                svg.append('g')
-                    .selectAll('rect')
-                    .data(self.col_names)
-                    .enter()
-                    .append('rect')
-                    .text( function(d) { return d; } )
-                    .attr('x', function(d,i,j) { return (i * cell_width); })
-                    .attr('y', 0)
-                    .attr('width', function(d) { return cell_width; })
-                    .attr('height', height)
-                    .style('fill', 'transparent')
-                    .on('mouseover', function (d, i, j) {
-                        d3.select(this)
-                            .style('stroke', 'black')
-                            .style('stroke-width', '1');
-
-                        $(this).tooltip({
-                            container: 'body',
-                            title: d,
-                            html: true,
-                            animation: false,
-                        }).tooltip('show');
-                    })
-                    .on('mouseout', function () {
-                        d3.select(this)
-                            .style('stroke', 'none');
-                    });
-
-                $('[data-toggle="tooltip"]').tooltip();
-
-                var cluster_sizes = [];
-                var entry_count = 0;
-
-                for (var i in data['cluster_sizes']) {
-                    cluster_sizes.push({'entry':data['cluster_sizes'][i], 'cume':entry_count});
-                    entry_count += data['cluster_sizes'][i];
-                }
-
-                svg = d3.select(heatmap_clusters.get(0))
-                    .append('svg')
-                    .attr('height', heatmap_clusters.height())
-                    .attr('width', heatmap_clusters.width());
-
-                svg.append('g')
-                    .selectAll('rect')
-                    .data(cluster_sizes)
-                    .enter()
-                    .append('rect')
-                    .attr('x', 0)
-                    .attr('y', function(d) { return (d.cume/entry_count)*heatmap_clusters.height(); })
-                    .attr('width', heatmap_clusters.width())
-                    .attr('height', function(d) { return (d.entry/entry_count)*heatmap_clusters.height(); })
-                    .style('fill', function(d, i) { return colors[i]; })
-                    .on('mouseover', function (d, i) {
-                        d3.select(this)
-                            .style('stroke', 'black')
-                            .style('stroke-width', '1');
-
-                        var content = ('Cluster ' + (i+1) + '<br/>' + d.entry + ' entries<br/>');
-
-                        $(this).tooltip({
-                            container: 'body',
-                            title: content,
-                            html: true,
-                            animation: false,
-                        }).tooltip('show');
-
-                    })
-                    .on('mouseout', function () {
-                        d3.select(this)
-                            .style('stroke', 'none');
-                    });
+        _.extend(this, {
+            heatmap_col_tooltips,
+            heatmap_clusters,
         });
+    }
+
+    drawHeatmapWithData(data) {
+        var canvas = document.getElementById('heatmap').getContext('2d'),
+            height = this.heatmap_col_tooltips.height(),
+            width = this.heatmap_col_tooltips.width(),
+            col_number = this.col_names.length,
+            cell_width = width/col_number,
+            entry_count = 0,
+            total_size = d3.sum(_.values(data['cluster_sizes'])),
+            clusters = [],
+            colorScale = d3.scale.linear()
+                .domain([0, 1])
+                .range(['white', 'red']),
+            showDatasectRectangle = function(d) {
+                d3.select(this)
+                    .style('stroke', 'black')
+                    .style('stroke-width', '1');
+
+                $(this).tooltip({
+                    container: 'body',
+                    title: d,
+                    html: true,
+                    animation: false,
+                }).tooltip('show');
+            },
+            hideDatasetRectangle = function () {
+                d3.select(this)
+                    .style('stroke', 'none');
+            },
+            showClusterDetails = function (d, i) {
+                d3.select(this)
+                    .style('stroke', 'black')
+                    .style('stroke-width', '1');
+
+                $(this).tooltip({
+                    container: 'body',
+                    title: `Cluster ${d.index}<br/>${d.size} entries`,
+                    html: true,
+                    animation: false,
+                }).tooltip('show');
+            },
+            hideClusterDetails = function() {
+                d3.select(this)
+                    .style('stroke', 'none');
+            },
+            i, j;
+
+        // create cluster-size details
+        _.each(data['cluster_sizes'], (size, i) => {
+            var d = {
+                index: parseInt(i) + 1,
+                size: size,
+                x: 0,
+                y: entry_count / total_size * this.heatmap_clusters.height(),
+                width: this.heatmap_clusters.width(),
+                height: size / total_size * this.heatmap_clusters.height(),
+                fill: this.colors[i],
+            };
+            entry_count += size;
+            clusters.push(d);
+        });
+
+        // draw canvas heatmap
+        for (i in data['display_data']) {
+            for (j in data['display_data'][i]) {
+                canvas.fillStyle = colorScale(data['display_data'][i][j]);
+                canvas.fillRect(j, i, 1, 1);
+            }
+        }
+
+        // draw rectangles around each dataset/dataset cluster
+        d3.select(this.heatmap_col_tooltips.get(0))
+            .append('svg')
+                .attr('height', height)
+                .attr('width', width)
+            .append('g')
+            .selectAll('rect')
+            .data(this.col_names)
+            .enter()
+            .append('rect')
+                .text((d) => d)
+                .attr('x', (d, i) => (i * cell_width))
+                .attr('y', 0)
+                .attr('width', cell_width)
+                .attr('height', height)
+                .style('fill', 'transparent')
+                .on('mouseover', showDatasectRectangle)
+                .on('mouseout', hideDatasetRectangle);
+
+        // draw cluster-detail rectangles
+        d3.select(this.heatmap_clusters.get(0))
+            .append('svg')
+                .attr('height', this.heatmap_clusters.height())
+                .attr('width', this.heatmap_clusters.width())
+            .append('g')
+            .selectAll('rect')
+            .data(clusters)
+            .enter()
+            .append('rect')
+                .attr('x', (d) => d.x)
+                .attr('y', (d) => d.y)
+                .attr('width', (d) => d.width)
+                .attr('height', (d) => d.height)
+                .style('fill', (d) => d.fill)
+                .on('mouseover', showClusterDetails)
+                .on('mouseout', hideClusterDetails);
+
+        // globally enable tooltips
+        $('[data-toggle="tooltip"]').tooltip();
     }
 
     drawDendrogram() {
@@ -319,7 +331,6 @@ class FeatureClusteringOverview{
             .css({
                 'height': '8%',
                 'width': '20%',
-                //'font-size': '12px',
                 'position': 'absolute',
                 'top': '20%',
                 'left': '0%',
@@ -333,7 +344,6 @@ class FeatureClusteringOverview{
             .css({
                 'height': '8%',
                 'width': '6%',
-                // 'font-size': '12px',
                 'position': 'absolute',
                 'top': '20%',
                 'left': '24%',
@@ -735,11 +745,6 @@ class FeatureClusteringOverview{
             .append('stop')
             .attr('offset', '0')
             .attr('stop-color', 'white');
-        //
-        // gradient
-        //     .append('stop')
-        //     .attr('offset', '0.5')
-        //     .attr('stop-color', 'white');
 
         gradient
             .append('stop')
