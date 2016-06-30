@@ -68,30 +68,6 @@ def analysis_zip(id_):
     analysis.create_zip()
 
 
-@task()
-def validate_feature_list(id_):
-    obj = apps.get_model('analysis', 'FeatureList').objects.get(id=id_)
-    obj.validate_and_save()
-
-
-@task()
-def validate_sort_vector(id_):
-    obj = apps.get_model('analysis', 'SortVector').objects.get(id=id_)
-    obj.validate_and_save()
-
-
-@task()
-def validate_user_dataset(id_):
-    obj = apps.get_model('analysis', 'UserDataset').objects.get(id=id_)
-    obj.validate_and_save()
-
-
-@task()
-def validate_analysis(id_):
-    obj = apps.get_model('analysis', 'Analysis').objects.get(id=id_)
-    obj.validate_and_save()
-
-
 @periodic_task(run_every=timedelta(hours=1))
 def remove_expired_download_links():
     TemporaryDownload = apps.get_model('analysis', 'TemporaryDownload')
