@@ -93,6 +93,6 @@ def validate_analysis(id_):
 
 
 @periodic_task(run_every=timedelta(hours=1))
-def remove_expired_download_links(**kwargs):
+def remove_expired_download_links():
     TemporaryDownload = apps.get_model('analysis', 'TemporaryDownload')
     TemporaryDownload.remove_expired()
