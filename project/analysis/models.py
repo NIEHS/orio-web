@@ -1059,11 +1059,12 @@ class Analysis(GenomicBinSettings):
 
     def create_zip(self):
         """
-        Create a zip file of output, specifically designed to recreate analysis,
+        Create a zip file of output, specifically designed to recreate analysis
         or to load analysis onto local development computers.
         """
         f = io.BytesIO()
-        with zipfile.ZipFile(f, mode='w', compression=zipfile.ZIP_DEFLATED) as z:
+        with zipfile.ZipFile(f, mode='w',
+                             compression=zipfile.ZIP_DEFLATED) as z:
 
             # write feature list
             z.write(self.feature_list.dataset.path, arcname='feature_list.txt')
@@ -1078,7 +1079,8 @@ class Analysis(GenomicBinSettings):
 
             # write all intermediate count matrices
             for ds in self.analysisdatasets_set.all():
-                z.write(ds.count_matrix.matrix.path, 'count_matrix/{}.txt'.format(ds.display_name))
+                z.write(ds.count_matrix.matrix.path,
+                        'count_matrix/{}.txt'.format(ds.display_name))
 
         tf = self._save_zip_download(f)
         self._send_zip_email(tf)

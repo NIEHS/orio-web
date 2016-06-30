@@ -2,12 +2,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages import get_messages
 from django.core.urlresolvers import reverse_lazy
 from django.http import HttpResponseRedirect, JsonResponse
-from django.shortcuts import HttpResponse, get_object_or_404
-from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
 from django.views.generic import TemplateView, CreateView, UpdateView, \
         DetailView, DeleteView, ListView, View
 
-from utils.views import UserCanEdit, UserCanView, AddUserToFormMixin, MessageMixin
+from utils.views import UserCanEdit, UserCanView, \
+    AddUserToFormMixin, MessageMixin
 from . import models, forms, tasks
 
 
