@@ -71,6 +71,12 @@ def download_dataset(id_):
 
 
 @task()
+def analysis_zip(id_):
+    analysis = apps.get_model('analysis', 'Analysis').objects.get(id=id_)
+    analysis.create_zip()
+
+
+@task()
 def validate_feature_list(id_):
     obj = apps.get_model('analysis', 'FeatureList').objects.get(id=id_)
     obj.validate_and_save()

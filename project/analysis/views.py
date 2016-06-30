@@ -206,13 +206,12 @@ class AnalysisExecute(UserCanEdit, DetailView):
         return super().get(request, *args, **kwargs)
 
 
-class AnalysisZip(UserCanView, DetailView):
+class AnalysisZip(MessageMixin, UserCanView, DetailView):
     model = models.Analysis
+    success_message = "Zip file being created; we will email you the link once it's complete."  # noqa
 
-    def get(self, context, **response_kwargs):
-        obj = self.get_object()
-        zip_ = obj.create_zip()
-        zip_.seek(0)
-        response = HttpResponse(zip_, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="{}.zip"'.format(obj)
-        return response
+    def get(self, request, *args, **kwargs):
+        object = self.get_object()
+        tasks.analysis_zip.delay(object.id)
+        self.send_message()
+        return HttpResponseRedirect(object.get_absolute_url())

@@ -1,4 +1,5 @@
 import json
+import datetime
 import hashlib
 import logging
 import os
@@ -18,9 +19,11 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.urlresolvers import reverse
+from django.core.files.base import ContentFile
 from django.contrib.sites.models import Site
 from django.contrib.postgres.fields import JSONField
 from django.utils.timezone import now
+from django.utils.text import slugify
 from django.template.loader import render_to_string
 
 from utils.models import ReadOnlyFileSystemStorage, get_random_filename
@@ -1077,7 +1080,33 @@ class Analysis(GenomicBinSettings):
             for ds in self.analysisdatasets_set.all():
                 z.write(ds.count_matrix.matrix.path, 'count_matrix/{}.txt'.format(ds.display_name))
 
-        return f
+        tf = self._save_zip_download(f)
+        self._send_zip_email(tf)
+
+    def _save_zip_download(self, zipfile):
+        zipfile.seek(0)
+        cf = ContentFile(zipfile.read())
+        fn = '{}.zip'.format(slugify(str(self)))
+        tf = TemporaryDownload(owner=self.owner)
+        tf.file.save(fn, cf)
+        tf.save()
+        return tf
+
+    def _send_zip_email(self, download):
+        context = {
+            'object': self,
+            'tf': download,
+            'domain': Site.objects.get_current().domain
+        }
+        send_mail(
+            subject='[ORIO]: analysis zip available',
+            message=render_to_string(
+                'analysis/analysis_zip_email.txt', context),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[self.owner.email],
+            html_message=render_to_string(
+                'analysis/analysis_zip_email.html', context)
+        )
 
     def send_completion_email(self):
         context = {
@@ -1283,3 +1312,34 @@ class FeatureListCountMatrix(GenomicBinSettings):
             'smoothed_data': smoothed_data,
             'ad_results': ad_results,
         }
+
+
+def get_temporary_download_path(instance, filename):
+    user = hashlib.md5(instance.owner.email.encode('utf-8')).hexdigest()
+    return 'downloads/{0}/{1}'.format(user, filename)
+
+
+class TemporaryDownload(models.Model):
+
+    EXPIRATION_HOURS = 48
+
+    file = models.FileField(
+        upload_to=get_temporary_download_path,
+        max_length=256)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='%(class)s',)
+    created = models.DateTimeField(
+        auto_now_add=True)
+
+    @property
+    def expiration_date(self):
+        return self.created + datetime.timedelta(hours=self.EXPIRATION_HOURS)
+
+    @classmethod
+    def remove_expired(cls):
+        expired_time = now() - datetime.timedelta(hours=cls.EXPIRATION_HOURS)
+        expired = cls.objects.filter(created__lte=expired_time)
+        for exp in expired:
+            exp.file.delete()
+        expired.delete()
