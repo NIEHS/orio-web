@@ -26,7 +26,8 @@ from django.utils.timezone import now
 from django.utils.text import slugify
 from django.template.loader import render_to_string
 
-from utils.models import ReadOnlyFileSystemStorage, get_random_filename
+from utils.models import ReadOnlyFileSystemStorage, get_random_filename, \
+    DynamicFilePathField
 from async_messages import messages
 
 from .import tasks
@@ -34,6 +35,8 @@ from .import tasks
 from orio.matrix import BedMatrix
 from orio.matrixByMatrix import MatrixByMatrix
 from orio import validators
+from orio.utils import get_data_path
+
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +104,15 @@ def get_chromosome_size_file(genome_assembly):
         return validators.get_chromosome_size_path('hg19')
     elif genome_assembly == MM9:
         return validators.get_chromosome_size_path('mm9')
+
+
+class GenomeAssembly(models.Model):
+    name = models.CharField(
+        max_length=128)
+    chromosome_size_file = DynamicFilePathField(
+        max_length=128,
+        path=get_data_path,
+        recursive=False)
 
 
 def validation_save_and_message(object, is_valid, notes):

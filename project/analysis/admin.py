@@ -3,6 +3,13 @@ from django.contrib import admin
 from . import models
 
 
+class GenomeAssemblyAdmin(admin.ModelAdmin):
+    list_display = (
+        'name', 'chromosome_size_file',
+    )
+    search_fields = ('name', )
+
+
 class UserDatasetAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'genome_assembly', 'owner', 'validated',
@@ -115,6 +122,7 @@ class TemporaryDownloadAdmin(admin.ModelAdmin):
     )
 
 
+admin.site.register(models.GenomeAssembly, GenomeAssemblyAdmin)
 admin.site.register(models.UserDataset, UserDatasetAdmin)
 admin.site.register(models.EncodeDataset, EncodeDatasetAdmin)
 admin.site.register(models.FeatureList, FeatureListAdmin)
