@@ -754,6 +754,10 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         formObj.end_time = None
         cache.delete(self.output_cache_key)
 
+    def execute_time_estimate(self):
+        # estimate execution time, in seconds
+        return 300  # TODO - make more precise :)
+
     @property
     def user_datasets(self):
         return UserDataset.objects.filter(id__in=self.datasets.values_list('id', flat=True))
@@ -805,7 +809,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
     @property
     def is_complete(self):
-        return self.start_time and self.end_time
+        return self.start_time is not None and self.end_time is not None
 
     @property
     def execute_task_id(self):

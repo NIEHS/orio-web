@@ -215,6 +215,9 @@ class AnalysisExecute(UserCanEdit, DetailView):
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
 
+        if self.object.is_complete:
+            return HttpResponseRedirect(self.object.get_visuals_url())
+
         if self.object.is_ready_to_run:
             self.object.execute()
 

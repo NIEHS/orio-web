@@ -136,6 +136,13 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         return Response(an.get_unsorted_ks(matrix_id))
 
     @detail_route(methods=['get'])
+    def is_complete(self, request, pk=None):
+        an = get_object_or_404(models.Analysis, pk=int(pk))
+        self.check_object_permissions(request, an)
+        resp = {"is_complete": an.is_complete}
+        return Response(resp)
+
+    @detail_route(methods=['get'])
     def user_sort_ks(self, request, pk=None):
         matrix_id = tryParseInt(self.request.GET.get('matrix_id'), -1)
         if matrix_id == -1:
