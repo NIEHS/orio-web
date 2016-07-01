@@ -77,6 +77,10 @@ body {
 
 
 /* toastr notification overrides */
+#toast-container {
+  /* behind bs3 modals */
+  z-index: 1049;
+}
 .toast-top-right {
   top: 65px;
   right: 12px;
