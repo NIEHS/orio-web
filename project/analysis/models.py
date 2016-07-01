@@ -105,33 +105,39 @@ class GenomeAssembly(models.Model):
         return self.name
 
 
-def validation_save_and_message(object, is_valid, notes):
-
+def scrub_validation_text(owner, text):
     # remove any path information from outputs
-    user_home = object.owner.path
+    user_home = owner.path
     media_path = settings.MEDIA_ROOT
-    notes = notes\
+    notes = text\
         .replace(user_home, '/***')\
         .replace(media_path, '/***')\
 
     # remove extra whitespace from all lines
-    notes = '\n'.join([l.strip() for l in notes.splitlines()])
+    return '\n'.join([l.strip() for l in notes.splitlines()])
 
-    # intentionally omit post_save signal
+
+def validation_save_and_message(object, is_valid, text):
+    # skip post_save signal
     object.__class__.objects\
         .filter(id=object.id)\
         .update(
             validated=is_valid,
-            validation_notes=notes)
+            validation_notes=scrub_validation_text(object.owner, text))
+    # re-query to get updated version
+    object = object.__class__.objects.get(id=object.id)
+    send_validation_message(object)
 
-    msg = '{} {}: '.format(object._meta.verbose_name.title(), object)
-    if is_valid:
+
+def send_validation_message(obj):
+    msg = '{} {}: '.format(obj._meta.verbose_name.title(), obj)
+    if obj.validated:
         msg += 'validation complete!'
-        messages.success(object.owner, msg)
+        messages.success(obj.owner, msg)
     else:
         msg += "<a href='{}'>validation failed (view errors)</a>"\
-            .format(object.get_absolute_url())
-        messages.warning(object.owner, msg)
+            .format(obj.get_absolute_url())
+        messages.warning(obj.owner, msg)
 
 
 class DatasetDownload(models.Model):
@@ -402,7 +408,10 @@ class UserDataset(GenomicDataset):
             is_valid = validator.is_valid
             notes = validator.display_errors()
 
-        validation_save_and_message(self, is_valid, notes)
+        self.validated = is_valid
+        self.validation_notes = scrub_validation_text(self.owner, notes)
+        send_validation_message(self)
+        self.save()
 
 
 class EncodeDataset(GenomicDataset):
@@ -520,13 +529,15 @@ class FeatureList(Dataset):
         return reverse('analysis:feature_list_delete', args=[self.pk, ])
 
     def validate_and_save(self):
-        size_file = self.genome_assembly.chromosome_size_file
         validator = validators.FeatureListValidator(
-            self.dataset.path, size_file)
+            self.dataset.path,
+            self.genome_assembly.chromosome_size_file)
         validator.validate()
-        validation_save_and_message(
-            self, validator.is_valid,
-            validator.display_errors())
+        self.validated = validator.is_valid
+        self.validation_notes = scrub_validation_text(
+            self.owner, validator.display_errors())
+        send_validation_message(self)
+        self.save()
 
 
 class SortVector(Dataset):
@@ -561,9 +572,11 @@ class SortVector(Dataset):
             self.feature_list.dataset.path,
             self.vector.path)
         validator.validate()
-        validation_save_and_message(
-            self, validator.is_valid,
-            validator.display_errors())
+        self.validated = validator.is_valid
+        self.validation_notes = scrub_validation_text(
+            self.owner, validator.display_errors())
+        send_validation_message(self)
+        self.save()
 
 
 class AnalysisDatasets(models.Model):
@@ -683,9 +696,11 @@ class Analysis(GenomicBinSettings):
             stranded_bed=self.feature_list.stranded,
         )
         validator.validate()
-        validation_save_and_message(
-            self, validator.is_valid,
-            validator.display_errors())
+        self.validated = validator.is_valid
+        self.validation_notes = scrub_validation_text(
+            self.owner, validator.display_errors())
+        send_validation_message(self)
+        self.save()
 
     def get_absolute_url(self):
         return reverse('analysis:analysis', args=[self.pk, ])

@@ -13,11 +13,3 @@ def trigger_download(sender, instance, created, **kwargs):
 @receiver(post_delete, sender=models.DatasetDownload)
 def trigger_delete(sender, instance, **kwargs):
     instance.delete_file()
-
-
-@receiver(post_save, sender=models.FeatureList)
-@receiver(post_save, sender=models.SortVector)
-@receiver(post_save, sender=models.UserDataset)
-@receiver(post_save, sender=models.Analysis)
-def trigger_validation(sender, instance, **kwargs):
-    instance.validate_and_save()
