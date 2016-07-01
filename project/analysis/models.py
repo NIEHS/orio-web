@@ -91,21 +91,6 @@ class Dataset(models.Model):
         return self.owner == user or user.is_staff
 
 
-HG19 = 1
-MM9 = 2
-GENOME_ASSEMBLY_CHOICES = (
-    (HG19, 'hg19'),
-    (MM9,  'mm9'),
-)
-
-
-def get_chromosome_size_file(genome_assembly):
-    if genome_assembly == HG19:
-        return validators.get_chromosome_size_path('hg19')
-    elif genome_assembly == MM9:
-        return validators.get_chromosome_size_path('mm9')
-
-
 class GenomeAssembly(models.Model):
     name = models.CharField(
         unique=True,
@@ -115,6 +100,12 @@ class GenomeAssembly(models.Model):
         max_length=128,
         path=get_data_path,
         recursive=False)
+
+    class Meta:
+        verbose_name_plural = 'genome assemblies'
+
+    def __str__(self):
+        return self.name
 
 
 def validation_save_and_message(object, is_valid, notes):
@@ -291,12 +282,8 @@ class DatasetDownload(models.Model):
 
 
 class GenomicDataset(Dataset):
-    genome_assembly_new = models.ForeignKey(
-        GenomeAssembly,
-        null=True)
-    genome_assembly = models.PositiveSmallIntegerField(
-        db_index=True,
-        choices=GENOME_ASSEMBLY_CHOICES)
+    genome_assembly = models.ForeignKey(
+        GenomeAssembly)
 
     @property
     def subclass(self):
@@ -394,7 +381,7 @@ class UserDataset(GenomicDataset):
         if not self.is_downloaded:
             return
 
-        size_file = get_chromosome_size_file(self.genome_assembly)
+        size_file = self.genome_assembly.chromosome_size_file
         if self.is_stranded:
             validatorA = validators.BigWigValidator(
                 self.plus.data.path, size_file)
@@ -488,10 +475,10 @@ class EncodeDataset(GenomicDataset):
             'phase',
             'localization',
         ]
-        for genome, _ in GENOME_ASSEMBLY_CHOICES:
-            dicts[genome] = {}
+        for genome in GenomeAssembly.objects.all():
+            dicts[genome.id] = {}
             for fld in fields:
-                dicts[genome][fld] = cls.objects\
+                dicts[genome.id][fld] = cls.objects\
                     .filter(genome_assembly=genome)\
                     .values_list(fld, flat=True)\
                     .distinct()\
@@ -506,11 +493,8 @@ class EncodeDataset(GenomicDataset):
 
 
 class FeatureList(Dataset):
-    genome_assembly_new = models.ForeignKey(
-        GenomeAssembly,
-        null=True)
-    genome_assembly = models.PositiveSmallIntegerField(
-        choices=GENOME_ASSEMBLY_CHOICES)
+    genome_assembly = models.ForeignKey(
+        GenomeAssembly)
     stranded = models.BooleanField(
         default=True)
     dataset = models.FileField(
@@ -538,7 +522,7 @@ class FeatureList(Dataset):
         return reverse('analysis:feature_list_delete', args=[self.pk, ])
 
     def validate_and_save(self):
-        size_file = get_chromosome_size_file(self.genome_assembly)
+        size_file = self.genome_assembly.chromosome_size_file
         validator = validators.FeatureListValidator(
             self.dataset.path, size_file)
         validator.validate()
@@ -648,11 +632,8 @@ class Analysis(GenomicBinSettings):
         GenomicDataset,
         through=AnalysisDatasets,
         through_fields=('analysis', 'dataset'))
-    genome_assembly_new = models.ForeignKey(
-        GenomeAssembly,
-        null=True)
-    genome_assembly = models.PositiveSmallIntegerField(
-        choices=GENOME_ASSEMBLY_CHOICES)
+    genome_assembly = models.ForeignKey(
+        GenomeAssembly)
     feature_list = models.ForeignKey(
         FeatureList)
     sort_vector = models.ForeignKey(
@@ -700,7 +681,7 @@ class Analysis(GenomicBinSettings):
             bin_number=self.bin_number,
             bin_size=self.bin_size,
             feature_bed=self.feature_list.dataset.path,
-            chrom_sizes=get_chromosome_size_file(self.genome_assembly),
+            chrom_sizes=self.genome_assembly.chromosome_size_file,
             stranded_bed=self.feature_list.stranded,
         )
         validator.validate()
