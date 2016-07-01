@@ -105,39 +105,39 @@ class GenomeAssembly(models.Model):
         return self.name
 
 
-def scrub_validation_text(owner, text):
-    # remove any path information from outputs
-    user_home = owner.path
-    media_path = settings.MEDIA_ROOT
-    notes = text\
-        .replace(user_home, '/***')\
-        .replace(media_path, '/***')\
+class ValidationMixin(object):
 
-    # remove extra whitespace from all lines
-    return '\n'.join([l.strip() for l in notes.splitlines()])
+    def validate(self):
+        # return tuple (is_valid: bool, validation_text: str)
+        raise NotImplementedError('Requires implementation')
 
+    def validate_and_save(self):
+        is_valid, text = self.validate()
+        self.validated = is_valid
+        self.validation_notes = self.scrub_validation_text(text)
+        self.send_validation_message()
+        self.save()
 
-def validation_save_and_message(object, is_valid, text):
-    # skip post_save signal
-    object.__class__.objects\
-        .filter(id=object.id)\
-        .update(
-            validated=is_valid,
-            validation_notes=scrub_validation_text(object.owner, text))
-    # re-query to get updated version
-    object = object.__class__.objects.get(id=object.id)
-    send_validation_message(object)
+    def scrub_validation_text(self, text):
+        # remove any path information from outputs
+        user_home = self.owner.path
+        media_path = settings.MEDIA_ROOT
+        notes = text\
+            .replace(user_home, '/***')\
+            .replace(media_path, '/***')\
 
+        # remove extra whitespace from all lines
+        return '\n'.join([l.strip() for l in notes.splitlines()])
 
-def send_validation_message(obj):
-    msg = '{} {}: '.format(obj._meta.verbose_name.title(), obj)
-    if obj.validated:
-        msg += 'validation complete!'
-        messages.success(obj.owner, msg)
-    else:
-        msg += "<a href='{}'>validation failed (view errors)</a>"\
-            .format(obj.get_absolute_url())
-        messages.warning(obj.owner, msg)
+    def send_validation_message(self):
+        msg = '{} {}: '.format(self._meta.verbose_name.title(), self)
+        if self.validated:
+            msg += 'validation complete!'
+            messages.success(self.owner, msg)
+        else:
+            msg += "<a href='{}'>validation failed (view errors)</a>"\
+                .format(self.get_absolute_url())
+            messages.warning(self.owner, msg)
 
 
 class DatasetDownload(models.Model):
@@ -301,7 +301,7 @@ class GenomicDataset(Dataset):
         raise NotImplementedError('Abstract method')
 
 
-class UserDataset(GenomicDataset):
+class UserDataset(ValidationMixin, GenomicDataset):
     DATA_TYPES = (
         ('Cage',        'Cage'),
         ('ChiaPet',     'ChiaPet'),
@@ -381,9 +381,10 @@ class UserDataset(GenomicDataset):
 
     def validate_and_save(self):
         # wait until all files are downloaded before attempting validation
-        if not self.is_downloaded:
-            return
+        if self.is_downloaded:
+            super().validate_and_save()
 
+    def validate(self):
         size_file = self.genome_assembly.chromosome_size_file
         if self.is_stranded:
             validatorA = validators.BigWigValidator(
@@ -408,10 +409,7 @@ class UserDataset(GenomicDataset):
             is_valid = validator.is_valid
             notes = validator.display_errors()
 
-        self.validated = is_valid
-        self.validation_notes = scrub_validation_text(self.owner, notes)
-        send_validation_message(self)
-        self.save()
+        return is_valid, notes
 
 
 class EncodeDataset(GenomicDataset):
@@ -499,7 +497,7 @@ class EncodeDataset(GenomicDataset):
             return [self.data_ambiguous.path]
 
 
-class FeatureList(Dataset):
+class FeatureList(ValidationMixin, Dataset):
     genome_assembly = models.ForeignKey(
         GenomeAssembly)
     stranded = models.BooleanField(
@@ -528,19 +526,15 @@ class FeatureList(Dataset):
     def get_delete_url(self):
         return reverse('analysis:feature_list_delete', args=[self.pk, ])
 
-    def validate_and_save(self):
+    def validate(self):
         validator = validators.FeatureListValidator(
             self.dataset.path,
             self.genome_assembly.chromosome_size_file)
         validator.validate()
-        self.validated = validator.is_valid
-        self.validation_notes = scrub_validation_text(
-            self.owner, validator.display_errors())
-        send_validation_message(self)
-        self.save()
+        return validator.is_valid, validator.display_errors()
 
 
-class SortVector(Dataset):
+class SortVector(ValidationMixin, Dataset):
     feature_list = models.ForeignKey(
         FeatureList)
     vector = models.FileField(
@@ -567,16 +561,12 @@ class SortVector(Dataset):
     def get_delete_url(self):
         return reverse('analysis:sort_vector_delete', args=[self.pk, ])
 
-    def validate_and_save(self):
+    def validate(self):
         validator = validators.SortVectorValidator(
             self.feature_list.dataset.path,
             self.vector.path)
         validator.validate()
-        self.validated = validator.is_valid
-        self.validation_notes = scrub_validation_text(
-            self.owner, validator.display_errors())
-        send_validation_message(self)
-        self.save()
+        return validator.is_valid, validator.display_errors()
 
 
 class AnalysisDatasets(models.Model):
@@ -630,7 +620,7 @@ class GenomicBinSettings(models.Model):
         abstract = True
 
 
-class Analysis(GenomicBinSettings):
+class Analysis(ValidationMixin, GenomicBinSettings):
     UPLOAD_TO = 'analysis/'
 
     owner = models.ForeignKey(
@@ -685,7 +675,7 @@ class Analysis(GenomicBinSettings):
     def complete(cls, owner):
         return cls.objects.filter(end_time__isnull=False, owner=owner)
 
-    def validate_and_save(self):
+    def validate(self):
         validator = validators.AnalysisValidator(
             bin_anchor=self.get_anchor_display(),
             bin_start=self.bin_start,
@@ -696,11 +686,7 @@ class Analysis(GenomicBinSettings):
             stranded_bed=self.feature_list.stranded,
         )
         validator.validate()
-        self.validated = validator.is_valid
-        self.validation_notes = scrub_validation_text(
-            self.owner, validator.display_errors())
-        send_validation_message(self)
-        self.save()
+        return validator.is_valid, validator.display_errors()
 
     def get_absolute_url(self):
         return reverse('analysis:analysis', args=[self.pk, ])
