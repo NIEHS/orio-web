@@ -26,7 +26,8 @@ from django.utils.timezone import now
 from django.utils.text import slugify
 from django.template.loader import render_to_string
 
-from utils.models import ReadOnlyFileSystemStorage, get_random_filename
+from utils.models import ReadOnlyFileSystemStorage, get_random_filename, \
+    DynamicFilePathField
 from async_messages import messages
 
 from .import tasks
@@ -34,11 +35,10 @@ from .import tasks
 from orio.matrix import BedMatrix
 from orio.matrixByMatrix import MatrixByMatrix
 from orio import validators
+from orio.utils import get_data_path
+
 
 logger = logging.getLogger(__name__)
-
-encode_store = ReadOnlyFileSystemStorage.create_store(settings.ENCODE_PATH)
-userdata_store = ReadOnlyFileSystemStorage.create_store(settings.USERDATA_PATH)
 
 
 class Dataset(models.Model):
@@ -88,19 +88,21 @@ class Dataset(models.Model):
         return self.owner == user or user.is_staff
 
 
-HG19 = 1
-MM9 = 2
-GENOME_ASSEMBLY_CHOICES = (
-    (HG19, 'hg19'),
-    (MM9,  'mm9'),
-)
+class GenomeAssembly(models.Model):
+    name = models.CharField(
+        unique=True,
+        max_length=32)
+    chromosome_size_file = DynamicFilePathField(
+        unique=True,
+        max_length=128,
+        path=get_data_path,
+        recursive=False)
 
+    class Meta:
+        verbose_name_plural = 'genome assemblies'
 
-def get_chromosome_size_file(genome_assembly):
-    if genome_assembly == HG19:
-        return validators.get_chromosome_size_path('hg19')
-    elif genome_assembly == MM9:
-        return validators.get_chromosome_size_path('mm9')
+    def __str__(self):
+        return self.name
 
 
 def validation_save_and_message(object, is_valid, notes):
@@ -153,7 +155,7 @@ class DatasetDownload(models.Model):
     data = models.FileField(
         blank=True,
         max_length=256,
-        storage=userdata_store)
+        storage=ReadOnlyFileSystemStorage.create_store(settings.USERDATA_PATH))
     filesize = models.FloatField(
         null=True)
     md5 = models.CharField(
@@ -277,9 +279,8 @@ class DatasetDownload(models.Model):
 
 
 class GenomicDataset(Dataset):
-    genome_assembly = models.PositiveSmallIntegerField(
-        db_index=True,
-        choices=GENOME_ASSEMBLY_CHOICES)
+    genome_assembly = models.ForeignKey(
+        GenomeAssembly)
 
     @property
     def subclass(self):
@@ -377,7 +378,7 @@ class UserDataset(GenomicDataset):
         if not self.is_downloaded:
             return
 
-        size_file = get_chromosome_size_file(self.genome_assembly)
+        size_file = self.genome_assembly.chromosome_size_file
         if self.is_stranded:
             validatorA = validators.BigWigValidator(
                 self.plus.data.path, size_file)
@@ -405,20 +406,21 @@ class UserDataset(GenomicDataset):
 
 
 class EncodeDataset(GenomicDataset):
+    store = ReadOnlyFileSystemStorage.create_store(settings.ENCODE_PATH)
     data_ambiguous = models.FileField(
         blank=True,
         max_length=256,
-        storage=encode_store,
+        storage=store,
         help_text='Coverage data for which strand is ambiguous or unknown')
     data_plus = models.FileField(
         blank=True,
         max_length=256,
-        storage=encode_store,
+        storage=store,
         help_text='Coverage data for which strand is plus')
     data_minus = models.FileField(
         blank=True,
         max_length=256,
-        storage=encode_store,
+        storage=store,
         help_text='Coverage data for which strand is minus')
     data_type = models.CharField(
         max_length=16,
@@ -471,10 +473,10 @@ class EncodeDataset(GenomicDataset):
             'phase',
             'localization',
         ]
-        for genome, _ in GENOME_ASSEMBLY_CHOICES:
-            dicts[genome] = {}
+        for genome in GenomeAssembly.objects.all():
+            dicts[genome.id] = {}
             for fld in fields:
-                dicts[genome][fld] = cls.objects\
+                dicts[genome.id][fld] = cls.objects\
                     .filter(genome_assembly=genome)\
                     .values_list(fld, flat=True)\
                     .distinct()\
@@ -489,8 +491,8 @@ class EncodeDataset(GenomicDataset):
 
 
 class FeatureList(Dataset):
-    genome_assembly = models.PositiveSmallIntegerField(
-        choices=GENOME_ASSEMBLY_CHOICES)
+    genome_assembly = models.ForeignKey(
+        GenomeAssembly)
     stranded = models.BooleanField(
         default=True)
     dataset = models.FileField(
@@ -518,7 +520,7 @@ class FeatureList(Dataset):
         return reverse('analysis:feature_list_delete', args=[self.pk, ])
 
     def validate_and_save(self):
-        size_file = get_chromosome_size_file(self.genome_assembly)
+        size_file = self.genome_assembly.chromosome_size_file
         validator = validators.FeatureListValidator(
             self.dataset.path, size_file)
         validator.validate()
@@ -584,17 +586,17 @@ class AnalysisDatasets(models.Model):
         verbose_name_plural = 'Analysis datasets'
 
 
-ANCHOR_START = 0
-ANCHOR_CENTER = 1
-ANCHOR_END = 2
-ANCHOR_CHOICES = (
-    (ANCHOR_START, 'start'),
-    (ANCHOR_CENTER, 'center'),
-    (ANCHOR_END, 'end'),
-)
-
-
 class GenomicBinSettings(models.Model):
+
+    ANCHOR_START = 0
+    ANCHOR_CENTER = 1
+    ANCHOR_END = 2
+    ANCHOR_CHOICES = (
+        (ANCHOR_START, 'start'),
+        (ANCHOR_CENTER, 'center'),
+        (ANCHOR_END, 'end'),
+    )
+
     anchor = models.PositiveSmallIntegerField(
         choices=ANCHOR_CHOICES,
         default=ANCHOR_CENTER,
@@ -628,8 +630,8 @@ class Analysis(GenomicBinSettings):
         GenomicDataset,
         through=AnalysisDatasets,
         through_fields=('analysis', 'dataset'))
-    genome_assembly = models.PositiveSmallIntegerField(
-        choices=GENOME_ASSEMBLY_CHOICES)
+    genome_assembly = models.ForeignKey(
+        GenomeAssembly)
     feature_list = models.ForeignKey(
         FeatureList)
     sort_vector = models.ForeignKey(
@@ -677,7 +679,7 @@ class Analysis(GenomicBinSettings):
             bin_number=self.bin_number,
             bin_size=self.bin_size,
             feature_bed=self.feature_list.dataset.path,
-            chrom_sizes=get_chromosome_size_file(self.genome_assembly),
+            chrom_sizes=self.genome_assembly.chromosome_size_file,
             stranded_bed=self.feature_list.stranded,
         )
         validator.validate()
