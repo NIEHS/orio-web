@@ -588,17 +588,17 @@ class AnalysisDatasets(models.Model):
         verbose_name_plural = 'Analysis datasets'
 
 
-ANCHOR_START = 0
-ANCHOR_CENTER = 1
-ANCHOR_END = 2
-ANCHOR_CHOICES = (
-    (ANCHOR_START, 'start'),
-    (ANCHOR_CENTER, 'center'),
-    (ANCHOR_END, 'end'),
-)
-
-
 class GenomicBinSettings(models.Model):
+
+    ANCHOR_START = 0
+    ANCHOR_CENTER = 1
+    ANCHOR_END = 2
+    ANCHOR_CHOICES = (
+        (ANCHOR_START, 'start'),
+        (ANCHOR_CENTER, 'center'),
+        (ANCHOR_END, 'end'),
+    )
+
     anchor = models.PositiveSmallIntegerField(
         choices=ANCHOR_CHOICES,
         default=ANCHOR_CENTER,
