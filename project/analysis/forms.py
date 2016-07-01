@@ -227,8 +227,8 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
     class Meta:
         model = models.Analysis
         fields = (
-            'name', 'description', 'genome_assembly',
-            'feature_list', 'sort_vector', 'public',
+            'name', 'description', 'public',
+            'genome_assembly', 'feature_list', 'sort_vector',
             'anchor', 'bin_start', 'bin_size',
             'bin_number',
         )

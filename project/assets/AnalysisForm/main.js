@@ -13,8 +13,7 @@ let wrapAdditionalSettings = function($el){
     */
 
     let extra = $('<div>').attr('class', 'hidden');
-    $el.find('#div_id_public').closest('.form-group').appendTo(extra);
-    $el.find('#div_id_anchor').appendTo(extra);
+    $el.find('#div_id_anchor').closest('.form-group').appendTo(extra);
     $el.find('#div_id_bin_start').appendTo(extra);
     $el.find('#div_id_bin_size').appendTo(extra);
     $el.find('#div_id_bin_number').appendTo(extra);
