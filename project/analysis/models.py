@@ -40,9 +40,6 @@ from orio.utils import get_data_path
 
 logger = logging.getLogger(__name__)
 
-encode_store = ReadOnlyFileSystemStorage.create_store(settings.ENCODE_PATH)
-userdata_store = ReadOnlyFileSystemStorage.create_store(settings.USERDATA_PATH)
-
 
 class Dataset(models.Model):
     owner = models.ForeignKey(
@@ -158,7 +155,7 @@ class DatasetDownload(models.Model):
     data = models.FileField(
         blank=True,
         max_length=256,
-        storage=userdata_store)
+        storage=ReadOnlyFileSystemStorage.create_store(settings.USERDATA_PATH))
     filesize = models.FloatField(
         null=True)
     md5 = models.CharField(
@@ -409,20 +406,21 @@ class UserDataset(GenomicDataset):
 
 
 class EncodeDataset(GenomicDataset):
+    store = ReadOnlyFileSystemStorage.create_store(settings.ENCODE_PATH)
     data_ambiguous = models.FileField(
         blank=True,
         max_length=256,
-        storage=encode_store,
+        storage=store,
         help_text='Coverage data for which strand is ambiguous or unknown')
     data_plus = models.FileField(
         blank=True,
         max_length=256,
-        storage=encode_store,
+        storage=store,
         help_text='Coverage data for which strand is plus')
     data_minus = models.FileField(
         blank=True,
         max_length=256,
-        storage=encode_store,
+        storage=store,
         help_text='Coverage data for which strand is minus')
     data_type = models.CharField(
         max_length=16,
