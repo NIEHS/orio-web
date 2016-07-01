@@ -108,8 +108,10 @@ def get_chromosome_size_file(genome_assembly):
 
 class GenomeAssembly(models.Model):
     name = models.CharField(
-        max_length=128)
+        unique=True,
+        max_length=32)
     chromosome_size_file = DynamicFilePathField(
+        unique=True,
         max_length=128,
         path=get_data_path,
         recursive=False)
@@ -289,6 +291,9 @@ class DatasetDownload(models.Model):
 
 
 class GenomicDataset(Dataset):
+    genome_assembly_new = models.ForeignKey(
+        GenomeAssembly,
+        null=True)
     genome_assembly = models.PositiveSmallIntegerField(
         db_index=True,
         choices=GENOME_ASSEMBLY_CHOICES)
@@ -501,6 +506,9 @@ class EncodeDataset(GenomicDataset):
 
 
 class FeatureList(Dataset):
+    genome_assembly_new = models.ForeignKey(
+        GenomeAssembly,
+        null=True)
     genome_assembly = models.PositiveSmallIntegerField(
         choices=GENOME_ASSEMBLY_CHOICES)
     stranded = models.BooleanField(
@@ -640,6 +648,9 @@ class Analysis(GenomicBinSettings):
         GenomicDataset,
         through=AnalysisDatasets,
         through_fields=('analysis', 'dataset'))
+    genome_assembly_new = models.ForeignKey(
+        GenomeAssembly,
+        null=True)
     genome_assembly = models.PositiveSmallIntegerField(
         choices=GENOME_ASSEMBLY_CHOICES)
     feature_list = models.ForeignKey(
