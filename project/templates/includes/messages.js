@@ -22,5 +22,5 @@
                 toastr[resp.status](resp.message);
             });
         });
-    }, 5000);
+    }, 60000);
 </script>
