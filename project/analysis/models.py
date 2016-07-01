@@ -756,7 +756,12 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
     def execute_time_estimate(self):
         # estimate execution time, in seconds
-        return 300  # TODO - make more precise :)
+        n = float(self.datasets.count())
+        workers = 10
+        base = 300
+        matrices = math.ceil(n/workers) * 90
+        agg = 120 + math.log10(n)**2 * 60
+        return base + matrices + agg
 
     @property
     def user_datasets(self):
