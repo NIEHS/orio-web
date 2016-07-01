@@ -58,22 +58,31 @@ class ManageData(LoginRequiredMixin, TemplateView):
         return context
 
 
+class ValidatedSuccessMixin(object):
+    def get_success_url(self):
+        self.object.validate_and_save()
+        if self.object.validated:
+            return reverse_lazy('analysis:manage_data')
+        else:
+            return self.object.get_absolute_url()
+
+
 # User dataset CRUD
 class UserDatasetDetail(UserCanView, DetailView):
     model = models.UserDataset
 
 
-class UserDatasetCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class UserDatasetCreate(ValidatedSuccessMixin, MessageMixin,
+                        AddUserToFormMixin, LoginRequiredMixin, CreateView):
     model = models.UserDataset
     form_class = forms.UserDatasetForm
-    success_url = reverse_lazy('analysis:manage_data')
     success_message = 'User dataset created; datasets will begin downloading.'
 
 
-class UserDatasetUpdate(MessageMixin, UserCanEdit, UpdateView):
+class UserDatasetUpdate(ValidatedSuccessMixin, MessageMixin,
+                        UserCanEdit, UpdateView):
     model = models.UserDataset
     form_class = forms.UserDatasetForm
-    success_url = reverse_lazy('analysis:manage_data')
     success_message = 'User dataset updated; datasets will begin downloading.'
 
 
@@ -103,18 +112,15 @@ class FeatureListDetail(UserCanView, DetailView):
     model = models.FeatureList
 
 
-class FeatureListCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class FeatureListCreate(ValidatedSuccessMixin, AddUserToFormMixin,
+                        LoginRequiredMixin, CreateView):
     model = models.FeatureList
     form_class = forms.FeatureListForm
-    success_url = reverse_lazy('analysis:manage_data')
-    success_message = 'Feature-list created.'
 
 
-class FeatureListUpdate(MessageMixin, UserCanEdit, UpdateView):
+class FeatureListUpdate(ValidatedSuccessMixin, UserCanEdit, UpdateView):
     model = models.FeatureList
     form_class = forms.FeatureListForm
-    success_url = reverse_lazy('analysis:manage_data')
-    success_message = 'Feature-list updated.'
 
 
 class FeatureListDelete(MessageMixin, UserCanEdit, DeleteView):
@@ -128,18 +134,15 @@ class SortVectorDetail(UserCanView, DetailView):
     model = models.SortVector
 
 
-class SortVectorCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class SortVectorCreate(ValidatedSuccessMixin, AddUserToFormMixin,
+                       LoginRequiredMixin, CreateView):
     model = models.SortVector
     form_class = forms.SortVectorForm
-    success_url = reverse_lazy('analysis:manage_data')
-    success_message = 'Sort-vector created.'
 
 
-class SortVectorUpdate(MessageMixin, UserCanEdit, UpdateView):
+class SortVectorUpdate(ValidatedSuccessMixin, UserCanEdit, UpdateView):
     model = models.SortVector
     form_class = forms.SortVectorForm
-    success_url = reverse_lazy('analysis:manage_data')
-    success_message = 'Sort-vector updated.'
 
 
 class SortVectorDelete(MessageMixin, UserCanEdit, DeleteView):
@@ -153,11 +156,17 @@ class AnalysisDetail(UserCanView, DetailView):
     model = models.Analysis
 
 
-class AnalysisCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class AnalysisCreate(AddUserToFormMixin, LoginRequiredMixin, CreateView):
     model = models.Analysis
     form_class = forms.AnalysisForm
     success_url = reverse_lazy('analysis:dashboard')
-    success_message = 'Analysis created.'
+
+    def get_success_url(self):
+        self.object.validate_and_save()
+        if self.object.is_ready_to_run:
+            return self.object.get_execute_url()
+        else:
+            return self.object.get_absolute_url()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -166,10 +175,16 @@ class AnalysisCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, Creat
         return context
 
 
-class AnalysisUpdate(MessageMixin, UserCanEdit, UpdateView):
+class AnalysisUpdate(UserCanEdit, UpdateView):
     model = models.Analysis
     form_class = forms.AnalysisForm
-    success_message = 'Analysis updated.'
+
+    def get_success_url(self):
+        self.object.validate_and_save()
+        if self.object.is_ready_to_run:
+            return self.object.get_execute_url()
+        else:
+            return self.object.get_absolute_url()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -199,6 +214,9 @@ class AnalysisExecute(UserCanEdit, DetailView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+
+        if self.object.is_complete:
+            return HttpResponseRedirect(self.object.get_visuals_url())
 
         if self.object.is_ready_to_run:
             self.object.execute()

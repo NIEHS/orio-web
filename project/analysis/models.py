@@ -105,33 +105,39 @@ class GenomeAssembly(models.Model):
         return self.name
 
 
-def validation_save_and_message(object, is_valid, notes):
+class ValidationMixin(object):
 
-    # remove any path information from outputs
-    user_home = object.owner.path
-    media_path = settings.MEDIA_ROOT
-    notes = notes\
-        .replace(user_home, '/***')\
-        .replace(media_path, '/***')\
+    def validate(self):
+        # return tuple (is_valid: bool, validation_text: str)
+        raise NotImplementedError('Requires implementation')
 
-    # remove extra whitespace from all lines
-    notes = '\n'.join([l.strip() for l in notes.splitlines()])
+    def validate_and_save(self):
+        is_valid, text = self.validate()
+        self.validated = is_valid
+        self.validation_notes = self.scrub_validation_text(text)
+        self.send_validation_message()
+        self.save()
 
-    # intentionally omit post_save signal
-    object.__class__.objects\
-        .filter(id=object.id)\
-        .update(
-            validated=is_valid,
-            validation_notes=notes)
+    def scrub_validation_text(self, text):
+        # remove any path information from outputs
+        user_home = self.owner.path
+        media_path = settings.MEDIA_ROOT
+        notes = text\
+            .replace(user_home, '/***')\
+            .replace(media_path, '/***')\
 
-    msg = '{} {}: '.format(object._meta.verbose_name.title(), object)
-    if is_valid:
-        msg += 'validation complete!'
-        messages.success(object.owner, msg)
-    else:
-        msg += "<a href='{}'>validation failed (view errors)</a>"\
-            .format(object.get_absolute_url())
-        messages.warning(object.owner, msg)
+        # remove extra whitespace from all lines
+        return '\n'.join([l.strip() for l in notes.splitlines()])
+
+    def send_validation_message(self):
+        msg = '{} {}: '.format(self._meta.verbose_name.title(), self)
+        if self.validated:
+            msg += 'validation complete!'
+            messages.success(self.owner, msg)
+        else:
+            msg += "<a href='{}'>validation failed (view errors)</a>"\
+                .format(self.get_absolute_url())
+            messages.warning(self.owner, msg)
 
 
 class DatasetDownload(models.Model):
@@ -295,7 +301,7 @@ class GenomicDataset(Dataset):
         raise NotImplementedError('Abstract method')
 
 
-class UserDataset(GenomicDataset):
+class UserDataset(ValidationMixin, GenomicDataset):
     DATA_TYPES = (
         ('Cage',        'Cage'),
         ('ChiaPet',     'ChiaPet'),
@@ -375,9 +381,10 @@ class UserDataset(GenomicDataset):
 
     def validate_and_save(self):
         # wait until all files are downloaded before attempting validation
-        if not self.is_downloaded:
-            return
+        if self.is_downloaded:
+            super().validate_and_save()
 
+    def validate(self):
         size_file = self.genome_assembly.chromosome_size_file
         if self.is_stranded:
             validatorA = validators.BigWigValidator(
@@ -402,7 +409,7 @@ class UserDataset(GenomicDataset):
             is_valid = validator.is_valid
             notes = validator.display_errors()
 
-        validation_save_and_message(self, is_valid, notes)
+        return is_valid, notes
 
 
 class EncodeDataset(GenomicDataset):
@@ -490,7 +497,7 @@ class EncodeDataset(GenomicDataset):
             return [self.data_ambiguous.path]
 
 
-class FeatureList(Dataset):
+class FeatureList(ValidationMixin, Dataset):
     genome_assembly = models.ForeignKey(
         GenomeAssembly)
     stranded = models.BooleanField(
@@ -519,17 +526,15 @@ class FeatureList(Dataset):
     def get_delete_url(self):
         return reverse('analysis:feature_list_delete', args=[self.pk, ])
 
-    def validate_and_save(self):
-        size_file = self.genome_assembly.chromosome_size_file
+    def validate(self):
         validator = validators.FeatureListValidator(
-            self.dataset.path, size_file)
+            self.dataset.path,
+            self.genome_assembly.chromosome_size_file)
         validator.validate()
-        validation_save_and_message(
-            self, validator.is_valid,
-            validator.display_errors())
+        return validator.is_valid, validator.display_errors()
 
 
-class SortVector(Dataset):
+class SortVector(ValidationMixin, Dataset):
     feature_list = models.ForeignKey(
         FeatureList)
     vector = models.FileField(
@@ -556,14 +561,12 @@ class SortVector(Dataset):
     def get_delete_url(self):
         return reverse('analysis:sort_vector_delete', args=[self.pk, ])
 
-    def validate_and_save(self):
+    def validate(self):
         validator = validators.SortVectorValidator(
             self.feature_list.dataset.path,
             self.vector.path)
         validator.validate()
-        validation_save_and_message(
-            self, validator.is_valid,
-            validator.display_errors())
+        return validator.is_valid, validator.display_errors()
 
 
 class AnalysisDatasets(models.Model):
@@ -617,7 +620,7 @@ class GenomicBinSettings(models.Model):
         abstract = True
 
 
-class Analysis(GenomicBinSettings):
+class Analysis(ValidationMixin, GenomicBinSettings):
     UPLOAD_TO = 'analysis/'
 
     owner = models.ForeignKey(
@@ -672,7 +675,7 @@ class Analysis(GenomicBinSettings):
     def complete(cls, owner):
         return cls.objects.filter(end_time__isnull=False, owner=owner)
 
-    def validate_and_save(self):
+    def validate(self):
         validator = validators.AnalysisValidator(
             bin_anchor=self.get_anchor_display(),
             bin_start=self.bin_start,
@@ -683,9 +686,7 @@ class Analysis(GenomicBinSettings):
             stranded_bed=self.feature_list.stranded,
         )
         validator.validate()
-        validation_save_and_message(
-            self, validator.is_valid,
-            validator.display_errors())
+        return validator.is_valid, validator.display_errors()
 
     def get_absolute_url(self):
         return reverse('analysis:analysis', args=[self.pk, ])
@@ -753,6 +754,10 @@ class Analysis(GenomicBinSettings):
         formObj.end_time = None
         cache.delete(self.output_cache_key)
 
+    def execute_time_estimate(self):
+        # estimate execution time, in seconds
+        return 300  # TODO - make more precise :)
+
     @property
     def user_datasets(self):
         return UserDataset.objects.filter(id__in=self.datasets.values_list('id', flat=True))
@@ -804,7 +809,7 @@ class Analysis(GenomicBinSettings):
 
     @property
     def is_complete(self):
-        return self.start_time and self.end_time
+        return self.start_time is not None and self.end_time is not None
 
     @property
     def execute_task_id(self):

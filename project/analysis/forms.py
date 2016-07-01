@@ -163,12 +163,6 @@ class FeatureListForm(BaseFormMixin, forms.ModelForm):
         exclude = ('owner', 'public', 'borrowers',
                    'validated', 'validation_notes')
 
-    def save(self, commit=True):
-        if commit:
-            self.instance.validated = False
-            self.instance.validation_notes = ''
-        return super().save(commit=commit)
-
 
 class SortVectorForm(BaseFormMixin, forms.ModelForm):
     CREATE_LEGEND = 'Create sort vector'
@@ -182,12 +176,6 @@ class SortVectorForm(BaseFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['feature_list'].queryset = \
             models.FeatureList.usable(self.instance.owner)
-
-    def save(self, commit=True):
-        if commit:
-            self.instance.validated = False
-            self.instance.validation_notes = ''
-        return super().save(commit=commit)
 
 
 class DatasetField(forms.CharField):
@@ -227,8 +215,8 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
     class Meta:
         model = models.Analysis
         fields = (
-            'name', 'description', 'genome_assembly',
-            'feature_list', 'sort_vector', 'public',
+            'name', 'description', 'public',
+            'genome_assembly', 'feature_list', 'sort_vector',
             'anchor', 'bin_start', 'bin_size',
             'bin_number',
         )
