@@ -5,20 +5,33 @@ import d3 from 'd3';
 
 class FeatureClusteringOverview{
 
-    constructor(el_1, el_2, data) {
+    constructor(el_1, el_2, analysis_id) {
         this.el_1 = el_1;
         this.el_2 = el_2;
-        this.matrix_names = data['matrix_names'];
-        this.feature_clusters = data['feature_clusters'];
-        this.feature_vectors = data['feature_vectors'];
-        this.feature_columns = data['feature_columns'];
-        this.dendrogram = data['dendrogram'];
-        this.matrix_names = data['matrix_names'];
-        this.matrix_ids = data['matrix_ids'];
-        this.cluster_medoids = data['cluster_medoids'];
-        this.cluster_members = data['cluster_members'];
-        this.feature_names = data['feature_names'];
-        this.feature_cluster_members = data['feature_cluster_members'];
+        this.id = window.analysisObjectID;
+
+        this.featureClusteringOverviewInitURL = function(id) {
+            return (`/dashboard/api/analysis/${id}/feature_clustering_overview/`);
+        };
+
+        this.fcFeaturesInClusterURL = function(id, k, cluster) {
+            return (
+                `/dashboard/api/`+
+                `analysis/${id}/`+
+                `features_in_cluster/`+
+                `?k=${k}`+
+                `&cluster=${cluster}`
+            );
+        };
+
+        this.fcFeatureDataURL = function(id, feature_name) {
+            return (
+                `/dashboard/api/`+
+                `analysis/${id}/`+
+                `feature_data/`+
+                `?feature=${feature_name}`
+            );
+        };
 
         this.colors = [
             '#a50026',
@@ -32,16 +45,6 @@ class FeatureClusteringOverview{
             '#fee090',
             '#313695',
         ];
-
-        var cluster_medoids = this.cluster_medoids,
-            matrix = _.object(data['matrix_ids'], data['matrix_names']);
-        this.col_names = _.map(this.cluster_members, function(d, i){
-            let name = (d.length > 1)?
-                    `(${d.length}) ${matrix[cluster_medoids[i]]}`:
-                    matrix[cluster_medoids[i]];
-
-            return name;
-        });
     }
 
     drawHeatmap(k) {
@@ -104,9 +107,15 @@ class FeatureClusteringOverview{
             .domain([0, 1])
             .range(['white', 'red']);
 
-        var self = this;
         $.get(clusterKUrl(window.analysisObjectID, k, heatmap.width(), heatmap.height()),
             function(data) {
+                var scale_y =  data['display_data'].length < heatmap.height()
+                    ? heatmap.height() / data['display_data'].length
+                    : 1;
+                var scale_x =  data['display_data'][0].length < heatmap.width()
+                    ? heatmap.width() / data['display_data'][0].length
+                    : 1;
+                context.scale(scale_x, scale_y);
 
                 for (var i in data['display_data']) {
                     for (var j in data['display_data'][i]) {
@@ -117,7 +126,7 @@ class FeatureClusteringOverview{
 
                 var height = heatmap_col_tooltips.height(),
                     width = heatmap_col_tooltips.width(),
-                    col_number = self.col_names.length;
+                    col_number = data['col_names'].length;
 
                 var cell_width = width/col_number;
                 var svg = d3.select(heatmap_col_tooltips.get(0))
@@ -127,16 +136,16 @@ class FeatureClusteringOverview{
 
                 svg.append('g')
                     .selectAll('rect')
-                    .data(self.col_names)
+                    .data(data['col_names'])
                     .enter()
                     .append('rect')
                     .text( function(d) { return d; } )
-                    .attr('x', function(d,i,j) { return (i * cell_width); })
+                    .attr('x', function(d, i) { return (i * cell_width); })
                     .attr('y', 0)
                     .attr('width', function(d) { return cell_width; })
                     .attr('height', height)
                     .style('fill', 'transparent')
-                    .on('mouseover', function (d, i, j) {
+                    .on('mouseover', function (d) {
                         d3.select(this)
                             .style('stroke', 'black')
                             .style('stroke-width', '1');
@@ -200,7 +209,7 @@ class FeatureClusteringOverview{
         });
     }
 
-    drawDendrogram() {
+    drawDendrogram(data) {
         this.el_1.find('#dendrogram').remove();
 
         var dendro = $('<div id="dendrogram">')
@@ -214,16 +223,16 @@ class FeatureClusteringOverview{
             }).appendTo(this.el_1);
 
         var line_coords = [],
-            x_max = parseFloat(Math.max(...[].concat.apply([], this.dendrogram['icoord']))),
-            y_max = parseFloat(Math.max(...[].concat.apply([], this.dendrogram['dcoord']))),
-            x_min = parseFloat(Math.min(...[].concat.apply([], this.dendrogram['icoord']))),
-            y_min = parseFloat(Math.min(...[].concat.apply([], this.dendrogram['dcoord']))),
+            x_max = parseFloat(Math.max(...[].concat.apply([], data['icoord']))),
+            y_max = parseFloat(Math.max(...[].concat.apply([], data['dcoord']))),
+            x_min = parseFloat(Math.min(...[].concat.apply([], data['icoord']))),
+            y_min = parseFloat(Math.min(...[].concat.apply([], data['dcoord']))),
             height = dendro.height(),
             width = dendro.width(),
             ceiling = 0.05*dendro.height(),
-            leaf_num = this.dendrogram['leaves'].length,
-            icoords = this.dendrogram['icoord'],
-            dcoords = this.dendrogram['dcoord'],
+            leaf_num = data['leaves'].length,
+            icoords = data['icoord'],
+            dcoords = data['dcoord'],
             leafHeight = ((0.5/leaf_num)*width);
 
         for(var i=0; i<icoords.length; i++){
@@ -254,7 +263,7 @@ class FeatureClusteringOverview{
             .attr('y2', function(d) { return d.y2; });
     }
 
-    writeVertNames() {
+    writeVertNames(col_names) {
         // remove existing
         this.el_1.find('#vert_names').remove();
 
@@ -272,9 +281,7 @@ class FeatureClusteringOverview{
         //Draw SVGs
         var height = vert.height(),
             width = vert.width(),
-            row_number = this.cluster_members.length,
-            cluster_medoids = this.cluster_medoids,
-            matrix_names = this.matrix_names;
+            col_number = col_names.length;
 
         var svg = d3.select(vert.get(0))
             .append('svg')
@@ -283,17 +290,17 @@ class FeatureClusteringOverview{
 
         svg.append('g')
             .selectAll('text')
-            .data(this.col_names)
+            .data(col_names)
             .enter()
             .append('text')
             .attr('class', 'heatmapLabelText')
             .text(function(d) {return d;})
             .attr('x', function(d,i) {
-                return (((0.5 / row_number) * width) + i * (width / row_number));
+                return (((0.5 / col_number) * width) + i * (width / col_number));
             })
             .attr('y', 0)
             .attr('transform', function(d,i) {
-                var rot = (((0.5/row_number)*width) + i*(width/row_number));
+                var rot = (((0.5/col_number)*width) + i*(width/col_number));
                 return 'rotate(90 ' + rot + ',0)';
             });
     }
@@ -306,7 +313,7 @@ class FeatureClusteringOverview{
 
             d3.select(select.get(0))
                 .selectAll('option')
-                .data(d3.keys(option_array))
+                .data(option_array)
                 .enter()
                 .append('option')
                 .text(function(d) {return d;})
@@ -319,7 +326,6 @@ class FeatureClusteringOverview{
             .css({
                 'height': '8%',
                 'width': '20%',
-                //'font-size': '12px',
                 'position': 'absolute',
                 'top': '20%',
                 'left': '0%',
@@ -333,21 +339,25 @@ class FeatureClusteringOverview{
             .css({
                 'height': '8%',
                 'width': '6%',
-                // 'font-size': '12px',
                 'position': 'absolute',
                 'top': '20%',
                 'left': '24%',
             })
             .change(function() {
+                window.centroid_display_flag = {};
+                d3.range(1, parseInt(this.value)+1).forEach(function(i) {
+                    window.centroid_display_flag[i] = true;
+                });
+
                 self.drawHeatmap(this.value);
-                self.drawClusterSelect(this.value);
-                self.drawFeatureSelect(this.value, '--');
+                // self.drawClusterSelect(this.value);
+                // self.drawFeatureSelect(this.value, '--');
                 self.drawCentroidPlot(this.value, null);
                 self.drawCentroidPlotLegend(this.value);
             })
             .appendTo(this.el_1);
 
-        addOptions(this.el_1, this.feature_clusters);
+        addOptions(this.el_1, d3.range(2,11));
         select_list[0].selectedIndex = 0;
     }
 
@@ -372,7 +382,6 @@ class FeatureClusteringOverview{
             .css({
                 'height': '8%',
                 'width': '6%',
-                //'font-size': '12px',
                 'position': 'absolute',
                 'top': '30%',
                 'left': '24%',
@@ -397,7 +406,7 @@ class FeatureClusteringOverview{
             .attr('value', function(d) {return d;});
     }
 
-    drawFeatureSelect(k,cluster) {
+    drawFeatureSelect(k, cluster) {
         function addOptions(select, option_array) {
             select.empty();
             d3.select(select.get(0))
@@ -409,66 +418,16 @@ class FeatureClusteringOverview{
                 .attr('value', function(d) {return d;});
         }
 
-        function drawPointer(feature, k) {
-            function getIndex(feature) {
-                var feature_index = 0;
-                for (var i in feature_cluster_members[k]) {
-                    for (var j in feature_cluster_members[k][i]) {
-                        if (feature == feature_cluster_members[k][i][j]) {
-                            return feature_index;
-                        }
-                        feature_index += 1;
-                    }
-                }
-            }
-            var total_feature_num = feature_names.length;
-            var feature_index = getIndex(feature);
-            var total_height = 0.8 * el_1.height();
-            var pointer_height = (feature_index/total_feature_num)*total_height + 0.2 * el_1.height();
-
-            var offset = {
-                'top': 0.01 * el_1.height(),
-                'left': 0.02 * el_1.width(),
-            };
-
-
-            var point_1 = (0) + ',' + (pointer_height - offset.top),
-                point_2 = (offset.left) + ',' + (pointer_height),
-                point_3 = (0) + ',' + (pointer_height + offset.top);
-            var points = point_1 + ' ' + point_2 + ' ' + point_3;
-
-            el_1.find('#pointer').remove();
-            var pointer = $('<div id="pointer">')
-                .css({
-                    'position': 'absolute',
-                    'left': '35%',
-                    'top': '0%',
-                    'overflow': 'visible',
-                    'height': '110%',
-                    'width': offset.left,
-                }).appendTo(el_1);
-            d3.select(pointer.get(0))
-                .append('svg')
-                .attr('height', pointer.height())
-                .attr('width', pointer.width())
-                .append('polygon')
-                .attr('points', points)
-                .style('fill', 'black')
-                .style('position', 'absolute');
-        }
-
         var features = [];
         var feature_names = this.feature_names;
         var feature_cluster_members = this.feature_cluster_members;
         var el_1 = this.el_1;
         //Add text
         this.el_1.find('#feature_prompt').remove();
-        this.el_1.find('#pointer').remove();
         var feature_prompt = $('<div id="feature_prompt">Select feature from cluster:</div>')
             .css({
                 'height': '8%',
                 'width': '20%',
-                //'font-size': '12px',
                 'position': 'absolute',
                 'top': '40%',
                 'left': '0%',
@@ -491,19 +450,19 @@ class FeatureClusteringOverview{
                 'left': '0%',
             })
             .change(function() {
-                drawPointer(this.value, k);
                 self.drawCentroidPlot(k, this.value);
+                window.plot_feature_name = this.value;
             })
             .appendTo(this.el_1);
 
-        if (k) {
-            if (cluster == '--') {
-                var features = this.feature_names;
-            } else {
-                var features = this.feature_cluster_members[k][cluster];
-            }
+        var features;
+        if (cluster != '--') {
+            $.get(this.fcFeaturesInClusterURL(this.id, k, cluster),
+                function(data) {
+                    features = data.split(',');
+                    addOptions(select_list, features);
+            });
         }
-        addOptions(select_list, features);
 
         this.el_1.find('#feature_search_field').remove();
 
@@ -539,7 +498,139 @@ class FeatureClusteringOverview{
             .appendTo(this.el_1);
     }
 
-    drawCentroidPlot(k, feature) {
+    drawCentroidPlot(k, feature_name) {
+        function plotData(k, centroids, col_names, feature_data) {
+            var plot_max = 0;
+            for (var cluster in centroids[k]) {
+                centroids[k][cluster].forEach( function(value) {
+                    if ((parseFloat(value) > plot_max) &
+                            window.centroid_display_flag[cluster]) {
+                        plot_max = parseFloat(value);
+                    }
+                });
+            }
+            if (feature_data) {
+                for (var i = 0; i < feature_data.length; i++) {
+                    if (parseFloat(feature_data[i]) > plot_max) {
+                        plot_max = parseFloat(feature_data[i]);
+                    }
+                }
+            }
+            if (plot_max < 1) { plot_max = 1;}
+
+            var graph = d3.select(this.el_2.find('#graph').get(0)).append('svg')
+                .attr('width', this.el_2.find('#centroid_plot').width())
+                .attr('height', this.el_2.find('#centroid_plot').height())
+                .append('g');
+
+            var y = d3.scale.linear()
+                .domain([0,plot_max])
+                .range([this.el_2.find('#centroid_plot').height() - offset.bottom, offset.top]);
+            var x = d3.scale.ordinal()
+                .domain(d3.range(centroids[k][1].length))
+                .rangePoints([offset.left,this.el_2.find('#centroid_plot').width() - offset.right], 1);
+            var line = d3.svg.line()
+                .x(function(d,i) {
+                    return x(i);
+                })
+                .y(function(d) {
+                    return y(d);
+                });
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient('bottom')
+                .outerTickSize(0)
+                .tickFormat('');
+            var xGrid = d3.svg.axis()
+                .scale(x)
+                .orient('bottom')
+                .outerTickSize(0)
+                .innerTickSize(-(this.el_2.find('#centroid_plot').height() - offset.top - offset.bottom))
+                .tickFormat('');
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient('left')
+                .ticks(5);
+
+            graph.append('g')
+                .attr('class', 'x axis')
+                .attr('transform', 'translate(0,' + (this.el_2.find('#centroid_plot').height() - offset.bottom) + ')')
+                .call(xAxis);
+
+            graph.append('g')
+                .attr('class', 'x axis')
+                .attr('transform', 'translate(0,' + (this.el_2.find('#centroid_plot').height() - offset.bottom) + ')')
+                .style('stroke-dasharray', ('3, 3'))
+                .call(xGrid);
+
+            graph.append('g')
+                .attr('class', 'y axis')
+                .attr('transform', 'translate(' + offset.left + ',0)')
+                .call(yAxis);
+
+            var colors = this.colors;
+            graph.append('g')
+                .selectAll('path')
+                .data(d3.values(centroids[k]))
+                .enter()
+                .append('path')
+                .attr('d', function(d) {return line(d);})
+                .style('stroke', function(d,i) {
+                    if (window.centroid_display_flag[i+1]) {return colors[i]}
+                    else {return 'none'}
+                ;})
+                .style('fill', 'none')
+                .style('stroke-width', '3');
+
+            if (feature_data) {
+                graph.append('path')
+                    .attr('d', function(d) {return line(feature_data);})
+                    .style('stroke', 'black')
+                    .style('fill', 'none')
+                    .style('stroke-width', '3');
+            }
+
+            // remove existing
+            this.el_2.find('#vert_names').remove();
+
+            // create new
+            var vert = $('<div id="vert_names">')
+                .css({
+                    'position': 'absolute',
+                    'left': '40%',
+                    'top': '72%',
+                    'overflow': 'hidden',
+                    'height': '28%',
+                    'width': '60%',
+                }).appendTo(this.el_2);
+
+            //Draw SVGs
+            var height = vert.height(),
+                width = vert.width(),
+                row_number = col_names.length;
+
+            var svg = d3.select(vert.get(0))
+                .append('svg')
+                .attr('height', height)
+                .attr('width', width);
+
+            svg.append('g')
+                .selectAll('text')
+                .data(col_names)
+                .enter()
+                .append('text')
+                .attr('class', 'heatmapLabelText')
+                .text(function(d) { return d;})
+                .attr('x', function(d,i) {
+                    return (((0.5 / row_number) * width) + i * (width / row_number));
+                })
+                .attr('y', 0)
+                .attr('transform', function(d,i) {
+                    var rot = (((0.5/row_number)*width) + i*(width/row_number));
+                    return 'rotate(90 ' + rot + ',0)';
+            });
+        }
+
         this.el_2.find('#centroid_plot').remove();
         $('<div id="centroid_plot">')
             .css({
@@ -567,135 +658,14 @@ class FeatureClusteringOverview{
             'right': 0,
         };
 
-        var plot_max = 0;
-        for (var cluster = 0; cluster < this.feature_clusters[k]['centroids'].length; cluster++) {
-            for (var i = 0; i < this.feature_clusters[k]['centroids'][cluster].length; i++) {
-                if (parseFloat(this.feature_clusters[k]['centroids'][cluster][i]) > plot_max) {
-                    plot_max = parseFloat(this.feature_clusters[k]['centroids'][cluster][i]);
-                }
-            }
+        if (feature_name) {
+            $.get(this.fcFeatureDataURL(this.id, feature_name),
+                function(data) {
+                    plotData.call(this, k, window.centroids, window.matrix_names, data);
+            }.bind(this));
+        } else {
+            plotData.call(this, k, window.centroids, window.matrix_names, null);
         }
-        if (feature) {
-            var feature_data = this.feature_vectors[this.feature_names.indexOf(feature)];
-            for (var i = 0; i < feature_data.length; i++) {
-                if (parseFloat(feature_data[i]) > plot_max) {
-                    plot_max = parseFloat(feature_data[i]);
-                }
-            }
-        }
-
-        var graph = d3.select(this.el_2.find('#graph').get(0)).append('svg')
-            .attr('width', this.el_2.find('#centroid_plot').width())
-            .attr('height', this.el_2.find('#centroid_plot').height())
-            .append('g');
-
-        var col_names = this.col_names;
-        var y = d3.scale.linear()
-            .domain([0,plot_max])
-            .range([this.el_2.find('#centroid_plot').height() - offset.bottom, offset.top]);
-        var x = d3.scale.ordinal()
-            .domain(this.col_names)
-            .rangePoints([offset.left,this.el_2.find('#centroid_plot').width() - offset.right], 1);
-        var line = d3.svg.line()
-            .x(function(d,i) {
-                return x(col_names[i]);
-            })
-            .y(function(d) {
-                return y(d);
-            });
-        var xAxis = d3.svg.axis()
-            .scale(x)
-            .orient('bottom')
-            .outerTickSize(0)
-            .tickFormat('');
-        var xGrid = d3.svg.axis()
-            .scale(x)
-            .orient('bottom')
-            .outerTickSize(0)
-            .innerTickSize(-(this.el_2.find('#centroid_plot').height() - offset.top - offset.bottom))
-            .tickFormat('');
-        var yAxis = d3.svg.axis()
-            .scale(y)
-            .orient('left')
-            .ticks(5);
-
-        graph.append('g')
-            .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (this.el_2.find('#centroid_plot').height() - offset.bottom) + ')')
-            .call(xAxis);
-
-        graph.append('g')
-            .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (this.el_2.find('#centroid_plot').height() - offset.bottom) + ')')
-            .style('stroke-dasharray', ('3, 3'))
-            .call(xGrid);
-
-        graph.append('g')
-            .attr('class', 'y axis')
-            .attr('transform', 'translate(' + offset.left + ',0)')
-            .call(yAxis);
-
-        var colors = this.colors;
-        graph.append('g')
-            .selectAll('path')
-            .data(this.feature_clusters[k]['centroids'])
-            .enter()
-            .append('path')
-            .attr('d', function(d) {return line(d);})
-            .style('stroke', function(d,i) {return colors[i];})
-            .style('fill', 'none')
-            .style('stroke-width', '3');
-
-        if (feature) {
-            var feature_data = this.feature_vectors[this.feature_names.indexOf(feature)];
-            graph.append('path')
-                .attr('d', function(d) {return line(feature_data);})
-                .style('stroke', 'black')
-                .style('fill', 'none')
-                .style('stroke-width', '3');
-        }
-
-        // remove existing
-        this.el_2.find('#vert_names').remove();
-
-        // create new
-        var vert = $('<div id="vert_names">')
-            .css({
-                'position': 'absolute',
-                'left': '40%',
-                'top': '72%',
-                'overflow': 'hidden',
-                'height': '28%',
-                'width': '60%',
-            }).appendTo(this.el_2);
-
-        //Draw SVGs
-        var height = vert.height(),
-            width = vert.width(),
-            row_number = this.cluster_members.length,
-            cluster_medoids = this.cluster_medoids,
-            matrix_names = this.matrix_names;
-
-        var svg = d3.select(vert.get(0))
-            .append('svg')
-            .attr('height', height)
-            .attr('width', width);
-
-        svg.append('g')
-            .selectAll('text')
-            .data(this.col_names)
-            .enter()
-            .append('text')
-            .attr('class', 'heatmapLabelText')
-            .text(function(d) { return d;})
-            .attr('x', function(d,i) {
-                return (((0.5 / row_number) * width) + i * (width / row_number));
-            })
-            .attr('y', 0)
-            .attr('transform', function(d,i) {
-                var rot = (((0.5/row_number)*width) + i*(width/row_number));
-                return 'rotate(90 ' + rot + ',0)';
-            });
     }
 
     drawHeatmapLegend() {
@@ -735,11 +705,6 @@ class FeatureClusteringOverview{
             .append('stop')
             .attr('offset', '0')
             .attr('stop-color', 'white');
-        //
-        // gradient
-        //     .append('stop')
-        //     .attr('offset', '0.5')
-        //     .attr('stop-color', 'white');
 
         gradient
             .append('stop')
@@ -792,7 +757,6 @@ class FeatureClusteringOverview{
             .css({
                 'height': '10%',
                 'width': '10%',
-                //'font-size': '12px',
                 'position': 'absolute',
                 'top': '10%',
                 'left': '20%',
@@ -819,6 +783,7 @@ class FeatureClusteringOverview{
             .attr('height', legend.height())
             .style('overflow', 'visible');
 
+        var self = this;
         svg.append('g')
             .selectAll('rect')
             .data(centroid_list)
@@ -829,7 +794,18 @@ class FeatureClusteringOverview{
             .attr('y', function(d,i) { return ((i % 5) * (legend.height()*0.2)); })
             .attr('width', legend.width()*0.1)
             .attr('height', legend.width()*0.1)
-            .style('fill', function(d, i) { return colors[i]; });
+            .style('fill', function(d, i) { return colors[i]; })
+            .style('stroke', function(d, i) { return colors[i]; })
+            .on('click', function(d, i) {
+                if (d3.select(this).style('fill-opacity') == 1) {
+                    d3.select(this).style('fill-opacity', 0);
+                    window.centroid_display_flag[i+1] = false;
+                } else {
+                    d3.select(this).style('fill-opacity', 1);
+                    window.centroid_display_flag[i+1] = true;
+                }
+                self.drawCentroidPlot(k, window.plot_feature_name);
+            });
 
         svg.append('g')
             .selectAll('text')
@@ -843,20 +819,29 @@ class FeatureClusteringOverview{
             .attr('height', legend.width()*0.2)
             .attr('dx', legend.width()*0.2)
             .attr('dy', '0.7em');
-            // .attr('transform', 'translate(' + (legend.width()*0.2) + ',0)');
     }
 
     render() {
-        this.drawHeatmap(2);
-        this.drawClusterSelect(2);
-        this.drawFeatureSelect(2, '--');
-        this.drawCentroidPlot(2, null);
-        this.drawCentroidPlotLegend(2);
+        window.centroid_display_flag = {};
+        d3.range(1, 3).forEach(function(i) {
+            window.centroid_display_flag[i] = true;
+        });
 
         this.makeKSelect();
-        this.drawDendrogram();
-        this.writeVertNames();
         this.drawHeatmapLegend();
+
+        $.get(this.featureClusteringOverviewInitURL(this.id), function(data) {
+            window.matrix_names = data['matrix_names'];
+            window.centroids = data['fcCentroids'];
+
+            this.drawDendrogram(data['dendrogram']);
+            this.writeVertNames(window.matrix_names);
+            this.drawHeatmap(2);
+            // this.drawClusterSelect(2);
+            // this.drawFeatureSelect(2, '--');
+            this.drawCentroidPlot(2, null);
+            this.drawCentroidPlotLegend(2);
+        }.bind(this));
     }
 }
 

@@ -93,7 +93,7 @@ class IndividualHeatmap {
 
         var options = this.matrices;
         if (this.sort_vector) {
-            options.unshift(['Sort vector order','Sort vector order']);
+            options.unshift(['Sort vector order', 'Sort vector order']);
         }
         options.unshift(['Feature list order', 'Feature list order']);
 
@@ -411,7 +411,7 @@ class IndividualHeatmap {
             .style('text-anchor', 'middle');
     }
 
-    drawHeatmap(data, norm_val) {
+    drawHeatmap(data, norm_val, dim_x, dim_y) {
         var sigmoid = function(i, median) {
             return (1 + ((i - median)/(1 + Math.abs(i - median))));
         };
@@ -433,6 +433,11 @@ class IndividualHeatmap {
 
         var context = document.getElementById('heatmap_canvas')
             .getContext('2d');
+
+        var scale_y = dim_y > data.length ? dim_y/data.length : 1;
+        var scale_x = dim_x > data[0].length ? dim_x/data[0].length: 1;
+
+        context.scale(scale_x, scale_y);
 
         var colorScale = d3.scale.linear()
             .domain([
@@ -462,7 +467,7 @@ class IndividualHeatmap {
     }
 
     renderSorted(dim_x, dim_y, analysis_sort, sort_id) {
-        var sortedUrl = function(id, dim_x, dim_y) {
+        var sortedURL = function(id, dim_x, dim_y) {
             return (
                 `/dashboard/api/`+
                 `feature-list-count-matrix/${id}/`+
@@ -475,9 +480,9 @@ class IndividualHeatmap {
         };
 
         var self = this;
-        $.get(sortedUrl(this.id, dim_x, dim_y),
+        $.get(sortedURL(this.id, dim_x, dim_y),
             function(data) {
-                self.drawHeatmap(data.smoothed_data, data.norm_val);
+                self.drawHeatmap(data.smoothed_data, data.norm_val, dim_x, dim_y);
                 self.drawHeatmapHeader(data.bin_labels);
                 self.drawMetaPlot(data.bin_averages, data.bin_labels);
                 self.drawQuartiles(data.quartile_averages, data.bin_labels);

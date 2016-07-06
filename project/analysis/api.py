@@ -151,6 +151,31 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         return Response(an.get_summary_plot())
 
     @detail_route(methods=['get'])
+    def analysis_overview(self, request, pk=None):
+        an = get_object_or_404(models.Analysis, pk=int(pk))
+        self.check_object_permissions(request, an)
+        return Response(an.get_analysis_overview_init())
+
+    @detail_route(methods=['get'])
+    def individual_overview(self, request, pk=None):
+        an = get_object_or_404(models.Analysis, pk=int(pk))
+        self.check_object_permissions(request, an)
+        return Response(an.get_individual_overview_init())
+
+    @detail_route(methods=['get'])
+    def feature_clustering_overview(self, request, pk=None):
+        an = get_object_or_404(models.Analysis, pk=int(pk))
+        self.check_object_permissions(request, an)
+        return Response(an.get_feature_clustering_overview_init())
+
+    @detail_route(methods=['get'])
+    def dsc_full_row_value(self, request, pk=None):
+        an = get_object_or_404(models.Analysis, pk=int(pk))
+        row_name = self.request.GET.get('row')
+        self.check_object_permissions(request, an)
+        return Response(an.get_dsc_full_row_value(row_name))
+
+    @detail_route(methods=['get'])
     def k_clust_heatmap(self, request, pk=None):
         k_value = tryParseInt(self.request.GET.get('k'), -1)
         if k_value == -1:
@@ -160,6 +185,25 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         an = get_object_or_404(models.Analysis, pk=int(pk))
         self.check_object_permissions(request, an)
         return Response(an.get_k_clust_heatmap(k_value, dim_x, dim_y))
+
+    @detail_route(methods=['get'])
+    def features_in_cluster(self, request, pk=None):
+        k_value = tryParseInt(self.request.GET.get('k'), -1)
+        if k_value == -1:
+            raise NotAcceptable("k value `id` parameter required")
+        cluster = tryParseInt(self.request.GET.get('cluster'), -1)
+        if cluster == -1:
+            raise NotAcceptable("cluster parameter required")
+        an = get_object_or_404(models.Analysis, pk=int(pk))
+        self.check_object_permissions(request, an)
+        return Response(an.get_features_in_cluster(k_value, cluster))
+
+    @detail_route(methods=['get'])
+    def feature_data(self, request, pk=None):
+        feature_name = self.request.GET.get('feature')
+        an = get_object_or_404(models.Analysis, pk=int(pk))
+        self.check_object_permissions(request, an)
+        return Response(an.get_feature_data(feature_name))
 
     @detail_route(methods=['get'])
     def sort_vector(self, request, pk=None):

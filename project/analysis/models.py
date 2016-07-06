@@ -855,14 +855,44 @@ class Analysis(GenomicBinSettings):
                 output = json.loads(f.read())
 
             # convert JSON str keys to int keys
-            sort_orders = output['sort_orders']
-            for k, v in sort_orders.items():
-                sort_orders[int(k)] = sort_orders.pop(k)
+            # sort_orders = output['sort_orders']
+            # for k, v in sort_orders.items():
+            #     sort_orders[int(k)] = sort_orders.pop(k)
 
             obj = output
             cache.set(key, obj)
 
         return obj
+
+    @property
+    def sort_vector_cache_key(self):
+        return 'analysis-sort-vector-%s' % self.id
+
+    @property
+    def sort_vector_df(self):
+        sv = None
+        if self.sort_vector is not None:
+            key = self.sort_vector_cache_key
+            sv = cache.get(key)
+            if sv is None:
+                sv = pd.read_csv(
+                    self.sort_vector.vector.path, sep='\t', header=None
+                )
+                cache.set(key, sv)
+        return sv
+
+    @property
+    def matrices(self):
+        if not self.output:
+            return False
+
+        names = []
+        ids = []
+        for row in self.output_json['dsc_full_data']['rows']:
+            names.append(row['row_name'])
+            ids.append(row['row_id'])
+
+        return {'names': names, 'ids': ids}
 
     def get_summary_plot(self):
         if not self.output:
@@ -885,37 +915,101 @@ class Analysis(GenomicBinSettings):
             'bin_parameters': output['bin_parameters'],
         }
 
-    def get_k_clust_heatmap(self, k_value, dim_x, dim_y):
-        cluster_values = [[] for i in range(k_value)]
-        cluster_sizes = dict()
-        for k in range(k_value):
-            cluster_sizes[k] = 0
+    def get_analysis_overview_init(self):
+        if not self.output:
+            return False
 
-        labels = self.output_json['feature_clusters'][str(k_value)]['labels']
-        vectors = self.output_json['feature_vectors']
-        for i, label in enumerate(labels):
-            cluster_sizes[label] += 1
-            # Because cols are often few, add duplicate values to limit
-            # border effects
-            _vector = []
-            for val in vectors[i]:
-                for _ in range(10):
-                    _vector.append(val)
-            cluster_values[label].append(_vector)
+        sv = self.sort_vector_df
+        if sv is not None:
+            sv = sv.as_matrix(columns=[1]).flatten()
+
+        data = {
+            'dscRepData': self.output_json['dsc_rep_data'],
+            'dendrogram': self.output_json['dsc_dendrogram'],
+            'sort_vector': sv,
+        }
+        return data
+
+    def get_individual_overview_init(self):
+        if not self.output:
+            return False
+
+        matrices = self.matrices
+
+        sv = None
+        if self.sort_vector_df is not None:
+            sv = self.sort_vector_df.to_json()
+
+        data = {
+            'col_names': self.output_json['dsc_full_data']['col_names'],
+            'matrix_names': matrices['names'],
+            'matrix_IDs': matrices['ids'],
+            'sort_vector': sv,
+        }
+        return data
+
+    def get_feature_clustering_overview_init(self):
+        data = {
+            'dendrogram': self.output_json['dsc_dendrogram'],
+            'matrix_names': self.matrices['names'],
+            'fcCentroids': self.output_json['fc_centroids'],
+        }
+        return data
+
+    def get_dsc_full_row_value(self, row_name):
+        if not self.output:
+            return False
+        i = next(index for (index, d) in
+                 enumerate(self.output_json['dsc_full_data']['rows']) if
+                 d['row_name'] == row_name)
+        return self.output_json['dsc_full_data']['rows'][i]['row_data']
+
+    def get_dsc_name_to_id(self, row_name):
+        if not self.output:
+            return False
+        i = next(index for (index, d) in
+                 enumerate(self.output_json['dsc_full_data']['rows']) if
+                 d['row_name'] == row_name)
+        return self.output_json['dsc_full_data']['rows'][i]['row_id']
+
+    def get_features_in_cluster(self, k_value, cluster):
+        if not self.output:
+            return False
+        features = ','.join(
+            self.output_json['fc_clusters'][str(k_value)][str(cluster)]
+        )
+        return features
+
+    def get_feature_data(self, feature_name):
+        if not self.output:
+            return False
+        return self.output_json['fc_vectors']['vectors'][feature_name]
+
+    def get_k_clust_heatmap(self, k_value, dim_x, dim_y):
+        fc_vectors = self.output_json['fc_vectors']['vectors']
+        fc_clusters = self.output_json['fc_clusters'][str(k_value)]
 
         display_values = []
-
-        for _list in cluster_values:
-            for vector in _list:
-                display_values.append(vector)
+        cluster_sizes = dict()
+        for cluster in sorted(fc_clusters, key=lambda x: int(x)):
+            cluster_sizes[cluster] = len(fc_clusters[cluster])
+            for member in fc_clusters[cluster]:
+                display_values.append(fc_vectors[member])
 
         display_values = numpy.array(display_values)
         display_values = display_values.astype(float)
 
         ncols = len(display_values[0])
         nrows = len(display_values)
-        zoom_x = dim_x/ncols
-        zoom_y = dim_y/nrows
+
+        if ncols > dim_x:
+            zoom_x = dim_x/ncols
+        else:
+            zoom_x = 1
+        if nrows > dim_y:
+            zoom_y = dim_y/nrows
+        else:
+            zoom_y = 1
 
         zoomed_data = ndimage.zoom(
             display_values, (zoom_y, zoom_x), order=0)
@@ -923,6 +1017,7 @@ class Analysis(GenomicBinSettings):
         return {
             'display_data': zoomed_data,
             'cluster_sizes': cluster_sizes,
+            'col_names': self.output_json['fc_vectors']['col_names'],
         }
 
     def get_ks(self, vector_id, matrix_id):
@@ -1217,8 +1312,8 @@ class FeatureListCountMatrix(GenomicBinSettings):
         elif analysis_sort:
             sorted_flcm = []
             sort_list = self.analysisdatasets_set.get()\
-                .analysis.output_json['sort_vector']
-            for i in numpy.argsort(sort_list)[::-1]:
+                .analysis.sort_vector_df.as_matrix(columns=[1])
+            for i in numpy.argsort(sort_list.flatten())[::-1]:
                 sorted_flcm.append(flcm_data[i])
             sorted_flcm = numpy.array(sorted_flcm)
 
@@ -1241,8 +1336,13 @@ class FeatureListCountMatrix(GenomicBinSettings):
 
         nrows = len(sorted_flcm[0])
         ncols = len(sorted_flcm)
-        zoom_x = dim_x/nrows
-        zoom_y = dim_y/ncols
+
+        zoom_x = 1
+        if nrows > dim_x:
+            zoom_x = dim_x/nrows
+        zoom_y = 1
+        if ncols > dim_y:
+            zoom_y = dim_y/ncols
 
         quartiles = numpy.array_split(sorted_flcm, 4)
         quartile_averages = []
