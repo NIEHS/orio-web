@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, filters
 from rest_framework.decorators import list_route
 from rest_framework.response import Response
@@ -122,65 +121,55 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
             raise NotAcceptable("Vector `id` parameter required")
         if matrix_id == -1:
             raise NotAcceptable("Matrix `id` parameter required")
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_ks(vector_id, matrix_id))
+        object = self.get_object()
+        return Response(object.get_ks(vector_id, matrix_id))
 
     @detail_route(methods=['get'])
     def unsorted_ks(self, request, pk=None):
         matrix_id = tryParseInt(self.request.GET.get('matrix_id'), -1)
         if matrix_id == -1:
             raise NotAcceptable("Matrix `id` parameter required")
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_unsorted_ks(matrix_id))
+        object = self.get_object()
+        return Response(object.get_unsorted_ks(matrix_id))
 
     @detail_route(methods=['get'])
     def is_complete(self, request, pk=None):
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        resp = {"is_complete": an.is_complete}
-        return Response(resp)
+        object = self.get_object()
+        return Response({"is_complete": object.is_complete})
 
     @detail_route(methods=['get'])
     def user_sort_ks(self, request, pk=None):
         matrix_id = tryParseInt(self.request.GET.get('matrix_id'), -1)
         if matrix_id == -1:
             raise NotAcceptable("Matrix `id` parameter required")
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_ks_by_user_vector(matrix_id))
+        object = self.get_object()
+        return Response(object.get_ks_by_user_vector(matrix_id))
 
     @detail_route(methods=['get'])
     def plot(self, request, pk=None):
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_summary_plot())
+        object = self.get_object()
+        return Response(object.get_summary_plot())
 
     @detail_route(methods=['get'])
     def analysis_overview(self, request, pk=None):
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_analysis_overview_init())
+        object = self.get_object()
+        return Response(object.get_analysis_overview_init())
 
     @detail_route(methods=['get'])
     def individual_overview(self, request, pk=None):
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_individual_overview_init())
+        object = self.get_object()
+        return Response(object.get_individual_overview_init())
 
     @detail_route(methods=['get'])
     def feature_clustering_overview(self, request, pk=None):
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_feature_clustering_overview_init())
+        object = self.get_object()
+        return Response(object.get_feature_clustering_overview_init())
 
     @detail_route(methods=['get'])
     def dsc_full_row_value(self, request, pk=None):
-        an = get_object_or_404(models.Analysis, pk=int(pk))
         row_name = self.request.GET.get('row')
-        self.check_object_permissions(request, an)
-        return Response(an.get_dsc_full_row_value(row_name))
+        object = self.get_object()
+        return Response(object.get_dsc_full_row_value(row_name))
 
     @detail_route(methods=['get'])
     def k_clust_heatmap(self, request, pk=None):
@@ -189,9 +178,8 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
             raise NotAcceptable("k value `id` parameter required")
         dim_x = tryParseInt(self.request.GET.get('dim_x'))
         dim_y = tryParseInt(self.request.GET.get('dim_y'))
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_k_clust_heatmap(k_value, dim_x, dim_y))
+        object = self.get_object()
+        return Response(object.get_k_clust_heatmap(k_value, dim_x, dim_y))
 
     @detail_route(methods=['get'])
     def features_in_cluster(self, request, pk=None):
@@ -201,25 +189,22 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         cluster = tryParseInt(self.request.GET.get('cluster'), -1)
         if cluster == -1:
             raise NotAcceptable("cluster parameter required")
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_features_in_cluster(k_value, cluster))
+        object = self.get_object()
+        return Response(object.get_features_in_cluster(k_value, cluster))
 
     @detail_route(methods=['get'])
     def feature_data(self, request, pk=None):
         feature_name = self.request.GET.get('feature')
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_feature_data(feature_name))
+        object = self.get_object()
+        return Response(object.get_feature_data(feature_name))
 
     @detail_route(methods=['get'])
     def sort_vector(self, request, pk=None):
         sort_vector_id = tryParseInt(self.request.GET.get('id'), -1)
         if sort_vector_id == -1:
             raise NotAcceptable("Sort vector `id` parameter required")
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_sort_vector(sort_vector_id))
+        object = self.get_object()
+        return Response(object.get_sort_vector(sort_vector_id))
 
     @detail_route(methods=['get'], renderer_classes=(PlainTextRenderer,))
     def sortvectorscatterplot(self, request, pk=None):
@@ -227,9 +212,8 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         column = self.request.GET.get('column')
         if idy is None:
             raise NotAcceptable("Parameter `idy` is required; `column` is optional")  # noqa
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_sortvector_scatterplot_data(idy, column))
+        object = self.get_object()
+        return Response(object.get_sortvector_scatterplot_data(idy, column))
 
     @detail_route(methods=['get'], renderer_classes=(PlainTextRenderer,))
     def scatterplot(self, request, pk=None):
@@ -238,15 +222,13 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         column = self.request.GET.get('column')
         if idx is None or idy is None:
             raise NotAcceptable("Parameters `idx` and `idy` are required")
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_scatterplot_data(idx, idy, column))
+        object = self.get_object()
+        return Response(object.get_scatterplot_data(idx, idy, column))
 
     @detail_route(methods=['get'])
     def bin_names(self, request, pk=None):
-        an = get_object_or_404(models.Analysis, pk=int(pk))
-        self.check_object_permissions(request, an)
-        return Response(an.get_bin_names())
+        object = self.get_object()
+        return Response(object.get_bin_names())
 
     def get_serializer_class(self):
         return serializers.AnalysisSerializer
@@ -263,15 +245,11 @@ class FeatureListCountMatrixViewset(AnalysisObjectMixin, viewsets.ReadOnlyModelV
 
     @detail_route(methods=['get'], renderer_classes=(PlainTextRenderer,))
     def plot(self, request, pk=None):
-        flcm = get_object_or_404(models.FeatureListCountMatrix, pk=int(pk))
-        self.check_object_permissions(request, flcm)
-        return Response(flcm.get_dataset())
+        object = self.get_object()
+        return Response(object.get_dataset())
 
     @detail_route(methods=['get'])
     def sorted_render(self, request, pk=None):
-        flcm = get_object_or_404(models.FeatureListCountMatrix, pk=int(pk))
-        self.check_object_permissions(request, flcm)
-
         dim_x = tryParseInt(self.request.GET.get('dim_x'))
         dim_y = tryParseInt(self.request.GET.get('dim_y'))
         analysis_sort = (self.request.GET.get('analysis_sort') == '1')
@@ -280,7 +258,8 @@ class FeatureListCountMatrixViewset(AnalysisObjectMixin, viewsets.ReadOnlyModelV
             sort_matrix_id = None
 
         # TODO: throw errors if values aren't given or are not numeric?
-        return Response(flcm.get_sorted_data(
+        object = self.get_object()
+        return Response(object.get_sorted_data(
             dim_x, dim_y, analysis_sort, sort_matrix_id
         ))
 
