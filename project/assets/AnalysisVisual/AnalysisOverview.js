@@ -22,11 +22,11 @@ class AnalysisOverview{
         // create heatmap
         var heatmap = $('<div id="heatmap">')
             .css({
-                'height': '80%',
-                'width': '60%',
-                'position': 'absolute',
-                'left': '40%',
-                'top': '20%',
+                height: '80%',
+                width: '60%',
+                position: 'absolute',
+                left: '40%',
+                top: '20%',
             }).appendTo(this.el);
 
         var sort_vector = window.sort_vector;
@@ -70,14 +70,15 @@ class AnalysisOverview{
                     modalBody.html('');
                 })
                 .one('shown.bs.modal', function(){
+                    var modal;
                     if (window.sort_vector) {
-                        var modal = new SortVectorScatterplotModal(
+                        modal = new SortVectorScatterplotModal(
                             sort_vector, data.col_names[i],
                             data.rows[j].row_id, data.rows[j].row_name,
                             modalTitle, modalBody
                         );
                     } else {
-                        var modal = new ScatterplotModal(
+                        modal = new ScatterplotModal(
                             data.col_ids[i], data.rows[j].row_id,
                             data.col_names[i], data.rows[j].row_name,
                             modalTitle, modalBody
@@ -97,15 +98,15 @@ class AnalysisOverview{
             .enter()
             .append('g')
             .selectAll('rect')
-            .data(function(d) {return d.row_data; })
+            .data((d) => d.row_data)
             .enter()
             .append('rect')
-            .text((d)=>d)
-            .attr('x', (d,i,j)=>i * cell_width)
-            .attr('y', (d,i,j)=>j * cell_height)
+            .text((d) => d)
+            .attr('x', (d,i,j) => i * cell_width)
+            .attr('y', (d,i,j) => j * cell_height)
             .attr('width', cell_width)
             .attr('height', cell_height)
-            .style('fill', (d)=>colorScale(d))
+            .style('fill', (d) => colorScale(d))
             .style('cursor', 'pointer')
             .on('mouseover', showTooltip)
             .on('mouseout', hideTooltip)
@@ -131,17 +132,17 @@ class AnalysisOverview{
 
         var height = vert.height(),
             width = vert.width(),
-            ncols = data.col_names.length;
+            ncols = data.col_names.length,
+            svg;
 
-        var data = _.map(data.col_names, function(d, i){
+        data = _.map(data.col_names, function(d, i){
             let name = d,
                 x = (((0.5 / ncols) * width) + i * (width / ncols)),
                 transform = `rotate(90 ${(((0.5/ncols)*width) + i*(width/ncols))},0)`;
-
             return {name, x, transform};
         });
 
-        var svg = d3.select(vert.get(0))
+        svg = d3.select(vert.get(0))
             .append('svg')
             .attr('height', height)
             .attr('width', width);
@@ -164,12 +165,12 @@ class AnalysisOverview{
 
         var row_names = $('<div id="row_names">')
             .css({
-                'position': 'absolute',
-                'left': '21%',
-                'top': '20%',
-                'overflow': 'hidden',
-                'height': '80%',
-                'width': '18%',
+                position: 'absolute',
+                left: '21%',
+                top: '20%',
+                overflow: 'hidden',
+                height: '80%',
+                width: '18%',
             }).appendTo(this.el);
 
         //Draw SVGs
@@ -182,7 +183,7 @@ class AnalysisOverview{
             .attr('height', height)
             .attr('width', width);
 
-        var data = _.map(data.rows, function(d, i){
+        data = _.map(data.rows, function(d, i){
             let name = d.row_name,
                 y = (((0.5 / row_number) * height) + i * (height / row_number));
             return {name, y};
@@ -194,9 +195,9 @@ class AnalysisOverview{
             .enter()
             .append('text')
             .attr('class', 'heatmapLabelText')
-            .text((d)=>d.name)
+            .text((d) => d.name)
             .attr('x', 0)
-            .attr('y', (d)=>d.y);
+            .attr('y', (d) => d.y);
     }
 
     writeDendrogram(data) {
@@ -204,19 +205,18 @@ class AnalysisOverview{
 
         var dendro = $('<div id="dendrogram">')
             .css({
-                'position': 'absolute',
-                'left': '0%',
-                'top': '20%',
-                'overflow': 'hidden',
-                'height': '80%',
-                'width': '20%',
+                position: 'absolute',
+                left: '0%',
+                top: '20%',
+                overflow: 'hidden',
+                height: '80%',
+                width: '20%',
             }).appendTo(this.el);
 
         var height = dendro.height(),
             width = dendro.width();
 
-        var line_coords = [],
-            icoords = data.icoord,
+        var icoords = data.icoord,
             dcoords = data.dcoord,
             x_max = d3.max(_.flatten(dcoords), Number),
             y_max = d3.max(_.flatten(icoords), Number),
@@ -226,9 +226,10 @@ class AnalysisOverview{
             y_rng = y_max - y_min,
             nleaves = data.leaves.length,
             leafHeight = ((0.5/nleaves)*height),
-            totHeight = height*((nleaves-1)/nleaves);
+            totHeight = height*((nleaves-1)/nleaves),
+            line_coords, svg;
 
-        var line_coords = _.chain(icoords)
+        line_coords = _.chain(icoords)
             .map(function(ic, i){
                 let dc = dcoords[i];
                 return _.map([0, 1, 2], function(j){
@@ -243,7 +244,7 @@ class AnalysisOverview{
             .flatten()
             .value();
 
-        var svg = d3.select(dendro.get(0))
+        svg = d3.select(dendro.get(0))
             .append('svg')
             .attr('width', width)
             .attr('height', height)
@@ -268,24 +269,30 @@ class AnalysisOverview{
         // create new
         var legend = $('<div id="legend">')
             .css({
-                'position': 'absolute',
-                'left': '5%',
-                'top': '8%',
-                'overflow': 'visible',
-                'height': '5%',
-                'width': '20%',
+                position: 'absolute',
+                left: '5%',
+                top: '8%',
+                overflow: 'visible',
+                height: '5%',
+                width: '20%',
             }).appendTo(this.el);
 
         var height = legend.height(),
-            width = legend.width();
+            width = legend.width(),
+            legend_lines = [
+                {text: '-1', position: 0},
+                {text: '0', position: 0.5 * width},
+                {text: '1', position: width},
+            ],
+            svg, gradient;
 
-        var svg = d3.select(legend.get(0))
+        svg = d3.select(legend.get(0))
             .append('svg')
             .attr('width', width)
             .attr('height', height)
             .style('overflow', 'visible');
 
-        var gradient = svg
+        gradient = svg
             .append('linearGradient')
             .attr('y1', '0')
             .attr('y2', '0')
@@ -318,12 +325,6 @@ class AnalysisOverview{
             .attr('stroke', 'black')
             .attr('stroke-width', '1');
 
-        var legend_lines = [
-            {text: '-1', position: 0},
-            {text: '0', position: 0.5 * width},
-            {text: '1', position: width},
-        ];
-
         svg.append('g')
             .selectAll('line')
             .data(legend_lines)
@@ -351,15 +352,18 @@ class AnalysisOverview{
     }
 
     render() {
+
+        var url = this.analysisOverviewInitURL(window.analysisObjectID),
+            cb = function(data) {
+                window.sort_vector = data.sort_vector;
+                this.drawHeatmap(data.dscRepData);
+                this.writeRowNames(data.dscRepData);
+                this.writeColNames(data.dscRepData);
+                this.writeDendrogram(data.dendrogram);
+            };
+
         this.drawLegend();
-        $.get(this.analysisOverviewInitURL(window.analysisObjectID),
-            function(data) {
-                window.sort_vector = data['sort_vector'];
-                this.drawHeatmap(data['dscRepData']);
-                this.writeRowNames(data['dscRepData']);
-                this.writeColNames(data['dscRepData']);
-                this.writeDendrogram(data['dendrogram']);
-        }.bind(this));
+        $.get(url, cb.bind(this));
     }
 }
 

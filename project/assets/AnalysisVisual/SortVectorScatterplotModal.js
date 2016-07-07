@@ -9,7 +9,6 @@ class SortVectorScatterplotModal {
 
     constructor (sort_vector, bin, idy, namey, modal_title, modal_body) {
         this.sort_vector = sort_vector;
-
         this.bin = bin;
         this.idy = idy;
         this.namex = 'Sort vector';
