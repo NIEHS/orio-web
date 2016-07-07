@@ -24,8 +24,8 @@ class Command(BaseCommand):
     help = HELP_TEXT
 
     assembly_cw = {
-        "hg19": models.HG19,
-        "mm9": models.MM9,
+        d.name: d.id for d in
+        models.GenomeAssembly.objects.all()
     }
 
     def add_arguments(self, parser):

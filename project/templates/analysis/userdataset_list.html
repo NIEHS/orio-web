@@ -20,7 +20,7 @@
         {% for object in object_list %}
             <tr>
                 <td><a href="{{object.get_absolute_url}}">{{object.name}}</a></td>
-                <td>{{object.get_genome_assembly_display}}</td>
+                <td>{{object.genome_assembly}}</td>
                 <td>{{object.stranded|fabool}}</td>
                 <td>{{object.validated|fabool}}</td>
                 <td>{{object.last_updated}}</td>

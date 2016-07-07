@@ -1,0 +1,10 @@
+Hi {{object.owner}},
+
+Your analysis zip file is available at http://{{domain}}{{tf.file.url}}.
+
+This link will expire on {{tf.expiration_date}}
+
+We hope you find something :)
+
+
+The {{domain}} team.

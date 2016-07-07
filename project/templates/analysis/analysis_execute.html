@@ -13,35 +13,38 @@
 {% block mid_content %}
 {% if object.is_running %}
 
-    <h1>{{object}}: execution started</h1>
+    <h1>{{object}}: queued for execution</h1>
 
     <p>
-        Your analysis has been validated and added to the queue for execution.
-        <br>
-        <b>Start time:</b> {{object.start_time}} (<i id="startTime"></i>)
-    </p>
-
-    <p>
+        <i class="fa fa-cog fa-spin fa-2x" aria-hidden="true"></i>
+        <i class="fa fa-cog fa-spin fa-2x" aria-hidden="true"></i>
         <i class="fa fa-cog fa-spin fa-2x" aria-hidden="true"></i>
     </p>
 
     <p>
-        You could refresh this page to view the current status if you'd like but we'll
-        also send an email to
-        <a href="mailto://{{request.user.email}}">{{request.user.email}}</a> when it's complete!
+        <b>Start time:</b> <span id='absStart'></span> (<i id="startTime"></i>)
+        <br/>
+        <b>Estimated run-time: </b> ~<span id="duration"></span>
+        <br/>
+        <b>Estimated end-time: </b> <span id='absEstEndTime'></span>
     </p>
 
-{% elif object.is_complete %}
+    <p>
+        <i class="fa fa-cog fa-spin fa-2x" aria-hidden="true"></i>
+        <i class="fa fa-cog fa-spin fa-2x" aria-hidden="true"></i>
+        <i class="fa fa-cog fa-spin fa-2x" aria-hidden="true"></i>
+    </p>
 
-    <h1>{{object}}: execution complete!</h1>
-    <a class='btn btn-primary' href="{{object.get_visuals_url}}">View visualization</a>
+    <p class='lead'>
+        Get some coffee. We will email you at <a href="mailto:{{request.user.email}}">{{request.user.email}}</a> when it's complete!
+    </p>
 
 {% else %}
 
     <h1>{{object}}: execution not started</h1>
     <p>
         Execution hasn't yet started yet. Please modify
-        <a href="{{object.get_update_url}}">your analysis settings</a>
+        <a href="{{object.get_update_url}}">your settings</a>
         and then try again.
     </p>
 
@@ -55,12 +58,23 @@
 <script type="text/javascript">
 $(document).ready(function(){
 
-    var startTime = window.moment('{{object.start_time.isoformat}}');
-    $('#startTime').html(startTime.fromNow());
+    var startTime = window.moment('{{object.start_time.isoformat}}'),
+        duration = window.moment.duration({{object.execute_time_estimate}}, 'seconds'),
+        estEndTime = startTime.clone().add(duration, 'seconds');
 
-    window.setTimeout(function(){
-        window.location.reload();
-    }, 10*1000);
+    $('#startTime').html(startTime.fromNow());
+    $('#absStart').html(startTime.format("dddd, MMMM Do YYYY, h:mm a"));
+    $('#duration').html(duration.humanize());
+    $('#absEstEndTime').html(estEndTime.format("dddd, MMMM Do YYYY, h:mm a"));
+
+    var checkComplete =function(){
+        $.get('{% url "analysis:api:analysis-is-complete" object.id %}', function(d){
+            if(d.is_complete){
+                window.location.replace('{{object.get_visuals_url}}');
+            }
+        });
+    };
+    window.setInterval(checkComplete, 10*1000);
 });
 </script>
 {% endif %}

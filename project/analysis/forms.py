@@ -163,12 +163,6 @@ class FeatureListForm(BaseFormMixin, forms.ModelForm):
         exclude = ('owner', 'public', 'borrowers',
                    'validated', 'validation_notes')
 
-    def save(self, commit=True):
-        if commit:
-            self.instance.validated = False
-            self.instance.validation_notes = ''
-        return super().save(commit=commit)
-
 
 class SortVectorForm(BaseFormMixin, forms.ModelForm):
     CREATE_LEGEND = 'Create sort vector'
@@ -183,12 +177,6 @@ class SortVectorForm(BaseFormMixin, forms.ModelForm):
         self.fields['feature_list'].queryset = \
             models.FeatureList.usable(self.instance.owner)
 
-    def save(self, commit=True):
-        if commit:
-            self.instance.validated = False
-            self.instance.validation_notes = ''
-        return super().save(commit=commit)
-
 
 class DatasetField(forms.CharField):
 
@@ -201,9 +189,10 @@ class DatasetField(forms.CharField):
         if len(cleaned['userDatasets']) + len(cleaned['encodeDatasets']) < 2:
             raise forms.ValidationError("At least two datasets are required.")
 
-        for obj in itertools.chain(cleaned['userDatasets'], cleaned['encodeDatasets']):
+        for obj in itertools.chain(
+                cleaned['userDatasets'], cleaned['encodeDatasets']):
             if 'dataset' not in obj or 'display_name' not in obj:
-                raise forms.ValidationError("At least two datasets are required.")
+                raise forms.ValidationError("2+ datasets are required.")
 
         return True
 
@@ -226,8 +215,8 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
     class Meta:
         model = models.Analysis
         fields = (
-            'name', 'description', 'genome_assembly',
-            'feature_list', 'sort_vector', 'public',
+            'name', 'description', 'public',
+            'genome_assembly', 'feature_list', 'sort_vector',
             'anchor', 'bin_start', 'bin_size',
             'bin_number',
         )
@@ -240,7 +229,8 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
             models.SortVector.usable(self.instance.owner)
 
         if self.instance.id:
-            self.fields['datasets_json'].initial = self.instance.get_form_datasets()
+            self.fields['datasets_json'].initial = \
+                self.instance.get_form_datasets()
 
     def save(self, commit=True):
         if commit:
@@ -269,6 +259,7 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
                 analysis_id=self.instance.id,
                 dataset_id=d['dataset'],
                 display_name=d['display_name']
-            ) for d in itertools.chain(ds['userDatasets'], ds['encodeDatasets'])
+            ) for d in itertools.chain(
+                ds['userDatasets'], ds['encodeDatasets'])
         ]
         models.AnalysisDatasets.objects.bulk_create(objects)
