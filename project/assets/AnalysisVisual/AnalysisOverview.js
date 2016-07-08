@@ -8,213 +8,105 @@ import SortVectorScatterplotModal from './SortVectorScatterplotModal';
 
 class AnalysisOverview{
 
-    constructor(el, data) {
+    constructor(el) {
         this.el = el;
-        this.dendrogram = data['dendrogram'];
-        this.cluster_members = data['cluster_members'];
-        this.cluster_display = data['max_abs_correlation_values'];
-        this.correlation_matrix = data['correlation_matrix'];
-        this.matrix_names = data['matrix_names'];
-        this.cluster_medoids = data['cluster_medoids'];
-        this.matrix_ids = data['matrix_ids'];
-        this.matrix = _.object(data['matrix_ids'], data['matrix_names']);
-        this.sort_vector = data['sort_vector'];
-        this.bin_parameters = data['bin_parameters'];
 
-        var matrix = this.matrix,
-            cluster_medoids = this.cluster_medoids;
-
-        this.row_names = _.map(this.cluster_members, function(d, i){
-            let name = (d.length > 1)?
-                    `(${d.length}) ${matrix[cluster_medoids[i]]}`:
-                    matrix[cluster_medoids[i]];
-
-            return name;
-        });
-
-        if (this.sort_vector) {
-            this.col_names = [];
-            var start = parseInt(this.bin_parameters['window_start']),
-                step = parseInt(this.bin_parameters['bin_size']);
-
-            for (var i = 0; i < parseInt(this.bin_parameters['bin_number']); i++) {
-                this.col_names.push((start + step*i) + ':' + (start + step*(i+1) - 1));
-            }
-        } else {
-            this.col_names = this.row_names;
-        }
+        this.analysisOverviewInitURL = function(id) {
+            return (`/dashboard/api/analysis/${id}/analysis_overview/`);
+        };
     }
 
-    drawHeatmap() {
+    drawHeatmap(data) {
         // remove existing heatmap
         this.el.find('#heatmap').remove();
-
         // create heatmap
         var heatmap = $('<div id="heatmap">')
             .css({
-                'height': '80%',
-                'width': '60%',
-                'position': 'absolute',
-                'left': '40%',
-                'top': '20%',
+                height: '80%',
+                width: '60%',
+                position: 'absolute',
+                left: '40%',
+                top: '20%',
             }).appendTo(this.el);
 
-        if (this.sort_vector) {
-            var height = heatmap.height(),
-            width = heatmap.width(),
-            col_number = this.cluster_display[0].length,
-            row_number = this.cluster_display.length,
-            cell_height = height/row_number,
-            cell_width = width/col_number,
-            cluster_members = this.cluster_members,
-            cluster_medoids = this.cluster_medoids,
-            matrix_names = this.matrix_names,
-            col_names = this.col_names,
-            row_names = this.row_names,
-            matrix = this.matrix,
-            sort_vector = this.sort_vector,
-            getIndex = function(idx){
-                return (cluster_members[idx].length === 1) ?
-                    cluster_members[idx][0] :
-                    `(${cluster_members[idx].length}) ${cluster_medoids[idx]}`;
-            },
-            showTooltip = function (d, i, j) {
-                d3.select(this)
-                    .style('stroke', 'black')
-                    .style('stroke-width', '1');
+        var sort_vector = window.sort_vector;
+        var height = heatmap.height(),
+            width = heatmap.width();
 
-                var idy = getIndex(j);
+        var cell_height = height/data.rows.length,
+            cell_width = width/data.col_names.length;
 
-                $(this).tooltip({
-                    container: 'body',
-                    title: `${row_names[j]}<br/>${col_names[i]}<br/>${d.toFixed(2)}`,
-                    html: true,
-                    animation: false,
-                }).tooltip('show');
+        var colorScale = d3.scale.linear()
+            .domain([-1, 0, 1])
+            .range(['blue', 'white', 'red']);
 
-            },
-            hideTooltip = function () {
-                $(this)
-                    .tooltip('destroy');
-                d3.select(this)
-                    .style('stroke', 'none');
-            },
-            showScatterplot = function(d, i, j){
-                var getIndexFromName = function(name, idx) {
-                    if (cluster_members[idx].length > 1) {
-                        name = name.split(') ')[1];
-                    }
-                    return (_.invert(matrix))[name];
-                };
+        var showTooltip = function (d, i, j) {
+            d3.select(this)
+                .style('stroke', 'black')
+                .style('stroke-width', '1');
 
-                var idy = getIndexFromName(row_names[j], j),
-                    bin = col_names[i],
-                    modalTitle = $('#ind_heatmap_modal_title'),
-                    modalBody = $('#ind_heatmap_modal_body');
+            $(this).tooltip({
+                container: 'body',
+                title: `${data.col_names[i]}<br/>${data.rows[j].row_name}<br/>${d.toFixed(2)}`,
+                html: true,
+                animation: false,
+            }).tooltip('show');
+        };
 
-                $('#flcModal')
-                    .one('show.bs.modal', function(){
-                        modalTitle.html('');
-                        modalBody.html('');
-                    })
-                    .one('shown.bs.modal', function(){
-                        var modal = new SortVectorScatterplotModal(
-                            sort_vector, bin, idy,
-                            matrix[idy],
+        var hideTooltip = function () {
+            $(this)
+                .tooltip('destroy');
+            d3.select(this)
+                .style('stroke', 'none');
+        };
+
+        var showScatterplot = function(d, i, j){
+            var modalTitle = $('#ind_heatmap_modal_title'),
+                modalBody = $('#ind_heatmap_modal_body');
+
+            $('#flcModal')
+                .one('show.bs.modal', function(){
+                    modalTitle.html('');
+                    modalBody.html('');
+                })
+                .one('shown.bs.modal', function(){
+                    var modal;
+                    if (window.sort_vector) {
+                        modal = new SortVectorScatterplotModal(
+                            sort_vector, data.col_names[i],
+                            data.rows[j].row_id, data.rows[j].row_name,
                             modalTitle, modalBody
                         );
-                        modal.render();
-                    }).modal('show');
-            },
-            colorScale = d3.scale.linear()
-                .domain([-1, 0, 1])
-                .range(['blue', 'white', 'red']);
-        } else {
-            var height = heatmap.height(),
-            width = heatmap.width(),
-            col_number = this.cluster_display[0].length,
-            row_number = this.cluster_display.length,
-            cell_height = height/row_number,
-            cell_width = width/col_number,
-            cluster_members = this.cluster_members,
-            cluster_medoids = this.cluster_medoids,
-            matrix = this.matrix,
-            col_names = this.col_names,
-            row_names = this.row_names,
-            getIndex = function(idx){
-                return (cluster_members[idx].length === 1) ?
-                    cluster_members[idx][0] :
-                    `(${cluster_members[idx].length}) ${cluster_medoids[idx]}`;
-            },
-            showTooltip = function (d, i, j) {
-                d3.select(this)
-                    .style('stroke', 'black')
-                    .style('stroke-width', '1');
-
-                $(this).tooltip({
-                    container: 'body',
-                    title: `${col_names[i]}<br/>${row_names[j]}<br/>${d.toFixed(2)}`,
-                    html: true,
-                    animation: false,
-                }).tooltip('show');
-
-            },
-            hideTooltip = function () {
-                $(this)
-                    .tooltip('destroy');
-                d3.select(this)
-                    .style('stroke', 'none');
-            },
-            showScatterplot = function(d, i, j){
-                var getIndexFromName = function(name, idx) {
-                    if (cluster_members[idx].length > 1) {
-                        name = name.split(') ')[1];
-                    }
-                    return (_.invert(matrix))[name];
-                };
-
-                var idx = getIndexFromName(col_names[i], i),
-                    idy = getIndexFromName(row_names[j], j),
-                    modalTitle = $('#ind_heatmap_modal_title'),
-                    modalBody = $('#ind_heatmap_modal_body');
-
-                $('#flcModal')
-                    .one('show.bs.modal', function(){
-                        modalTitle.html('');
-                        modalBody.html('');
-                    })
-                    .one('shown.bs.modal', function(){
-                        var modal = new ScatterplotModal(
-                            idx, idy,
-                            matrix[idx], matrix[idy],
+                    } else {
+                        modal = new ScatterplotModal(
+                            data.col_ids[i], data.rows[j].row_id,
+                            data.col_names[i], data.rows[j].row_name,
                             modalTitle, modalBody
                         );
-                        modal.render();
-                    }).modal('show');
-            },
-            colorScale = d3.scale.linear()
-                .domain([-1, 0, 1])
-                .range(['blue', 'white', 'red']);
-        }
+                    }
+                    modal.render();
+                }).modal('show');
+        };
+
         d3.select(heatmap.get(0))
             .append('svg')
             .attr('height', height)
             .attr('width', width)
             .append('g')
             .selectAll('g')
-            .data(this.cluster_display)
+            .data(data.rows)
             .enter()
             .append('g')
             .selectAll('rect')
-            .data((d)=>d)
+            .data((d) => d.row_data)
             .enter()
             .append('rect')
-            .text((d)=>d)
-            .attr('x', (d,i,j)=>i * cell_width)
-            .attr('y', (d,i,j)=>j * cell_height)
+            .text((d) => d)
+            .attr('x', (d,i,j) => i * cell_width)
+            .attr('y', (d,i,j) => j * cell_height)
             .attr('width', cell_width)
             .attr('height', cell_height)
-            .style('fill', (d)=>colorScale(d))
+            .style('fill', (d) => colorScale(d))
             .style('cursor', 'pointer')
             .on('mouseover', showTooltip)
             .on('mouseout', hideTooltip)
@@ -223,7 +115,7 @@ class AnalysisOverview{
         $('[data-toggle="tooltip"]').tooltip();
     }
 
-    writeColNames() {
+    writeColNames(data) {
         // remove existing
         this.el.find('#vert_names').remove();
 
@@ -238,127 +130,61 @@ class AnalysisOverview{
                 'width': '60%',
             }).appendTo(this.el);
 
-        if (this.sort_vector) {
-            var height = vert.height(),
-                width = vert.width(),
-                range_start = parseInt(this.col_names[0].split(':')[0]),
-                range_end = parseInt(this.col_names[this.col_names.length-1].split(':')[1]),
-                zero_position = width/(range_end-range_start)*(0-range_start);
+        var height = vert.height(),
+            width = vert.width(),
+            ncols = data.col_names.length,
+            svg;
 
-            var svg = d3.select(vert.get(0))
-                .append('svg')
-                .attr('height', height)
-                .attr('width', width)
-                .style('overflow', 'visible');
+        data = _.map(data.col_names, function(d, i){
+            let name = d,
+                x = (((0.5 / ncols) * width) + i * (width / ncols)),
+                transform = `rotate(90 ${(((0.5/ncols)*width) + i*(width/ncols))},0)`;
+            return {name, x, transform};
+        });
 
-            var header_lines = [
-                {
-                    text: range_start,
-                    position: 0,
-                },
-                {
-                    text: range_end,
-                    position: width,
-                },
-                {
-                    text: '0',
-                    position: zero_position,
-                },
-            ];
+        svg = d3.select(vert.get(0))
+            .append('svg')
+            .attr('height', height)
+            .attr('width', width);
 
-            svg.append('g')
-                .selectAll('line')
-                .data(header_lines)
-                .enter()
-                .append('line')
-                .attr('x1', function(d) {return d.position;})
-                .attr('x2', function(d) {return d.position;})
-                .attr('y1', 0.6*height)
-                .attr('y2', 0.9*height)
-                .style('stroke', 'black')
-                .style('stroke-width', 1);
-
-            svg.append('line')
-                .attr('x1', 0)
-                .attr('x2', width)
-                .attr('y1', 0.9*height)
-                .attr('y2', 0.9*height)
-                .style('stroke', 'black')
-                .style('stroke-width', 1);
-
-            svg.append('g')
-                .selectAll('text')
-                .data(header_lines)
-                .enter()
-                .append('text')
-                .text(function(d) { return d.text;})
-                .attr('x', function(d) {return d.position;})
-                .attr('y', 0.45*height)
-                .attr('font-family', 'sans-serif')
-                .attr('font-size', '12px')
-                .attr('fill', 'black')
-                .style('text-anchor', 'middle');
-        } else {
-            var height = vert.height(),
-                width = vert.width(),
-                ncols = this.col_names.length,
-                col_names = this.col_names;
-
-            var data = _.map(col_names, function(d, i){
-                let name = d,
-                    x = (((0.5 / ncols) * width) + i * (width / ncols)),
-                    transform = `rotate(90 ${(((0.5/ncols)*width) + i*(width/ncols))},0)`;
-
-                return {name, x, transform};
-            });
-
-            var svg = d3.select(vert.get(0))
-                .append('svg')
-                .attr('height', height)
-                .attr('width', width);
-
-            svg.append('g')
-                .selectAll('text')
-                .data(data)
-                .enter()
-                .append('text')
-                .attr('class', 'heatmapLabelText')
-                .text((d)=>d.name)
-                .attr('x', (d)=>d.x)
-                .attr('y', 0)
-                .attr('transform', (d)=>d.transform);
-        }
+        svg.append('g')
+            .selectAll('text')
+            .data(data)
+            .enter()
+            .append('text')
+            .attr('class', 'heatmapLabelText')
+            .text((d)=>d.name)
+            .attr('x', (d)=>d.x)
+            .attr('y', 0)
+            .attr('transform', (d)=>d.transform);
     }
 
-    writeRowNames() {
+    writeRowNames(data) {
 
         this.el.find('#row_names').remove();
 
         var row_names = $('<div id="row_names">')
             .css({
-                'position': 'absolute',
-                'left': '21%',
-                'top': '20%',
-                'overflow': 'hidden',
-                'height': '80%',
-                'width': '18%',
+                position: 'absolute',
+                left: '21%',
+                top: '20%',
+                overflow: 'hidden',
+                height: '80%',
+                width: '18%',
             }).appendTo(this.el);
 
         //Draw SVGs
         var height = row_names.height(),
             width = row_names.width(),
-            row_number = this.cluster_members.length,
-            cluster_medoids = this.cluster_medoids,
-            matrix_names = this.matrix_names,
-            matrix = this.matrix;
+            row_number = data.rows.length;
 
         var svg = d3.select(row_names.get(0))
             .append('svg')
             .attr('height', height)
             .attr('width', width);
 
-        var data = _.map(this.row_names, function(d, i){
-            let name = d,
+        data = _.map(data.rows, function(d, i){
+            let name = d.row_name,
                 y = (((0.5 / row_number) * height) + i * (height / row_number));
             return {name, y};
         });
@@ -369,40 +195,39 @@ class AnalysisOverview{
             .enter()
             .append('text')
             .attr('class', 'heatmapLabelText')
-            .text((d)=>d.name)
+            .text((d) => d.name)
             .attr('x', 0)
-            .attr('y', (d)=>d.y);
+            .attr('y', (d) => d.y);
     }
 
-    writeDendrogram() {
-
+    writeDendrogram(data) {
         this.el.find('#dendrogram').remove();
 
         var dendro = $('<div id="dendrogram">')
             .css({
-                'position': 'absolute',
-                'left': '0%',
-                'top': '20%',
-                'overflow': 'hidden',
-                'height': '80%',
-                'width': '20%',
+                position: 'absolute',
+                left: '0%',
+                top: '20%',
+                overflow: 'hidden',
+                height: '80%',
+                width: '20%',
             }).appendTo(this.el);
 
-        var line_coords = [],
-            icoords = this.dendrogram['icoord'],
-            dcoords = this.dendrogram['dcoord'],
-            x_max = d3.max(_.flatten(dcoords)),
-            y_max = d3.max(_.flatten(icoords)),
-            x_min = d3.min(_.flatten(dcoords)),
-            y_min = d3.min(_.flatten(icoords)),
+        var height = dendro.height(),
+            width = dendro.width();
+
+        var icoords = data.icoord,
+            dcoords = data.dcoord,
+            x_max = d3.max(_.flatten(dcoords), Number),
+            y_max = d3.max(_.flatten(icoords), Number),
+            x_min = d3.min(_.flatten(dcoords), Number),
+            y_min = d3.min(_.flatten(icoords), Number),
             x_rng = x_max - x_min,
             y_rng = y_max - y_min,
-            height = dendro.height(),
-            width = dendro.width(),
-            nleaves = this.dendrogram['leaves'].length,
+            nleaves = data.leaves.length,
             leafHeight = ((0.5/nleaves)*height),
-            totHeight = height*((nleaves-1)/nleaves);
-
+            totHeight = height*((nleaves-1)/nleaves),
+            line_coords, svg;
 
         line_coords = _.chain(icoords)
             .map(function(ic, i){
@@ -411,15 +236,15 @@ class AnalysisOverview{
                     return {
                         y1: leafHeight+((ic[j]-y_min)/y_rng)*totHeight,
                         y2: leafHeight+((ic[j+1]-y_min)/y_rng)*totHeight,
-                        x1: width-((dc[j]-x_min)/x_rng)*width,
-                        x2: width-((dc[j+1]-x_min)/x_rng)*width,
+                        x1: width-((dc[j]-x_min)/x_rng)*width*0.9,
+                        x2: width-((dc[j+1]-x_min)/x_rng)*width*0.9,
                     };
                 });
             })
             .flatten()
             .value();
 
-        var svg = d3.select(dendro.get(0))
+        svg = d3.select(dendro.get(0))
             .append('svg')
             .attr('width', width)
             .attr('height', height)
@@ -444,24 +269,30 @@ class AnalysisOverview{
         // create new
         var legend = $('<div id="legend">')
             .css({
-                'position': 'absolute',
-                'left': '5%',
-                'top': '8%',
-                'overflow': 'visible',
-                'height': '5%',
-                'width': '20%',
+                position: 'absolute',
+                left: '5%',
+                top: '8%',
+                overflow: 'visible',
+                height: '5%',
+                width: '20%',
             }).appendTo(this.el);
 
         var height = legend.height(),
-            width = legend.width();
+            width = legend.width(),
+            legend_lines = [
+                {text: '-1', position: 0},
+                {text: '0', position: 0.5 * width},
+                {text: '1', position: width},
+            ],
+            svg, gradient;
 
-        var svg = d3.select(legend.get(0))
+        svg = d3.select(legend.get(0))
             .append('svg')
             .attr('width', width)
             .attr('height', height)
             .style('overflow', 'visible');
 
-        var gradient = svg
+        gradient = svg
             .append('linearGradient')
             .attr('y1', '0')
             .attr('y2', '0')
@@ -494,12 +325,6 @@ class AnalysisOverview{
             .attr('stroke', 'black')
             .attr('stroke-width', '1');
 
-        var legend_lines = [
-            {text: '-1', position: 0},
-            {text: '0', position: 0.5 * width},
-            {text: '1', position: width},
-        ];
-
         svg.append('g')
             .selectAll('line')
             .data(legend_lines)
@@ -527,11 +352,18 @@ class AnalysisOverview{
     }
 
     render() {
-        this.drawHeatmap();
-        this.writeRowNames();
-        this.writeColNames();
-        this.writeDendrogram();
+
+        var url = this.analysisOverviewInitURL(window.analysisObjectID),
+            cb = function(data) {
+                window.sort_vector = data.sort_vector;
+                this.drawHeatmap(data.dscRepData);
+                this.writeRowNames(data.dscRepData);
+                this.writeColNames(data.dscRepData);
+                this.writeDendrogram(data.dendrogram);
+            };
+
         this.drawLegend();
+        $.get(url, cb.bind(this));
     }
 }
 

@@ -21,7 +21,8 @@ class ScatterplotModal {
     }
 
     datasetUrl(column) {
-        return `${window.scatterplotURL}?idx=${this.idx}&idy=${this.idy}&column=${column}`;
+        return `${window.scatterplotURL}?` +
+            $.param({idx: this.idx, idy: this.idy, column});
     }
 
     renderHeader(){

@@ -18,34 +18,34 @@ class IndividualHeatmap {
         this.matrices = _.zip(this.matrix_ids, this.matrix_names);
 
         this.modal_dim = {
-            'x': 0,
-            'y': 0,
-            'h': this.modal_body.height(),
-            'w': this.modal_body.width(),
+            x: 0,
+            y: 0,
+            h: this.modal_body.height(),
+            w: this.modal_body.width(),
         };
         this.heatmap_dim = {
-            'x': 0.4 * this.modal_dim.w,
-            'y': 0.1 * this.modal_dim.h,
-            'h': parseInt(0.85 * this.modal_dim.h),
-            'w': parseInt(0.55 * this.modal_dim.w),
+            x: 0.4 * this.modal_dim.w,
+            y: 0.1 * this.modal_dim.h,
+            h: parseInt(0.85 * this.modal_dim.h),
+            w: parseInt(0.55 * this.modal_dim.w),
         };
         this.meta_dim = {
-            'x': 0,
-            'y': 0.05 * this.modal_dim.h,
-            'h': 0.25 * this.modal_dim.h,
-            'w': 0.4 * this.modal_dim.w,
+            x: 0,
+            y: 0.05 * this.modal_dim.h,
+            h: 0.25 * this.modal_dim.h,
+            w: 0.4 * this.modal_dim.w,
         };
         this.quartile_dim = {
-            'x': 0,
-            'y': 0.35 * this.modal_dim.h,
-            'h': 0.25 * this.modal_dim.h,
-            'w': 0.4 * this.modal_dim.w,
+            x: 0,
+            y: 0.35 * this.modal_dim.h,
+            h: 0.25 * this.modal_dim.h,
+            w: 0.4 * this.modal_dim.w,
         };
         this.sort_dim = {
-            'x': 0.05 * this.modal_dim.w,
-            'y': 0.68 * this.modal_dim.h,
-            'h': 0.15 * this.modal_dim.h,
-            'w': 0.335 * this.modal_dim.w,
+            x: 0.05 * this.modal_dim.w,
+            y: 0.68 * this.modal_dim.h,
+            h: 0.15 * this.modal_dim.h,
+            w: 0.335 * this.modal_dim.w,
         };
     }
 
@@ -53,26 +53,25 @@ class IndividualHeatmap {
         this.modal_body.find('#quartile_pval').remove();
         $(`<p id="quartile_pval">p-value = ${p.toExponential(2)}</p>`)
             .css({
-                'position': 'absolute',
-                'left': 0.11 * this.modal_dim.w,
-                'top': this.quartile_dim.y + 0.02 * this.modal_dim.h,
-                'height': this.quartile_dim.h,
-                'width': this.quartile_dim.w,
+                position: 'absolute',
+                left: 0.11 * this.modal_dim.w,
+                top: this.quartile_dim.y + 0.02 * this.modal_dim.h,
+                height: this.quartile_dim.h,
+                width: this.quartile_dim.w,
             })
             .appendTo(this.modal_body);
     }
 
     createResortOptions() {
-        var self = this;
         //Remove heatmap div if there; append heatmap div
         this.modal_body.find('#select_list').remove();
 
         $('<h4>')
             .text('Feature list order')
             .css({
-                'position': 'absolute',
-                'top': this.sort_dim.y - 0.05 * this.modal_dim.h,
-                'left': this.sort_dim.x,
+                position: 'absolute',
+                top: this.sort_dim.y - 0.05 * this.modal_dim.h,
+                left: this.sort_dim.x,
             })
             .appendTo(this.modal_body);
 
@@ -91,44 +90,54 @@ class IndividualHeatmap {
             })
             .appendTo(this.modal_body);
 
-        var options = this.matrices;
+        var options = this.matrices,
+            opt_svo = '<sort vector order>',
+            opt_dflo = '<default feature list order>';
+
         if (this.sort_vector) {
-            options.unshift(['Sort vector order','Sort vector order']);
+            options.unshift([opt_svo, opt_svo]);
         }
-        options.unshift(['Feature list order', 'Feature list order']);
+        options.unshift([opt_dflo, opt_dflo]);
 
         d3.select(select_list.get(0))
             .selectAll('option')
             .data(this.matrices)
             .enter()
             .append('option')
-            .text(function(d) {return d[1];})
-            .attr('value', function(d) {return d[0];});
+                .text((d) => d[1])
+                .attr('value', (d) => d[0]);
 
         this.modal_body.find('#displayCorrelations').remove();
+
+        var handleReorder = function(){
+            var w = this.heatmap_dim.w,
+                h = this.heatmap_dim.h,
+                sel = select_list.val();
+
+            switch(sel){
+            case opt_dflo:
+                return this.renderSorted(w, h, 0, 0);
+            case opt_svo:
+                return this.renderSorted(w, h, 1, 0);
+            default:
+                return this.renderSorted(w, h, 0, sel);
+            }
+        };
 
         $('<button>')
             .text('Reorder heatmap')
             .attr({
-                'id': 'displayCorrelations',
-                'class': 'btn btn-primary',
+                id: 'displayCorrelations',
+                class: 'btn btn-primary',
             })
             .css({
-                'width': this.sort_dim.w,
-                'position': 'absolute',
-                'top': this.sort_dim.y + 0.16 * this.modal_dim.h,
-                'left': this.sort_dim.x,
+                width: this.sort_dim.w,
+                position: 'absolute',
+                top: this.sort_dim.y + 0.16 * this.modal_dim.h,
+                left: this.sort_dim.x,
             })
             .appendTo(this.modal_body)
-            .click(function(){
-                if (select_list.val() == 'Feature list order') {
-                    self.renderSorted(self.heatmap_dim.w, self.heatmap_dim.h, 0, 0);
-                } else if (select_list.val() == 'Sort vector order') {
-                    self.renderSorted(self.heatmap_dim.w, self.heatmap_dim.h, 1, 0);
-                } else {
-                    self.renderSorted(self.heatmap_dim.w, self.heatmap_dim.h, 0, select_list.val());
-                }
-            });
+            .click(handleReorder.bind(this));
     }
 
     drawQuartiles(quartile_averages, bin_labels) {
@@ -136,11 +145,11 @@ class IndividualHeatmap {
         this.modal_body.find('#quartile_plot').remove();
         var quartile_plot = $('<div id="quartile_plot"></div>')
             .css({
-                'position': 'absolute',
-                'left': this.quartile_dim.x,
-                'top': this.quartile_dim.y,
-                'height': this.quartile_dim.h,
-                'width': this.quartile_dim.w,
+                position: 'absolute',
+                left: this.quartile_dim.x,
+                top: this.quartile_dim.y,
+                height: this.quartile_dim.h,
+                width: this.quartile_dim.w,
             })
             .appendTo(this.modal_body);
 
@@ -148,11 +157,11 @@ class IndividualHeatmap {
         this.modal_body.find('#quartile_label').remove();
         var quartile_label = $('<div id="quartile_label"></div>')
             .css({
-                'position': 'absolute',
-                'left': this.quartile_dim.x + 0.05 * this.modal_dim.w,
-                'top': this.quartile_dim.y - 0.02 * this.modal_dim.h,
-                'height': 0.02 * this.modal_dim.h,
-                'width': 0.3 * this.modal_dim.w,
+                position: 'absolute',
+                left: this.quartile_dim.x + 0.05 * this.modal_dim.w,
+                top: this.quartile_dim.y - 0.02 * this.modal_dim.h,
+                height: 0.02 * this.modal_dim.h,
+                width: 0.3 * this.modal_dim.w,
             })
             .appendTo(this.modal_body);
 
@@ -161,11 +170,11 @@ class IndividualHeatmap {
         this.modal_body.find('#quartile_legend').remove();
         var quartile_legend = $('<div id="quartile_legend"></div>')
             .css({
-                'position': 'absolute',
-                'left': this.quartile_dim.x + 0.1 * this.modal_dim.w,
-                'top': this.quartile_dim.y + 0.25 * this.modal_dim.h,
-                'height': 0.05 * this.modal_dim.h,
-                'width': 0.3 * this.modal_dim.w,
+                position: 'absolute',
+                left: this.quartile_dim.x + 0.1 * this.modal_dim.w,
+                top: this.quartile_dim.y + 0.25 * this.modal_dim.h,
+                height: 0.05 * this.modal_dim.h,
+                width: 0.3 * this.modal_dim.w,
             })
             .appendTo(this.modal_body);
 
@@ -175,10 +184,10 @@ class IndividualHeatmap {
             legend_height = quartile_legend.height(),
             legend_width = quartile_legend.width(),
             margins = {
-                'top': 0.1 * height,
-                'bottom': 0.15 * height,
-                'left': 0.25 * width,
-                'right': 0.05 * width,
+                top: 0.1 * height,
+                bottom: 0.15 * height,
+                left: 0.25 * width,
+                right: 0.05 * width,
             },
             colors = ['red', 'orange', 'blue', 'black'];
 
@@ -212,7 +221,6 @@ class IndividualHeatmap {
             .attr('fill', 'black')
             .style('text-anchor', 'left');
 
-        var row_number = bin_labels.length-1;
         var window_values = [];
 
         for (var i in bin_labels) {
@@ -270,11 +278,11 @@ class IndividualHeatmap {
 
         var metaplot_label = $('<div id="metaplot_label">')
             .css({
-                'position': 'absolute',
-                'left': this.meta_dim.x + 0.05 * this.modal_dim.w,
-                'top': this.meta_dim.y - 0.02 * this.modal_dim.h,
-                'height': this.meta_dim.h - 0.23 * this.modal_dim.h,
-                'width': this.meta_dim.w,
+                position: 'absolute',
+                left: this.meta_dim.x + 0.05 * this.modal_dim.w,
+                top: this.meta_dim.y - 0.02 * this.modal_dim.h,
+                height: this.meta_dim.h - 0.23 * this.modal_dim.h,
+                width: this.meta_dim.w,
             })
             .appendTo(modal_body);
 
@@ -284,25 +292,24 @@ class IndividualHeatmap {
 
         var metaplot = $('<div id="metaplot"></div>')
             .css({
-                'position': 'absolute',
-                'left': this.meta_dim.x,
-                'top': this.meta_dim.y,
-                'height': this.meta_dim.h,
-                'width': this.meta_dim.w,
+                position: 'absolute',
+                left: this.meta_dim.x,
+                top: this.meta_dim.y,
+                height: this.meta_dim.h,
+                width: this.meta_dim.w,
             })
             .appendTo(modal_body);
 
         var height = metaplot.height(),
             width = metaplot.width(),
             margins = {
-                'top': 0.1 * height,
-                'bottom': 0.15 * height,
-                'left': 0.25 * width,
-                'right': 0.05 * width,
+                top: 0.1 * height,
+                bottom: 0.15 * height,
+                left: 0.25 * width,
+                right: 0.05 * width,
             };
 
-        var row_number = bin_labels.length-1,
-            window_values = [];
+        var window_values = [];
 
         for (var i in bin_labels) {
             var val_1 = parseInt(bin_labels[i].split(':')[0]),
@@ -323,20 +330,20 @@ class IndividualHeatmap {
             .range([0, (width - margins.left - margins.right)]);
 
         var line = d3.svg.line()
-            .x(function(d) { return x(d[0]);})
-            .y(function(d) { return y(d[1]);});
+            .x((d) => x(d[0]))
+            .y((d) => y(d[1]));
 
         var graph = d3.select(metaplot.get(0))
             .append('svg:svg')
             .attr('height', height)
             .attr('width', width)
             .append('svg:g')
-            .attr('transform', 'translate(' + margins.left + ',' + margins.top + ')');
+            .attr('transform', `translate(${margins.left},${margins.top})`);
 
         var xAxis = d3.svg.axis().scale(x).ticks(4).tickSubdivide(true);
         graph.append('svg:g')
             .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (height - margins.top - margins.bottom) + ')')
+            .attr('transform', `translate(0,${(height - margins.top - margins.bottom)})`)
             .call(xAxis);
 
         var yAxisLeft = d3.svg.axis().scale(y).ticks(2).orient('left');
@@ -411,15 +418,11 @@ class IndividualHeatmap {
             .style('text-anchor', 'middle');
     }
 
-    drawHeatmap(data, norm_val) {
-        var sigmoid = function(i, median) {
-            return (1 + ((i - median)/(1 + Math.abs(i - median))));
-        };
+    drawHeatmap(data, norm_val, dim_x, dim_y) {
 
-        var modal_body = this.modal_body;
+        this.modal_body.find('#heatmap_canvas').remove();
 
-        modal_body.find('#heatmap_canvas').remove();
-        var heatmap_canvas = $('<canvas id="heatmap_canvas"></canvas>')
+        $('<canvas id="heatmap_canvas"></canvas>')
             .prop({
                 'height': this.heatmap_dim.h,
                 'width': this.heatmap_dim.w,
@@ -429,10 +432,15 @@ class IndividualHeatmap {
                 'left': this.heatmap_dim.x,
                 'top': this.heatmap_dim.y,
             })
-            .appendTo(modal_body);
+            .appendTo(this.modal_body);
 
         var context = document.getElementById('heatmap_canvas')
             .getContext('2d');
+
+        var scale_y = dim_y > data.length ? dim_y/data.length : 1;
+        var scale_x = dim_x > data[0].length ? dim_x/data[0].length: 1;
+
+        context.scale(scale_x, scale_y);
 
         var colorScale = d3.scale.linear()
             .domain([
@@ -461,28 +469,22 @@ class IndividualHeatmap {
         this.renderSorted(this.heatmap_dim.w, this.heatmap_dim.h, 0, 0);
     }
 
-    renderSorted(dim_x, dim_y, analysis_sort, sort_id) {
-        var sortedUrl = function(id, dim_x, dim_y) {
-            return (
-                `/dashboard/api/`+
-                `feature-list-count-matrix/${id}/`+
-                `sorted_render/`+
-                `?dim_x=${dim_x}`+
-                `&dim_y=${dim_y}`+
-                `&analysis_sort=${analysis_sort}`+
-                `&sort_id=${sort_id}`
-            );
-        };
+    sortedURL(id, dim_x, dim_y, analysis_sort, sort_id) {
+        return `/dashboard/api/feature-list-count-matrix/${id}/sorted_render/?` +
+                $.param({dim_x, dim_y, analysis_sort, sort_id});
+    }
 
-        var self = this;
-        $.get(sortedUrl(this.id, dim_x, dim_y),
-            function(data) {
-                self.drawHeatmap(data.smoothed_data, data.norm_val);
-                self.drawHeatmapHeader(data.bin_labels);
-                self.drawMetaPlot(data.bin_averages, data.bin_labels);
-                self.drawQuartiles(data.quartile_averages, data.bin_labels);
-                self.displayQuartilePValue(data.ad_results.pvalue);
-        });
+    renderSorted(dim_x, dim_y, analysis_sort, sort_id) {
+        var url = this.sortedURL(this.id, dim_x, dim_y, analysis_sort, sort_id),
+            cb = function(data) {
+                this.drawHeatmap(data.smoothed_data, data.norm_val, dim_x, dim_y);
+                this.drawHeatmapHeader(data.bin_labels);
+                this.drawMetaPlot(data.bin_averages, data.bin_labels);
+                this.drawQuartiles(data.quartile_averages, data.bin_labels);
+                this.displayQuartilePValue(data.ad_results.pvalue);
+            };
+
+        $.get(url, cb.bind(this));
     }
 }
 

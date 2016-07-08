@@ -5,18 +5,24 @@
     margin-top: 20px;
 }
 
-#visual_panel_1 {
-    height: 500px;
+.panel {
+    height: 750px;
     width: 95%;
     position: relative;
     margin-top: 20px;
 }
 
-#visual_panel_2 {
+#dataClusterSubpanel1 {
+    height: 500px;
+    width: 100%;
+    position: absolute;
+}
+
+#dataClusterSubpanel2 {
     height: 250px;
-    width: 95%;
-    margin-top: 20px;
-    position: relative;
+    width: 100%;
+    position: absolute;
+    top: 500px;
 }
 
 #flcModal .modal-dialog {
@@ -79,4 +85,9 @@ path {
 .dendroLine {
     stroke: black;
     stroke-width: 1px;
+}
+
+
+g.labels text {
+    font-weight: bold;
 }
