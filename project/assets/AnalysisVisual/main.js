@@ -13,10 +13,10 @@ let startup = function(){
         _.each(config, (v, k) => window[k] = v);
 
         // create instances for visualization
-        let overview = new AnalysisOverview($('#visual_panel_1')),
-            individual_overview = new IndividualOverview($('#visual_panel_2')),
-            feature_clust_overview = new FeatureClusteringOverview(
-                $('#visual_panel_1'), $('#visual_panel_2'));
+        // let overview = new AnalysisOverview($('#visual_panel_1')),
+        //     individual_overview = new IndividualOverview($('#visual_panel_2')),
+        //     feature_clust_overview = new FeatureClusteringOverview(
+        //         $('#visual_panel_1'), $('#visual_panel_2'));
 
         // add buttons for visualization selection
         $('<button>Data set clustering</button>')
@@ -51,7 +51,24 @@ let startup = function(){
             });
 
             $('#visual_panel_1').empty();
-            $('#visual_panel_2').empty();
+            // $('#visual_panel_2').empty();
+
+            $('<div id="sub_1">')
+                .css({
+                    'height': '500px',
+                    'width': '100%',
+                    'position': 'absolute',
+                }).appendTo($('#visual_panel_1'));
+            $('<div id="sub_2">')
+                .css({
+                    'height': '250px',
+                    'width': '100%',
+                    'position': 'absolute',
+                    'top': '500px',
+                }).appendTo($('#visual_panel_1'));
+
+            let overview = new AnalysisOverview($('#sub_1')),
+                individual_overview = new IndividualOverview($('#sub_2'));
 
             overview.render();
             individual_overview.render();
@@ -66,10 +83,29 @@ let startup = function(){
             });
 
             $('#visual_panel_1').empty();
-            $('#visual_panel_2').empty();
+
+            let feature_clust_overview = new FeatureClusteringOverview(
+                $('#visual_panel_1'));
 
             feature_clust_overview.render();
         });
+
+        $('<div id="sub_1">')
+            .css({
+                'height': '500px',
+                'width': '100%',
+                'position': 'absolute',
+            }).appendTo($('#visual_panel_1'));
+        $('<div id="sub_2">')
+            .css({
+                'height': '250px',
+                'width': '100%',
+                'position': 'absolute',
+                'top': '500px',
+            }).appendTo($('#visual_panel_1'));
+
+        let overview = new AnalysisOverview($('#sub_1')),
+            individual_overview = new IndividualOverview($('#sub_2'));
 
         overview.render();
         individual_overview.render();
