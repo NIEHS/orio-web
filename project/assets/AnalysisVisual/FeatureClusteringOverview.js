@@ -1,38 +1,34 @@
-import _ from 'underscore';
 import $ from 'jquery';
 import d3 from 'd3';
 
+
+const LABEL_COLORS = [
+    '#a50026',
+    '#e0f3f8',
+    '#d73027',
+    '#abd9e9',
+    '#f46d43',
+    '#74add1',
+    '#fdae61',
+    '#4575b4',
+    '#fee090',
+    '#313695',
+];
 
 class FeatureClusteringOverview{
 
     constructor(el) {
         this.el = el;
         this.id = window.analysisObjectID;
+        this.colors = LABEL_COLORS;
+    }
 
-        this.featureClusteringOverviewInitURL = function(id) {
-            return `/dashboard/api/analysis/${id}/feature_clustering_overview/`;
-        };
+    featureClusteringOverviewInitURL(id) {
+        return `/dashboard/api/analysis/${id}/feature_clustering_overview/`;
+    }
 
-        this.fcFeaturesInClusterURL = function(id, k, cluster) {
-            return `/dashboard/api/analysis/${id}/features_in_cluster/?`+$.param({k, cluster});
-        };
-
-        this.fcFeatureDataURL = function(id, feature_name) {
-            return `/dashboard/api/analysis/${id}/feature_data/?feature=${feature_name}`;
-        };
-
-        this.colors = [
-            '#a50026',
-            '#e0f3f8',
-            '#d73027',
-            '#abd9e9',
-            '#f46d43',
-            '#74add1',
-            '#fdae61',
-            '#4575b4',
-            '#fee090',
-            '#313695',
-        ];
+    fcFeatureDataURL(id, feature_name) {
+        return `/dashboard/api/analysis/${id}/feature_data/?feature=${feature_name}`;
     }
 
     getClusterKUrl(id, k, dim_x, dim_y) {
@@ -40,28 +36,10 @@ class FeatureClusteringOverview{
             $.param({k, dim_x, dim_y});
     }
 
-    drawHeatmap(k) {
+    renderHeatmap(heatmap, data){
         var colors = this.colors;
-
-        // remove existing heatmap
-        this.el.find('#heatmap').remove();
-
-        // create heatmap
-        var heatmap = $('<canvas id="heatmap"></canvas>')
-            .prop({
-                'height': 0.60 * this.el.height(),
-                'width': 0.40 * this.el.width(),
-            })
-            .css({
-                'position': 'absolute',
-                'left': '10%',
-                'top': '22%',
-            })
-            .appendTo(this.el);
-
         // add column tooltips
         this.el.find('#heatmap_col_tooltips').remove();
-
         var heatmap_col_tooltips = $('<div id="heatmap_col_tooltips">')
             .css({
                 'height': '60%',
@@ -90,107 +68,128 @@ class FeatureClusteringOverview{
             .domain([0, 1])
             .range(['white', 'red']);
 
+        var scale_y =  data['display_data'].length < heatmap.height()
+            ? heatmap.height() / data['display_data'].length
+            : 1;
+        var scale_x =  data['display_data'][0].length < heatmap.width()
+            ? heatmap.width() / data['display_data'][0].length
+            : 1;
+        context.scale(scale_x, scale_y);
+
+        for (var i in data['display_data']) {
+            for (var j in data['display_data'][i]) {
+                context.fillStyle=colorScale(data['display_data'][i][j]);
+                context.fillRect(j,i,1,1);
+            }
+        }
+
+        var height = heatmap_col_tooltips.height(),
+            width = heatmap_col_tooltips.width(),
+            col_number = data['col_names'].length;
+
+        var cell_width = width/col_number;
+        var svg = d3.select(heatmap_col_tooltips.get(0))
+            .append('svg')
+            .attr('height', height)
+            .attr('width', width);
+
+        var handleHeatmapMouseOver = function(d) {
+                d3.select(this)
+                    .style('stroke', 'black')
+                    .style('stroke-width', '1');
+
+                $(this).tooltip({
+                    container: 'body',
+                    title: d,
+                    html: true,
+                    animation: false,
+                }).tooltip('show');
+            },
+            handleHeatmapMouseOut = function () {
+                d3.select(this)
+                    .style('stroke', 'none');
+            };
+
+        svg.append('g')
+            .selectAll('rect')
+            .data(data['col_names'])
+            .enter()
+            .append('rect')
+            .text((d) => d)
+            .attr('x', (d, i) => (i * cell_width))
+            .attr('y', 0)
+            .attr('width', cell_width)
+            .attr('height', height)
+            .style('fill', 'transparent')
+            .on('mouseover', handleHeatmapMouseOver)
+            .on('mouseout', handleHeatmapMouseOut);
+
+        $('[data-toggle="tooltip"]').tooltip();
+
+        var handleMouseOver = function (d, i) {
+                d3.select(this)
+                    .style('stroke', 'black')
+                    .style('stroke-width', '1');
+
+                $(this).tooltip({
+                    container: 'body',
+                    title: `Cluster ${(i+1)}<br/>${d.entry} entries<br/>`,
+                    html: true,
+                    animation: false,
+                }).tooltip('show');
+
+            },
+            handleMouseOut = function () {
+                d3.select(this)
+                    .style('stroke', 'none');
+            };
+
+        var cluster_sizes = [],
+            entry_count = 0;
+
+        for (i in data['cluster_sizes']) {
+            cluster_sizes.push({'entry':data['cluster_sizes'][i], 'cume':entry_count});
+            entry_count += data['cluster_sizes'][i];
+        }
+
+        svg = d3.select(heatmap_clusters.get(0))
+            .append('svg')
+            .attr('height', heatmap_clusters.height())
+            .attr('width', heatmap_clusters.width());
+
+        svg.append('g')
+            .selectAll('rect')
+            .data(cluster_sizes)
+            .enter()
+            .append('rect')
+            .attr('x', 0)
+            .attr('y', (d) => (d.cume/entry_count)*heatmap_clusters.height())
+            .attr('width', heatmap_clusters.width())
+            .attr('height', (d) => (d.entry/entry_count)*heatmap_clusters.height())
+            .style('fill', (d, i) => colors[i])
+            .on('mouseover', handleMouseOver)
+            .on('mouseout', handleMouseOut);
+    }
+
+    drawHeatmap(k) {
+        // remove existing heatmap
+        this.el.find('#heatmap').remove();
+
+        // create heatmap
+        var heatmap = $('<canvas id="heatmap"></canvas>')
+            .prop({
+                'height': 0.60 * this.el.height(),
+                'width': 0.40 * this.el.width(),
+            })
+            .css({
+                'position': 'absolute',
+                'left': '10%',
+                'top': '22%',
+            })
+            .appendTo(this.el);
+
         var url = this.getClusterKUrl(window.analysisObjectID, k, heatmap.width(), heatmap.height());
-        $.get(url,
-            function(data) {
-                var scale_y =  data['display_data'].length < heatmap.height()
-                    ? heatmap.height() / data['display_data'].length
-                    : 1;
-                var scale_x =  data['display_data'][0].length < heatmap.width()
-                    ? heatmap.width() / data['display_data'][0].length
-                    : 1;
-                context.scale(scale_x, scale_y);
-
-                for (var i in data['display_data']) {
-                    for (var j in data['display_data'][i]) {
-                        context.fillStyle=colorScale(data['display_data'][i][j]);
-                        context.fillRect(j,i,1,1);
-                    }
-                }
-
-                var height = heatmap_col_tooltips.height(),
-                    width = heatmap_col_tooltips.width(),
-                    col_number = data['col_names'].length;
-
-                var cell_width = width/col_number;
-                var svg = d3.select(heatmap_col_tooltips.get(0))
-                    .append('svg')
-                    .attr('height', height)
-                    .attr('width', width);
-
-                svg.append('g')
-                    .selectAll('rect')
-                    .data(data['col_names'])
-                    .enter()
-                    .append('rect')
-                    .text( function(d) { return d; } )
-                    .attr('x', function(d, i) { return (i * cell_width); })
-                    .attr('y', 0)
-                    .attr('width', function(d) { return cell_width; })
-                    .attr('height', height)
-                    .style('fill', 'transparent')
-                    .on('mouseover', function (d) {
-                        d3.select(this)
-                            .style('stroke', 'black')
-                            .style('stroke-width', '1');
-
-                        $(this).tooltip({
-                            container: 'body',
-                            title: d,
-                            html: true,
-                            animation: false,
-                        }).tooltip('show');
-                    })
-                    .on('mouseout', function () {
-                        d3.select(this)
-                            .style('stroke', 'none');
-                    });
-
-                $('[data-toggle="tooltip"]').tooltip();
-
-                var cluster_sizes = [];
-                var entry_count = 0;
-
-                for (var i in data['cluster_sizes']) {
-                    cluster_sizes.push({'entry':data['cluster_sizes'][i], 'cume':entry_count});
-                    entry_count += data['cluster_sizes'][i];
-                }
-
-                svg = d3.select(heatmap_clusters.get(0))
-                    .append('svg')
-                    .attr('height', heatmap_clusters.height())
-                    .attr('width', heatmap_clusters.width());
-
-                svg.append('g')
-                    .selectAll('rect')
-                    .data(cluster_sizes)
-                    .enter()
-                    .append('rect')
-                    .attr('x', 0)
-                    .attr('y', function(d) { return (d.cume/entry_count)*heatmap_clusters.height(); })
-                    .attr('width', heatmap_clusters.width())
-                    .attr('height', function(d) { return (d.entry/entry_count)*heatmap_clusters.height(); })
-                    .style('fill', function(d, i) { return colors[i]; })
-                    .on('mouseover', function (d, i) {
-                        d3.select(this)
-                            .style('stroke', 'black')
-                            .style('stroke-width', '1');
-
-                        var content = ('Cluster ' + (i+1) + '<br/>' + d.entry + ' entries<br/>');
-
-                        $(this).tooltip({
-                            container: 'body',
-                            title: content,
-                            html: true,
-                            animation: false,
-                        }).tooltip('show');
-
-                    })
-                    .on('mouseout', function () {
-                        d3.select(this)
-                            .style('stroke', 'none');
-                    });
-        });
+        $.get(url, this.renderHeatmap.bind(this, heatmap));
     }
 
     drawDendrogram(data) {
@@ -241,10 +240,10 @@ class FeatureClusteringOverview{
             .enter()
             .append('line')
             .attr('class', 'dendroLine')
-            .attr('x1', function(d) { return d.x1; })
-            .attr('x2', function(d) { return d.x2; })
-            .attr('y1', function(d) { return d.y1; })
-            .attr('y2', function(d) { return d.y2; });
+            .attr('x1', (d) => d.x1)
+            .attr('x2', (d) => d.x2)
+            .attr('y1', (d) => d.y1)
+            .attr('y2', (d) => d.y2);
     }
 
     writeVertNames(col_names) {
@@ -278,14 +277,14 @@ class FeatureClusteringOverview{
             .enter()
             .append('text')
             .attr('class', 'heatmapLabelText')
-            .text(function(d) {return d;})
-            .attr('x', function(d,i) {
+            .text((d) => d)
+            .attr('x', (d,i) => {
                 return (((0.5 / col_number) * width) + i * (width / col_number));
             })
             .attr('y', 0)
-            .attr('transform', function(d,i) {
+            .attr('transform', (d,i) => {
                 var rot = (((0.5/col_number)*width) + i*(width/col_number));
-                return 'rotate(90 ' + rot + ',0)';
+                return `rotate(90 ${rot},0)`;
             });
     }
 
@@ -300,8 +299,8 @@ class FeatureClusteringOverview{
                 .data(option_array)
                 .enter()
                 .append('option')
-                .text(function(d) {return d;})
-                .attr('value', function(d) {return d;});
+                .text((d) => d)
+                .attr('value', (d) => d);
         }
 
         //Add text
@@ -320,315 +319,177 @@ class FeatureClusteringOverview{
 
         //Remove heatmap div if there; append heatmap div
         this.el.find('#select_k').remove();
-        var self = this;
-        var select_list = $('<select id="select_k">')
+        var self = this,
+            resetDisplayFlags = function() {
+                window.show_centroid = [];
+                d3.range(parseInt(this.value)).forEach(function(i) {
+                    window.show_centroid.push(true);
+                });
+                self.drawHeatmap(this.value);
+                self.drawCentroidPlot(this.value, null);
+                self.drawCentroidPlotLegend(this.value);
+            };
+        select_list = $('<select id="select_k">')
             .css({
                 'height': '8%',
                 'width': '10%',
                 'position': 'absolute',
-                // 'top': '20%',
                 'top': '14.2%',
                 'left': '85%',
             })
-            .change(function() {
-                window.centroid_display_flag = {};
-                d3.range(1, parseInt(this.value)+1).forEach(function(i) {
-                    window.centroid_display_flag[i] = true;
-                });
-
-                self.drawHeatmap(this.value);
-                // self.drawClusterSelect(this.value);
-                // self.drawFeatureSelect(this.value, '--');
-                self.drawCentroidPlot(this.value, null);
-                self.drawCentroidPlotLegend(this.value);
-            })
+            .change(resetDisplayFlags)
             .appendTo(this.el);
 
         addOptions(this.el, d3.range(2,11));
         select_list[0].selectedIndex = 0;
     }
 
-    drawClusterSelect(k) {
-
-        //Add text
-        this.el.find('#cluster_prompt').remove();
-        var select_list = $('<div id="cluster_prompt">Select cluster:</div>')
-            .css({
-                'height': '8%',
-                'width': '20%',
-                //'font-size': '12px',
-                'position': 'absolute',
-                'top': '30%',
-                'left': '0%',
-            })
-            .appendTo(this.el);
-
-        this.el.find('#select_cluster').remove();
-        var self = this;
-        var select_list = $('<select id="select_cluster"></select>')
-            .css({
-                'height': '8%',
-                'width': '6%',
-                'position': 'absolute',
-                'top': '30%',
-                'left': '24%',
-            })
-            .change(function() {
-                self.drawFeatureSelect(k, this.value);
-                self.drawCentroidPlot(k, null);
-            })
-            .appendTo(this.el);
-
-        var cluster_range = d3.range(k);
-        for (var i=0; i<cluster_range.length; i++) {
-            cluster_range[i] += 1;
-        }
-        cluster_range.unshift('--');
-        d3.select(select_list.get(0))
-            .selectAll('option')
-            .data(cluster_range)
-            .enter()
-            .append('option')
-            .text(function(d) {return d;})
-            .attr('value', function(d) {return d;});
-    }
-
-    drawFeatureSelect(k, cluster) {
-        function addOptions(select, option_array) {
-            select.empty();
-            d3.select(select.get(0))
-                .selectAll('option')
-                .data(option_array)
-                .enter()
-                .append('option')
-                .text(function(d) {return d;})
-                .attr('value', function(d) {return d;});
-        }
-
-        var features = [];
-        var feature_names = this.feature_names;
-        var feature_cluster_members = this.feature_cluster_members;
-        var el_1 = this.el;
-        //Add text
-        this.el.find('#feature_prompt').remove();
-        var feature_prompt = $('<div id="feature_prompt">Select feature from cluster:</div>')
-            .css({
-                'height': '8%',
-                'width': '20%',
-                'position': 'absolute',
-                'top': '40%',
-                'left': '0%',
-            })
-            .appendTo(this.el);
-
-        this.el.find('#select_feature').remove();
-        var features = [];
-        var self = this;
-        var select_list = $('<select id="select_feature"></select>')
-            .attr({
-                'size': '12',
-            })
-            .css({
-                'height': '45%',
-                'width': '30%',
-                'font-size': '12px',
-                'position': 'absolute',
-                'top': '55%',
-                'left': '0%',
-            })
-            .change(function() {
-                self.drawCentroidPlot(k, this.value);
-                window.plot_feature_name = this.value;
-            })
-            .appendTo(this.el);
-
-        var features;
-        if (cluster != '--') {
-            $.get(this.fcFeaturesInClusterURL(this.id, k, cluster),
-                function(data) {
-                    features = data.split(',');
-                    addOptions(select_list, features);
+    renderCentroidPlot(offset, k, centroids, col_names, feature_data){
+        var plot_max = 0;
+        for (var cluster in centroids[k]) {
+            centroids[k][cluster].forEach( function(value) {
+                if ((parseFloat(value) > plot_max) & window.show_centroid[cluster-1]) {
+                    plot_max = parseFloat(value);
+                }
             });
         }
 
-        this.el.find('#feature_search_field').remove();
-
-        $('<input id="feature_search_field"></input>')
-            .attr({
-                'type': 'text',
-                'id': 'search_field',
-                'placeholder': 'Filter feature list',
-                'outerWidth': '30%',
-                'outerHeight': '8%',
-            }).css({
-                'position': 'absolute',
-                'left': '0%',
-                'top': '45%',
-                'width': '30%',
-                'height': '8%',
-                'overflow': 'scroll',
-            })
-
-            .on('input', function() {
-                var selectable;
-                let value = this.value.toLowerCase();
-                if (value === '') {
-                    selectable = features;
-                } else {
-                    selectable = $.grep(features, function(n) {
-                        return (n.toLowerCase().includes(value));
-                    });
+        if (feature_data) {
+            for (var i = 0; i < feature_data.length; i++) {
+                if (parseFloat(feature_data[i]) > plot_max) {
+                    plot_max = parseFloat(feature_data[i]);
                 }
-                addOptions(select_list, selectable);
-            })
+            }
+        }
 
-            .appendTo(this.el);
+        if (plot_max < 1) { plot_max = 1;}
+
+        var graph = d3.select(this.el.find('#graph').get(0)).append('svg')
+            .attr('width', this.el.find('#centroid_plot').width())
+            .attr('height', this.el.find('#centroid_plot').height())
+            .append('g');
+
+        var y = d3.scale.linear()
+            .domain([0,plot_max])
+            .range([this.el.find('#centroid_plot').height() - offset.bottom, offset.top]);
+
+        var x = d3.scale.ordinal()
+            .domain(window.matrix_names)
+            .rangePoints([offset.left,this.el.find('#centroid_plot').width() - offset.right], 1);
+
+        var line = d3.svg.line()
+            .x((d,i) => x(window.matrix_names[i]))
+            .y((d) => y(d));
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient('bottom')
+            .outerTickSize(0);
+
+        var xGrid = d3.svg.axis()
+            .scale(x)
+            .orient('bottom')
+            .outerTickSize(0)
+            .innerTickSize(-(this.el.find('#centroid_plot').height() - offset.top - offset.bottom))
+            .tickFormat('');
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient('left')
+            .ticks(5);
+
+        graph.append('g')
+            .attr('class', 'x axis')
+            .attr('transform', `translate(0,${this.el.find('#centroid_plot').height() - offset.bottom})`)
+            .call(xAxis)
+            .selectAll('text')
+                .style('text-anchor', 'end')
+                .style('font-size', '8px')
+                .attr('dx', '-1.6em')
+                .attr('dy', '-0.8em')
+                .attr('transform', 'rotate(-90)');
+
+        graph.append('g')
+            .attr('class', 'x axis')
+            .attr('transform', `translate(0,${this.el.find('#centroid_plot').height() - offset.bottom})`)
+            .style('stroke-dasharray', ('3, 3'))
+            .call(xGrid);
+
+        graph.append('g')
+            .attr('class', 'y axis')
+            .attr('transform', `translate(${offset.left},0)`)
+            .call(yAxis);
+
+        graph.append('text')
+            .attr('class', 'y label')
+            .attr('text-anchor', 'end')
+            .attr('y', (1/8) * this.el.find('#centroid_plot').width())
+            .attr('dy', '0.75em')
+            .attr('x', -(1/7) * this.el.find('#centroid_plot').height())
+            .attr('transform', 'rotate(-90)')
+            .text('Upper quartile-normalized counts');
+
+        var colors = this.colors;
+        graph.append('g')
+            .selectAll('path')
+            .data(d3.values(centroids[k]))
+            .enter()
+            .append('path')
+            .attr('d', (d) => line(d))
+            .style('stroke', (d,i) => {
+                return (window.show_centroid[i])? colors[i]: 'none';
+            })
+            .style('fill', 'none')
+            .style('stroke-width', '3');
+
+        if (feature_data) {
+            graph.append('path')
+                .attr('d', line(feature_data))
+                .style('stroke', 'black')
+                .style('fill', 'none')
+                .style('stroke-width', '3');
+        }
+
+        var cell_width = (
+            (this.el.find('#centroid_plot').width() - offset.left - offset.right) /
+            window.matrix_names.length
+        );
+
+        var h = this.el.find('#centroid_plot').height() - offset.top - offset.bottom;
+
+        var showTooltip = function (d) {
+                d3.select(this)
+                    .style('stroke', 'black')
+                    .style('stroke-width', '1');
+
+                $(this).tooltip({
+                    container: 'body',
+                    title: d,
+                    html: true,
+                    animation: false,
+                }).tooltip('show');
+            },
+            hideToolTip = function () {
+                d3.select(this)
+                    .style('stroke', 'none');
+            };
+
+        graph.append('g')
+            .selectAll('rect')
+            .data(window.matrix_names)
+            .enter()
+            .append('rect')
+            .text((d) => d)
+            .attr('x', (d, i) => (offset.left + i * cell_width))
+            .attr('y', offset.top)
+            .attr('width', cell_width)
+            .attr('height', h)
+            .style('fill', 'transparent')
+            .on('mouseover', showTooltip)
+            .on('mouseout', hideToolTip);
     }
 
     drawCentroidPlot(k, feature_name) {
-        function plotData(k, centroids, col_names, feature_data) {
-            var plot_max = 0;
-            for (var cluster in centroids[k]) {
-                centroids[k][cluster].forEach( function(value) {
-                    if ((parseFloat(value) > plot_max) &
-                            window.centroid_display_flag[cluster]) {
-                        plot_max = parseFloat(value);
-                    }
-                });
-            }
-            if (feature_data) {
-                for (var i = 0; i < feature_data.length; i++) {
-                    if (parseFloat(feature_data[i]) > plot_max) {
-                        plot_max = parseFloat(feature_data[i]);
-                    }
-                }
-            }
-            if (plot_max < 1) { plot_max = 1;}
-
-            var graph = d3.select(this.el.find('#graph').get(0)).append('svg')
-                .attr('width', this.el.find('#centroid_plot').width())
-                .attr('height', this.el.find('#centroid_plot').height())
-                .append('g');
-
-            var y = d3.scale.linear()
-                .domain([0,plot_max])
-                .range([this.el.find('#centroid_plot').height() - offset.bottom, offset.top]);
-            var x = d3.scale.ordinal()
-                .domain(window.matrix_names)
-                .rangePoints([offset.left,this.el.find('#centroid_plot').width() - offset.right], 1);
-            var line = d3.svg.line()
-                .x(function(d,i) {
-                    return x(window.matrix_names[i]);
-                })
-                .y(function(d) {
-                    return y(d);
-                });
-            var xAxis = d3.svg.axis()
-                .scale(x)
-                .orient('bottom')
-                .outerTickSize(0);
-                // .tickFormat();
-            var xGrid = d3.svg.axis()
-                .scale(x)
-                .orient('bottom')
-                .outerTickSize(0)
-                .innerTickSize(-(this.el.find('#centroid_plot').height() - offset.top - offset.bottom))
-                .tickFormat('');
-            var yAxis = d3.svg.axis()
-                .scale(y)
-                .orient('left')
-                .ticks(5);
-
-            graph.append('g')
-                .attr('class', 'x axis')
-                .attr('transform', 'translate(0,' + (this.el.find('#centroid_plot').height() - offset.bottom) + ')')
-                .call(xAxis)
-                .selectAll("text")
-                    .style("text-anchor", "end")
-                    .style('font-size', '8px')
-                    .attr("dx", "-1.6em")
-                    .attr("dy", "-.8em")
-                    .attr("transform", function(d) {
-                        return "rotate(-90)"
-                        });
-
-            graph.append('g')
-                .attr('class', 'x axis')
-                .attr('transform', 'translate(0,' + (this.el.find('#centroid_plot').height() - offset.bottom) + ')')
-                .style('stroke-dasharray', ('3, 3'))
-                .call(xGrid);
-
-            graph.append('g')
-                .attr('class', 'y axis')
-                .attr('transform', 'translate(' + offset.left + ',0)')
-                .call(yAxis);
-
-            graph.append("text")
-                .attr("class", "y label")
-                .attr("text-anchor", "end")
-                .attr("y", (1/8)*this.el.find('#centroid_plot').width())
-                .attr("dy", ".75em")
-                .attr('x', -(1/7)*this.el.find('#centroid_plot').height())
-                .attr("transform", "rotate(-90)")
-                .text("Upper quartile-normalized counts");
-
-            var colors = this.colors;
-            graph.append('g')
-                .selectAll('path')
-                .data(d3.values(centroids[k]))
-                .enter()
-                .append('path')
-                .attr('d', function(d) {return line(d);})
-                .style('stroke', function(d,i) {
-                    if (window.centroid_display_flag[i+1]) {return colors[i]}
-                    else {return 'none'}
-                ;})
-                .style('fill', 'none')
-                .style('stroke-width', '3');
-
-            if (feature_data) {
-                graph.append('path')
-                    .attr('d', function(d) {return line(feature_data);})
-                    .style('stroke', 'black')
-                    .style('fill', 'none')
-                    .style('stroke-width', '3');
-            }
-
-            var cell_width = (
-                (this.el.find('#centroid_plot').width() - offset.left - offset.right) /
-                window.matrix_names.length
-            );
-
-            graph.append('g')
-                .selectAll('rect')
-                .data(window.matrix_names)
-                .enter()
-                .append('rect')
-                .text( function(d) { return d; } )
-                .attr('x', function(d, i) { return (offset.left + i * cell_width); })
-                .attr('y', offset.top)
-                .attr('width', function(d) { return cell_width; })
-                .attr('height',
-                    this.el.find('#centroid_plot').height() - offset.top - offset.bottom)
-                .style('fill', 'transparent')
-                .on('mouseover', function (d) {
-                    d3.select(this)
-                        .style('stroke', 'black')
-                        .style('stroke-width', '1');
-
-                    $(this).tooltip({
-                        container: 'body',
-                        title: d,
-                        html: true,
-                        animation: false,
-                    }).tooltip('show');
-                })
-                .on('mouseout', function () {
-                    d3.select(this)
-                        .style('stroke', 'none');
-                });
-        }
-
         this.el.find('#centroid_plot').remove();
         $('<div id="centroid_plot">')
             .css({
@@ -637,7 +498,6 @@ class FeatureClusteringOverview{
                 'position': 'absolute',
                 'left': '50%',
                 'top': '20%',
-                // 'overflow': 'scroll',
             }).appendTo(this.el);
 
         $('<div id="graph">')
@@ -650,7 +510,6 @@ class FeatureClusteringOverview{
             }).appendTo(this.el.find('#centroid_plot'));
 
         var offset = {
-            // 'top': (1/7)*this.el.find('#centroid_plot').height(),
             'top': (1/20)*this.el.find('#centroid_plot').height(),
             'bottom': (3/10)*this.el.find('#centroid_plot').height(),
             'left': (1/4)*this.el.find('#centroid_plot').width(),
@@ -658,12 +517,13 @@ class FeatureClusteringOverview{
         };
 
         if (feature_name) {
-            $.get(this.fcFeatureDataURL(this.id, feature_name),
-                function(data) {
-                    plotData.call(this, k, window.centroids, window.matrix_names, data);
-            }.bind(this));
+            var url = this.fcFeatureDataURL(this.id, feature_name),
+                callback = function(data) {
+                    this.renderCentroidPlot(offset, k, window.centroids, window.matrix_names, data);
+                };
+            $.get(url, callback.bind(this));
         } else {
-            plotData.call(this, k, window.centroids, window.matrix_names, null);
+            this.renderCentroidPlot(offset,k, window.centroids, window.matrix_names, null);
         }
     }
 
@@ -783,30 +643,32 @@ class FeatureClusteringOverview{
             .attr('height', legend.height())
             .style('overflow', 'visible');
 
-        var self = this;
+        var drawCentroidPlot = this.drawCentroidPlot.bind(this),
+            handleClick = function(d, i) {
+                if (d3.select(this).style('fill-opacity') == 1) {
+                    d3.select(this).style('fill-opacity', 0);
+                    window.show_centroid[i] = false;
+                } else {
+                    d3.select(this).style('fill-opacity', 1);
+                    window.show_centroid[i] = true;
+                }
+                drawCentroidPlot(k, window.plot_feature_name);
+            };
+
         svg.append('g')
             .selectAll('rect')
             .data(centroid_list)
             .enter()
             .append('rect')
-            .text( function(d) { return d; } )
-            .attr('x', function(d,i) { return ((i % 5) * (legend.width()*0.2)); })
-            .attr('y', function(d,i) { return (Math.floor(i / 5) * (legend.height()*0.6)); })
+            .text((d) => d)
+            .attr('x', (d,i) => ((i % 5) * (legend.width()*0.2)))
+            .attr('y', (d,i) => (Math.floor(i / 5) * (legend.height()*0.6)))
             .attr('width', legend.width()*0.08)
             .attr('height', legend.height()*0.4)
-            .style('fill', function(d, i) { return colors[i]; })
-            .style('stroke', function(d, i) { return colors[i]; })
+            .style('fill', (d, i) => colors[i])
+            .style('stroke', (d, i) => colors[i])
             .style('cursor', 'pointer')
-            .on('click', function(d, i) {
-                if (d3.select(this).style('fill-opacity') == 1) {
-                    d3.select(this).style('fill-opacity', 0);
-                    window.centroid_display_flag[i+1] = false;
-                } else {
-                    d3.select(this).style('fill-opacity', 1);
-                    window.centroid_display_flag[i+1] = true;
-                }
-                self.drawCentroidPlot(k, window.plot_feature_name);
-            });
+            .on('click', handleClick);
 
         svg.append('g')
             .attr('class', 'labels')
@@ -824,26 +686,22 @@ class FeatureClusteringOverview{
     }
 
     render() {
-        window.centroid_display_flag = {};
-        d3.range(1, 3).forEach(function(i) {
-            window.centroid_display_flag[i] = true;
-        });
-
+        window.show_centroid = [true, true];
         this.makeKSelect();
         this.drawHeatmapLegend();
 
-        $.get(this.featureClusteringOverviewInitURL(this.id), function(data) {
-            window.matrix_names = data['matrix_names'];
-            window.centroids = data['fcCentroids'];
+        var url = this.featureClusteringOverviewInitURL(this.id),
+            callback = function(data) {
+                window.matrix_names = data['matrix_names'];
+                window.centroids = data['fcCentroids'];
+                this.drawDendrogram(data['dendrogram']);
+                this.writeVertNames(window.matrix_names);
+                this.drawHeatmap(2);
+                this.drawCentroidPlot(2, null);
+                this.drawCentroidPlotLegend(2);
+            };
 
-            this.drawDendrogram(data['dendrogram']);
-            this.writeVertNames(window.matrix_names);
-            this.drawHeatmap(2);
-            // this.drawClusterSelect(2);
-            // this.drawFeatureSelect(2, '--');
-            this.drawCentroidPlot(2, null);
-            this.drawCentroidPlotLegend(2);
-        }.bind(this));
+        $.get(url, callback.bind(this));
     }
 }
 
