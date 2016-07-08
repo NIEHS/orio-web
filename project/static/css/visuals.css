@@ -6,7 +6,8 @@
 }
 
 #visual_panel_1 {
-    height: 500px;
+    /*height: 500px;*/
+    height: 750px;
     width: 95%;
     position: relative;
     margin-top: 20px;
