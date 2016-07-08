@@ -10,6 +10,6 @@ class Command(BaseCommand):
     help = HELP_TEXT
 
     def handle(self, *args, **options):
-        self.stdout('Re-running all currently-saved analyses')
+        self.stdout.write('Re-running all currently-saved analyses\n')
         for analysis in models.Analysis.objects.all():
             analysis.execute()
