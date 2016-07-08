@@ -820,7 +820,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     def execute_task_id(self):
         return 'analysis-execute-{}'.format(self.id)
 
-    def execute(self):
+    def execute(self, silent=False):
         # intentionally don't fire save signal
         self.__class__.objects\
             .filter(id=self.id)\
@@ -829,7 +829,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                 end_time=None,
             )
         tasks.execute_analysis.apply_async(
-            args=[self.id], task_id=self.execute_task_id)
+            args=[self.id, silent], task_id=self.execute_task_id)
 
     def create_matrix_list(self):
         return [
@@ -868,11 +868,6 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         if not obj:
             with open(self.output.path, 'r') as f:
                 output = json.loads(f.read())
-
-            # convert JSON str keys to int keys
-            # sort_orders = output['sort_orders']
-            # for k, v in sort_orders.items():
-            #     sort_orders[int(k)] = sort_orders.pop(k)
 
             obj = output
             cache.set(key, obj)

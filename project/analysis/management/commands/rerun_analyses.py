@@ -12,4 +12,4 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write('Re-running all currently-saved analyses\n')
         for analysis in models.Analysis.objects.all():
-            analysis.execute()
+            analysis.execute(silent=True)
