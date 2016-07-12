@@ -4,6 +4,7 @@ import d3 from 'd3';
 
 import ScatterplotModal from './ScatterplotModal';
 import SortVectorScatterplotModal from './SortVectorScatterplotModal';
+import Loader from './Loader';
 
 
 class AnalysisOverview{
@@ -16,11 +17,9 @@ class AnalysisOverview{
         };
     }
 
-    drawHeatmap(data) {
-        // remove existing heatmap
-        this.el.find('#heatmap').remove();
+    renderHeatmapContainer(){
         // create heatmap
-        var heatmap = $('<div id="heatmap">')
+        this.heatmap = $('<div id="heatmap">')
             .css({
                 height: '80%',
                 width: '60%',
@@ -28,17 +27,20 @@ class AnalysisOverview{
                 left: '40%',
                 top: '20%',
             }).appendTo(this.el);
+    }
 
-        var sort_vector = window.sort_vector;
-        var height = heatmap.height(),
-            width = heatmap.width();
+    drawHeatmap(data) {
+        this.loadingSpinner.fadeOut();
 
-        var cell_height = height/data.rows.length,
-            cell_width = width/data.col_names.length;
-
-        var colorScale = d3.scale.linear()
-            .domain([-1, 0, 1])
-            .range(['blue', 'white', 'red']);
+        var sort_vector = window.sort_vector,
+            heatmap = this.heatmap,
+            height = heatmap.height(),
+            width = heatmap.width(),
+            cell_height = height/data.rows.length,
+            cell_width = width/data.col_names.length,
+            colorScale = d3.scale.linear()
+                .domain([-1, 0, 1])
+                .range(['blue', 'white', 'red']);
 
         var showTooltip = function (d, i, j) {
             d3.select(this)
@@ -351,8 +353,24 @@ class AnalysisOverview{
             .style('text-anchor', 'middle');
     }
 
-    render() {
+    renderLoader(){
+        var par = this.el;
+        new Loader(par);
+        this.loadingSpinner = par.find('.loadingSpinner');
+        this.loadingSpinner.css({
+            position: 'absolute',
+            left: '50%',
+            top: '35%',
+            'z-index': 10,
+            'background': 'white',
+            'border': '2px solid gray',
+            'border-radius': '10px',
+            'padding': '1em',
+        });
 
+    }
+
+    render() {
         var url = this.analysisOverviewInitURL(window.analysisObjectID),
             cb = function(data) {
                 window.sort_vector = data.sort_vector;
@@ -362,6 +380,8 @@ class AnalysisOverview{
                 this.writeDendrogram(data.dendrogram);
             };
 
+        this.renderHeatmapContainer();
+        this.renderLoader();
         this.drawLegend();
         $.get(url, cb.bind(this));
     }

@@ -1,6 +1,8 @@
 import $ from 'jquery';
 import d3 from 'd3';
 
+import Loader from './Loader';
+
 
 const LABEL_COLORS = [
     '#a50026',
@@ -325,6 +327,7 @@ class FeatureClusteringOverview{
                 d3.range(parseInt(this.value)).forEach(function(i) {
                     window.show_centroid.push(true);
                 });
+                self.loadingSpinner.show();
                 self.drawHeatmap(this.value);
                 self.drawCentroidPlot(this.value, null);
                 self.drawCentroidPlotLegend(this.value);
@@ -345,6 +348,9 @@ class FeatureClusteringOverview{
     }
 
     renderCentroidPlot(offset, k, centroids, col_names, feature_data){
+
+        this.loadingSpinner.fadeOut();
+
         var plot_max = 0;
         for (var cluster in centroids[k]) {
             centroids[k][cluster].forEach( function(value) {
@@ -685,8 +691,25 @@ class FeatureClusteringOverview{
             .attr('dy', '1.2em');
     }
 
+    renderLoader(){
+        var par = this.el;
+        new Loader(par);
+        this.loadingSpinner = par.find('.loadingSpinner');
+        this.loadingSpinner.css({
+            position: 'absolute',
+            left: '50%',
+            top: '35%',
+            'z-index': 10,
+            'background': 'white',
+            'border': '2px solid gray',
+            'border-radius': '10px',
+            'padding': '1em',
+        });
+    }
+
     render() {
         window.show_centroid = [true, true];
+        this.renderLoader();
         this.makeKSelect();
         this.drawHeatmapLegend();
 
@@ -701,6 +724,7 @@ class FeatureClusteringOverview{
                 this.drawCentroidPlotLegend(2);
             };
 
+        this.loadingSpinner.show();
         $.get(url, callback.bind(this));
     }
 }

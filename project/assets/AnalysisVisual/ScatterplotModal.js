@@ -4,6 +4,8 @@ import d3 from 'd3';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import Loader from './Loader';
+
 
 class ScatterplotModal {
 
@@ -68,8 +70,20 @@ class ScatterplotModal {
             .on('change', this.getScatterplotData.bind(this));
     }
 
+    renderLoader(){
+        var par = this.modal_body.find('#visual');
+        new Loader(par);
+        this.loadingSpinner = par.find('.loadingSpinner');
+        this.loadingSpinner.css({
+            position: 'absolute',
+            left: '50%',
+            top: '15%',
+        });
+    }
+
     getScatterplotData(){
         let column = this.selector.val();
+        this.loadingSpinner.fadeIn();
         d3.csv(
             this.datasetUrl(column),
             this.dataConversion,
@@ -81,6 +95,8 @@ class ScatterplotModal {
         /*
         Render scatterplot. Note logscale; values of 0 are rendered to 1.
         */
+
+        this.loadingSpinner.fadeOut();
 
         // DOM objects
         var $parent = this.modal_body,
@@ -229,6 +245,7 @@ class ScatterplotModal {
         this.renderHeader();
         this.renderBody();
         this.renderBinSelector();
+        this.renderLoader();
         this.getScatterplotData();
     }
 

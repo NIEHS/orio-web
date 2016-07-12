@@ -1,7 +1,9 @@
 import _ from 'underscore';
 import $ from 'jquery';
 import d3 from 'd3';
+
 import IndividualHeatmap from './IndividualHeatmap';
+import Loader from './Loader';
 
 
 class IndividualOverview {
@@ -100,14 +102,17 @@ class IndividualOverview {
     }
 
     renderCorrelations(selected, row_data){
-        var num = row_data.length - 1,
+        var cp = this.el.find('#correlation_plot'),
+            num = row_data.length - 1,
             entry_length = 6,
             margin = {top: 0, right: 0, bottom: 20, left: 0},
             offset = {top: 20, right: 0, bottom: 100, left: 40},
-            width = (num*entry_length > this.el.find('#correlation_plot').width())
+            width = (num*entry_length > cp.width())
                 ? (num*entry_length - margin.left - margin.right)
-                : (this.el.find('#correlation_plot').width() - margin.left - margin.right),
-            height = this.el.find('#correlation_plot').height();
+                : (cp.width() - margin.left - margin.right),
+            height = cp.height();
+
+        cp.empty();
 
         var sortable = [];
         for (let i = 0; i < window.col_names.length; i++) {
@@ -127,7 +132,7 @@ class IndividualOverview {
                 'position': 'absolute',
                 'left': '0%',
                 'top': margin.top,
-            }).appendTo(this.el.find('#correlation_plot'));
+            }).appendTo(cp);
 
         var graph = d3.select($graph.get(0)).append('svg')
             .attr('width', width)
@@ -229,7 +234,7 @@ class IndividualOverview {
 
     displayCorrelations(){
         this.el.find('#correlation_plot').remove();
-        $('<div id="correlation_plot">')
+        var $cp = $('<div id="correlation_plot">')
             .css({
                 height: '100%',
                 width: '68%',
@@ -237,11 +242,15 @@ class IndividualOverview {
                 left: '32%',
                 top: '0%',
                 overflow: 'scroll',
+                display: 'flex',
+                'flex-direction': 'column',
+                'justify-content': 'center',
             }).appendTo(this.el);
 
         var selected = this.el.find('#select_list').find('option:selected').text(),
             url = this.dscFullRowValueURL(this.id, selected);
 
+        new Loader($cp);
         $.get(url, this.renderCorrelations.bind(this, selected));
     }
 

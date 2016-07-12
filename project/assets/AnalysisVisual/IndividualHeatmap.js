@@ -2,6 +2,8 @@ import $ from 'jquery';
 import d3 from 'd3';
 import _ from 'underscore';
 
+import Loader from './Loader';
+
 
 class IndividualHeatmap {
 
@@ -113,6 +115,8 @@ class IndividualHeatmap {
             var w = this.heatmap_dim.w,
                 h = this.heatmap_dim.h,
                 sel = select_list.val();
+
+            this.loadingSpinner.fadeIn();
 
             switch(sel){
             case opt_dflo:
@@ -463,9 +467,26 @@ class IndividualHeatmap {
         }
     }
 
+    renderLoader(){
+        var par = this.modal_body;
+        new Loader(par);
+        this.loadingSpinner = par.find('.loadingSpinner');
+        this.loadingSpinner.css({
+            position: 'absolute',
+            left: '50%',
+            top: '20%',
+            'z-index': 10,
+            'background': 'white',
+            'border': '2px solid gray',
+            'border-radius': '10px',
+            'padding': '1em',
+        });
+    }
+
     render() {
         this.modal_title.html(this.heatmap_name);
         this.createResortOptions();
+        this.renderLoader();
         this.renderSorted(this.heatmap_dim.w, this.heatmap_dim.h, 0, 0);
     }
 
@@ -477,6 +498,7 @@ class IndividualHeatmap {
     renderSorted(dim_x, dim_y, analysis_sort, sort_id) {
         var url = this.sortedURL(this.id, dim_x, dim_y, analysis_sort, sort_id),
             cb = function(data) {
+                this.loadingSpinner.fadeOut();
                 this.drawHeatmap(data.smoothed_data, data.norm_val, dim_x, dim_y);
                 this.drawHeatmapHeader(data.bin_labels);
                 this.drawMetaPlot(data.bin_averages, data.bin_labels);
@@ -484,6 +506,7 @@ class IndividualHeatmap {
                 this.displayQuartilePValue(data.ad_results.pvalue);
             };
 
+        this.loadingSpinner.fadeIn();
         $.get(url, cb.bind(this));
     }
 }
