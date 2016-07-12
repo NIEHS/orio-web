@@ -37,12 +37,12 @@
 }
 
 #flcModal .modal-header {
-    height: 10%;
+    height: 50px;
     width: 100%;
 }
 
 #flcModal .modal-body{
-    height: 90%;
+    height: calc(100% - 50px);
     width: 100%;
 }
 
