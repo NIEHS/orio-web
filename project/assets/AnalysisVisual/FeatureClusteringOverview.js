@@ -39,6 +39,9 @@ class FeatureClusteringOverview{
     }
 
     renderHeatmap(heatmap, data){
+
+        this.loadingSpinner.fadeOut();
+
         var colors = this.colors;
         // add column tooltips
         this.el.find('#heatmap_col_tooltips').remove();
@@ -348,8 +351,6 @@ class FeatureClusteringOverview{
     }
 
     renderCentroidPlot(offset, k, centroids, col_names, feature_data){
-
-        this.loadingSpinner.fadeOut();
 
         var plot_max = 0;
         for (var cluster in centroids[k]) {
