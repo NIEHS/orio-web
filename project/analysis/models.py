@@ -44,13 +44,9 @@ logger = logging.getLogger(__name__)
 class Dataset(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        blank=True,
         null=True,
         related_name='%(class)s',)
-    borrowers = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        blank=True,
-        related_name='%(class)s_borrowers',
-    )
     name = models.CharField(
         max_length=128)
     description = models.TextField(
@@ -507,8 +503,11 @@ class FeatureList(ValidationMixin, Dataset):
 
     @classmethod
     def usable(cls, user):
-        # must be owned by user and validated
-        return cls.objects.filter(owner=user, validated=True)
+        # must be owned by user or no-user (public) and validated
+        return cls.objects\
+            .filter(((models.Q(owner=user) | models.Q(owner__isnull=True))),
+                    validated=True)\
+            .order_by('owner', 'name')
 
     @classmethod
     def usable_json(cls, user):
@@ -542,8 +541,11 @@ class SortVector(ValidationMixin, Dataset):
 
     @classmethod
     def usable(cls, user):
-        # must be owned by user and validated
-        return cls.objects.filter(owner=user, validated=True)
+        # must be owned by user or no-user (public) and validated
+        return cls.objects\
+            .filter(((models.Q(owner=user) | models.Q(owner__isnull=True))),
+                    validated=True)\
+            .order_by('owner', 'name')
 
     @classmethod
     def usable_json(cls, user):

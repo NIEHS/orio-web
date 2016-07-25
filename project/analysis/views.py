@@ -20,6 +20,14 @@ class Home(TemplateView):
         return super(Home, self).get(request, *args, **kwargs)
 
 
+class About(TemplateView):
+    template_name = 'about.html'
+
+
+class Help(TemplateView):
+    template_name = 'help.html'
+
+
 class ShortPollMessages(View):
     def get(self, request, *args, **kwargs):
         return JsonResponse({
