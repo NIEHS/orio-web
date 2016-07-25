@@ -29,3 +29,10 @@ The same process can be applied to sort vectors. Again, use some sort of
 common prefix to the name so it it's clear to users that these are shared
 content.
 
+### Adding new genomes
+
+To add new genomes, you'll need a chromosome size file. These can be downloaded
+using `download_chromosome_sizes` method (found in `orio/assemblies.py`).
+After downloading the chromosome size files, on the admin page, create a
+genome assembly. Select the appropriate chromosome size file, and give it
+a human-friendly name.
