@@ -12,6 +12,14 @@ urlpatterns = [
         views.Home.as_view(),
         name='home'),
 
+    url(r'^about/$',
+        views.About.as_view(),
+        name='about'),
+
+    url(r'^help/$',
+        views.Help.as_view(),
+        name='help'),
+
     url(r'^dashboard/',
         include('analysis.urls',
                 namespace='analysis')),
