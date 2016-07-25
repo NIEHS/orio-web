@@ -46,11 +46,6 @@ class Dataset(models.Model):
         settings.AUTH_USER_MODEL,
         null=True,
         related_name='%(class)s',)
-    borrowers = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        blank=True,
-        related_name='%(class)s_borrowers',
-    )
     name = models.CharField(
         max_length=128)
     description = models.TextField(

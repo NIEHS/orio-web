@@ -13,7 +13,7 @@ class UserDatasetSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = (
             'validated', 'validation_notes',
-            'expiration_date', 'owner', 'borrowers'
+            'expiration_date', 'owner',
         )
 
 
@@ -24,7 +24,7 @@ class FeatureListSerializer(serializers.ModelSerializer):
         model = models.FeatureList
         fields = '__all__'
         read_only_fields = (
-            'validated', 'validation_notes', 'owner', 'borrowers')
+            'validated', 'validation_notes', 'owner')
 
 
 class SortVectorSerializer(serializers.ModelSerializer):
@@ -33,7 +33,7 @@ class SortVectorSerializer(serializers.ModelSerializer):
         model = models.SortVector
         fields = '__all__'
         read_only_fields = (
-            'validated', 'validation_notes', 'owner', 'borrowers')
+            'validated', 'validation_notes', 'owner')
 
 
 class EncodeDatasetSerializer(serializers.ModelSerializer):
@@ -42,9 +42,8 @@ class EncodeDatasetSerializer(serializers.ModelSerializer):
         model = models.EncodeDataset
         exclude = (
            'public', 'validated', 'validation_notes', 'owner',
-           'borrowers', 'created', 'last_updated',
-           'data_plus', 'data_minus', 'data_ambiguous',
-           'uuid',
+           'created', 'last_updated', 'data_plus', 'data_minus',
+           'data_ambiguous', 'uuid',
         )
 
 
