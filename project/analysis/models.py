@@ -1,4 +1,5 @@
 import json
+import datetime
 import hashlib
 import logging
 import os
@@ -10,7 +11,7 @@ import itertools
 import pandas as pd
 import math
 import numpy
-from scipy import stats
+from scipy import stats, ndimage
 
 from django.db import models
 from django.conf import settings
@@ -18,37 +19,34 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.urlresolvers import reverse
+from django.core.files.base import ContentFile
 from django.contrib.sites.models import Site
 from django.contrib.postgres.fields import JSONField
 from django.utils.timezone import now
+from django.utils.text import slugify
 from django.template.loader import render_to_string
 
-from utils.models import ReadOnlyFileSystemStorage, get_random_filename
+from utils.models import ReadOnlyFileSystemStorage, get_random_filename, \
+    DynamicFilePathField
 from async_messages import messages
 
 from .import tasks
 
-from .workflow.matrix import BedMatrix
-from .workflow.matrixByMatrix import MatrixByMatrix
-from .workflow import validators
+from orio.matrix import BedMatrix
+from orio.matrixByMatrix import MatrixByMatrix
+from orio import validators
+from orio.utils import get_data_path
 
 
 logger = logging.getLogger(__name__)
-
-encode_store = ReadOnlyFileSystemStorage.create_store(settings.ENCODE_PATH)
-userdata_store = ReadOnlyFileSystemStorage.create_store(settings.USERDATA_PATH)
 
 
 class Dataset(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        blank=True,
         null=True,
         related_name='%(class)s',)
-    borrowers = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        blank=True,
-        related_name='%(class)s_borrowers',
-    )
     name = models.CharField(
         max_length=128)
     description = models.TextField(
@@ -86,48 +84,56 @@ class Dataset(models.Model):
         return self.owner == user or user.is_staff
 
 
-HG19 = 1
-MM9 = 2
-GENOME_ASSEMBLY_CHOICES = (
-    (HG19, 'hg19'),
-    (MM9,  'mm9'),
-)
+class GenomeAssembly(models.Model):
+    name = models.CharField(
+        unique=True,
+        max_length=32)
+    chromosome_size_file = DynamicFilePathField(
+        unique=True,
+        max_length=128,
+        path=get_data_path,
+        recursive=False)
+
+    class Meta:
+        verbose_name_plural = 'genome assemblies'
+
+    def __str__(self):
+        return self.name
 
 
-def get_chromosome_size_file(genome_assembly):
-    if genome_assembly == HG19:
-        return validators.get_chromosome_size_path('hg19')
-    elif genome_assembly == MM9:
-        return validators.get_chromosome_size_path('mm9')
+class ValidationMixin(object):
 
+    def validate(self):
+        # return tuple (is_valid: bool, validation_text: str)
+        raise NotImplementedError('Requires implementation')
 
-def validation_save_and_message(object, is_valid, notes):
+    def validate_and_save(self):
+        is_valid, text = self.validate()
+        self.validated = is_valid
+        self.validation_notes = self.scrub_validation_text(text)
+        self.send_validation_message()
+        self.save()
 
-    # remove any path information from outputs
-    user_home = object.owner.path
-    media_path = settings.MEDIA_ROOT
-    notes = notes\
-        .replace(user_home, '/***')\
-        .replace(media_path, '/***')\
+    def scrub_validation_text(self, text):
+        # remove any path information from outputs
+        user_home = self.owner.path
+        media_path = settings.MEDIA_ROOT
+        notes = text\
+            .replace(user_home, '/***')\
+            .replace(media_path, '/***')\
 
-    # remove extra whitespace from all lines
-    notes = '\n'.join([l.strip() for l in notes.splitlines()])
+        # remove extra whitespace from all lines
+        return '\n'.join([l.strip() for l in notes.splitlines()])
 
-    # intentionally omit post_save signal
-    object.__class__.objects\
-        .filter(id=object.id)\
-        .update(
-            validated=is_valid,
-            validation_notes=notes)
-
-    msg = '{} {}: '.format(object._meta.verbose_name.title(), object)
-    if is_valid:
-        msg += 'validation complete!'
-        messages.success(object.owner, msg)
-    else:
-        msg += "<a href='{}'>validation failed (view errors)</a>"\
-            .format(object.get_absolute_url())
-        messages.warning(object.owner, msg)
+    def send_validation_message(self):
+        msg = '{} {}: '.format(self._meta.verbose_name.title(), self)
+        if self.validated:
+            msg += 'validation complete!'
+            messages.success(self.owner, msg)
+        else:
+            msg += "<a href='{}'>validation failed (view errors)</a>"\
+                .format(self.get_absolute_url())
+            messages.warning(self.owner, msg)
 
 
 class DatasetDownload(models.Model):
@@ -151,7 +157,7 @@ class DatasetDownload(models.Model):
     data = models.FileField(
         blank=True,
         max_length=256,
-        storage=userdata_store)
+        storage=ReadOnlyFileSystemStorage.create_store(settings.USERDATA_PATH))
     filesize = models.FloatField(
         null=True)
     md5 = models.CharField(
@@ -204,8 +210,12 @@ class DatasetDownload(models.Model):
     @staticmethod
     def check_valid_url(url):
         # ensure URL is valid and doesn't raise a 400/500 error
-        resp = requests.head(url)
-        return resp.ok, "{}: {}".format(resp.status_code, resp.reason)
+        try:
+            resp = requests.head(url)
+        except requests.exceptions.ConnectionError:
+            return False, '{} not found.'.format(url)
+        else:
+            return resp.ok, "{}: {}".format(resp.status_code, resp.reason)
 
     def show_download_retry(self):
         return self.status_code == self.FINISHED_ERROR
@@ -271,9 +281,8 @@ class DatasetDownload(models.Model):
 
 
 class GenomicDataset(Dataset):
-    genome_assembly = models.PositiveSmallIntegerField(
-        db_index=True,
-        choices=GENOME_ASSEMBLY_CHOICES)
+    genome_assembly = models.ForeignKey(
+        GenomeAssembly)
 
     @property
     def subclass(self):
@@ -288,7 +297,7 @@ class GenomicDataset(Dataset):
         raise NotImplementedError('Abstract method')
 
 
-class UserDataset(GenomicDataset):
+class UserDataset(ValidationMixin, GenomicDataset):
     DATA_TYPES = (
         ('Cage',        'Cage'),
         ('ChiaPet',     'ChiaPet'),
@@ -368,10 +377,11 @@ class UserDataset(GenomicDataset):
 
     def validate_and_save(self):
         # wait until all files are downloaded before attempting validation
-        if not self.is_downloaded:
-            return
+        if self.is_downloaded:
+            super().validate_and_save()
 
-        size_file = get_chromosome_size_file(self.genome_assembly)
+    def validate(self):
+        size_file = self.genome_assembly.chromosome_size_file
         if self.is_stranded:
             validatorA = validators.BigWigValidator(
                 self.plus.data.path, size_file)
@@ -395,24 +405,25 @@ class UserDataset(GenomicDataset):
             is_valid = validator.is_valid
             notes = validator.display_errors()
 
-        validation_save_and_message(self, is_valid, notes)
+        return is_valid, notes
 
 
 class EncodeDataset(GenomicDataset):
+    store = ReadOnlyFileSystemStorage.create_store(settings.ENCODE_PATH)
     data_ambiguous = models.FileField(
         blank=True,
         max_length=256,
-        storage=encode_store,
+        storage=store,
         help_text='Coverage data for which strand is ambiguous or unknown')
     data_plus = models.FileField(
         blank=True,
         max_length=256,
-        storage=encode_store,
+        storage=store,
         help_text='Coverage data for which strand is plus')
     data_minus = models.FileField(
         blank=True,
         max_length=256,
-        storage=encode_store,
+        storage=store,
         help_text='Coverage data for which strand is minus')
     data_type = models.CharField(
         max_length=16,
@@ -465,10 +476,10 @@ class EncodeDataset(GenomicDataset):
             'phase',
             'localization',
         ]
-        for genome, _ in GENOME_ASSEMBLY_CHOICES:
-            dicts[genome] = {}
+        for genome in GenomeAssembly.objects.all():
+            dicts[genome.id] = {}
             for fld in fields:
-                dicts[genome][fld] = cls.objects\
+                dicts[genome.id][fld] = cls.objects\
                     .filter(genome_assembly=genome)\
                     .values_list(fld, flat=True)\
                     .distinct()\
@@ -482,9 +493,9 @@ class EncodeDataset(GenomicDataset):
             return [self.data_ambiguous.path]
 
 
-class FeatureList(Dataset):
-    genome_assembly = models.PositiveSmallIntegerField(
-        choices=GENOME_ASSEMBLY_CHOICES)
+class FeatureList(ValidationMixin, Dataset):
+    genome_assembly = models.ForeignKey(
+        GenomeAssembly)
     stranded = models.BooleanField(
         default=True)
     dataset = models.FileField(
@@ -492,8 +503,11 @@ class FeatureList(Dataset):
 
     @classmethod
     def usable(cls, user):
-        # must be owned by user and validated
-        return cls.objects.filter(owner=user, validated=True)
+        # must be owned by user or no-user (public) and validated
+        return cls.objects\
+            .filter(((models.Q(owner=user) | models.Q(owner__isnull=True))),
+                    validated=True)\
+            .order_by('owner', 'name')
 
     @classmethod
     def usable_json(cls, user):
@@ -511,17 +525,15 @@ class FeatureList(Dataset):
     def get_delete_url(self):
         return reverse('analysis:feature_list_delete', args=[self.pk, ])
 
-    def validate_and_save(self):
-        size_file = get_chromosome_size_file(self.genome_assembly)
+    def validate(self):
         validator = validators.FeatureListValidator(
-            self.dataset.path, size_file)
+            self.dataset.path,
+            self.genome_assembly.chromosome_size_file)
         validator.validate()
-        validation_save_and_message(
-            self, validator.is_valid,
-            validator.display_errors())
+        return validator.is_valid, validator.display_errors()
 
 
-class SortVector(Dataset):
+class SortVector(ValidationMixin, Dataset):
     feature_list = models.ForeignKey(
         FeatureList)
     vector = models.FileField(
@@ -529,8 +541,11 @@ class SortVector(Dataset):
 
     @classmethod
     def usable(cls, user):
-        # must be owned by user and validated
-        return cls.objects.filter(owner=user, validated=True)
+        # must be owned by user or no-user (public) and validated
+        return cls.objects\
+            .filter(((models.Q(owner=user) | models.Q(owner__isnull=True))),
+                    validated=True)\
+            .order_by('owner', 'name')
 
     @classmethod
     def usable_json(cls, user):
@@ -548,14 +563,12 @@ class SortVector(Dataset):
     def get_delete_url(self):
         return reverse('analysis:sort_vector_delete', args=[self.pk, ])
 
-    def validate_and_save(self):
+    def validate(self):
         validator = validators.SortVectorValidator(
             self.feature_list.dataset.path,
             self.vector.path)
         validator.validate()
-        validation_save_and_message(
-            self, validator.is_valid,
-            validator.display_errors())
+        return validator.is_valid, validator.display_errors()
 
 
 class AnalysisDatasets(models.Model):
@@ -578,17 +591,17 @@ class AnalysisDatasets(models.Model):
         verbose_name_plural = 'Analysis datasets'
 
 
-ANCHOR_START = 0
-ANCHOR_CENTER = 1
-ANCHOR_END = 2
-ANCHOR_CHOICES = (
-    (ANCHOR_START, 'start'),
-    (ANCHOR_CENTER, 'center'),
-    (ANCHOR_END, 'end'),
-)
-
-
 class GenomicBinSettings(models.Model):
+
+    ANCHOR_START = 0
+    ANCHOR_CENTER = 1
+    ANCHOR_END = 2
+    ANCHOR_CHOICES = (
+        (ANCHOR_START, 'start'),
+        (ANCHOR_CENTER, 'center'),
+        (ANCHOR_END, 'end'),
+    )
+
     anchor = models.PositiveSmallIntegerField(
         choices=ANCHOR_CHOICES,
         default=ANCHOR_CENTER,
@@ -609,7 +622,7 @@ class GenomicBinSettings(models.Model):
         abstract = True
 
 
-class Analysis(GenomicBinSettings):
+class Analysis(ValidationMixin, GenomicBinSettings):
     UPLOAD_TO = 'analysis/'
 
     owner = models.ForeignKey(
@@ -622,8 +635,8 @@ class Analysis(GenomicBinSettings):
         GenomicDataset,
         through=AnalysisDatasets,
         through_fields=('analysis', 'dataset'))
-    genome_assembly = models.PositiveSmallIntegerField(
-        choices=GENOME_ASSEMBLY_CHOICES)
+    genome_assembly = models.ForeignKey(
+        GenomeAssembly)
     feature_list = models.ForeignKey(
         FeatureList)
     sort_vector = models.ForeignKey(
@@ -664,20 +677,18 @@ class Analysis(GenomicBinSettings):
     def complete(cls, owner):
         return cls.objects.filter(end_time__isnull=False, owner=owner)
 
-    def validate_and_save(self):
+    def validate(self):
         validator = validators.AnalysisValidator(
             bin_anchor=self.get_anchor_display(),
             bin_start=self.bin_start,
             bin_number=self.bin_number,
             bin_size=self.bin_size,
             feature_bed=self.feature_list.dataset.path,
-            chrom_sizes=get_chromosome_size_file(self.genome_assembly),
+            chrom_sizes=self.genome_assembly.chromosome_size_file,
             stranded_bed=self.feature_list.stranded,
         )
         validator.validate()
-        validation_save_and_message(
-            self, validator.is_valid,
-            validator.display_errors())
+        return validator.is_valid, validator.display_errors()
 
     def get_absolute_url(self):
         return reverse('analysis:analysis', args=[self.pk, ])
@@ -745,6 +756,15 @@ class Analysis(GenomicBinSettings):
         formObj.end_time = None
         cache.delete(self.output_cache_key)
 
+    def execute_time_estimate(self):
+        # estimate execution time, in seconds
+        n = float(self.datasets.count())
+        workers = 10
+        base = 300
+        matrices = math.ceil(n/workers) * 90
+        agg = 120 + math.log10(n)**2 * 60
+        return base + matrices + agg
+
     @property
     def user_datasets(self):
         return UserDataset.objects.filter(id__in=self.datasets.values_list('id', flat=True))
@@ -796,13 +816,13 @@ class Analysis(GenomicBinSettings):
 
     @property
     def is_complete(self):
-        return self.start_time and self.end_time
+        return self.start_time is not None and self.end_time is not None
 
     @property
     def execute_task_id(self):
         return 'analysis-execute-{}'.format(self.id)
 
-    def execute(self):
+    def execute(self, silent=False):
         # intentionally don't fire save signal
         self.__class__.objects\
             .filter(id=self.id)\
@@ -811,7 +831,7 @@ class Analysis(GenomicBinSettings):
                 end_time=None,
             )
         tasks.execute_analysis.apply_async(
-            args=[self.id], task_id=self.execute_task_id)
+            args=[self.id, silent], task_id=self.execute_task_id)
 
     def create_matrix_list(self):
         return [
@@ -851,15 +871,40 @@ class Analysis(GenomicBinSettings):
             with open(self.output.path, 'r') as f:
                 output = json.loads(f.read())
 
-            # convert JSON str keys to int keys
-            sort_orders = output['sort_orders']
-            for k, v in sort_orders.items():
-                sort_orders[int(k)] = sort_orders.pop(k)
-
             obj = output
             cache.set(key, obj)
 
         return obj
+
+    @property
+    def sort_vector_cache_key(self):
+        return 'analysis-sort-vector-%s' % self.id
+
+    @property
+    def sort_vector_df(self):
+        sv = None
+        if self.sort_vector is not None:
+            key = self.sort_vector_cache_key
+            sv = cache.get(key)
+            if sv is None:
+                sv = pd.read_csv(
+                    self.sort_vector.vector.path, sep='\t', header=None
+                )
+                cache.set(key, sv)
+        return sv
+
+    @property
+    def matrices(self):
+        if not self.output:
+            return False
+
+        names = []
+        ids = []
+        for row in self.output_json['dsc_full_data']['rows']:
+            names.append(row['row_name'])
+            ids.append(row['row_id'])
+
+        return {'names': names, 'ids': ids}
 
     def get_summary_plot(self):
         if not self.output:
@@ -880,6 +925,111 @@ class Analysis(GenomicBinSettings):
             'feature_cluster_members': output['feature_cluster_members'],
             'sort_vector': output['sort_vector'],
             'bin_parameters': output['bin_parameters'],
+        }
+
+    def get_analysis_overview_init(self):
+        if not self.output:
+            return False
+
+        sv = self.sort_vector_df
+        if sv is not None:
+            sv = sv.as_matrix(columns=[1]).flatten()
+
+        data = {
+            'dscRepData': self.output_json['dsc_rep_data'],
+            'dendrogram': self.output_json['dsc_dendrogram'],
+            'sort_vector': sv,
+        }
+        return data
+
+    def get_individual_overview_init(self):
+        if not self.output:
+            return False
+
+        matrices = self.matrices
+
+        sv = None
+        if self.sort_vector_df is not None:
+            sv = self.sort_vector_df.to_json()
+
+        data = {
+            'col_names': self.output_json['dsc_full_data']['col_names'],
+            'matrix_names': matrices['names'],
+            'matrix_IDs': matrices['ids'],
+            'sort_vector': sv,
+        }
+        return data
+
+    def get_feature_clustering_overview_init(self):
+        data = {
+            'dendrogram': self.output_json['dsc_dendrogram'],
+            'matrix_names': self.matrices['names'],
+            'fcCentroids': self.output_json['fc_centroids'],
+        }
+        return data
+
+    def get_dsc_full_row_value(self, row_name):
+        if not self.output:
+            return False
+        i = next(index for (index, d) in
+                 enumerate(self.output_json['dsc_full_data']['rows']) if
+                 d['row_name'] == row_name)
+        return self.output_json['dsc_full_data']['rows'][i]['row_data']
+
+    def get_dsc_name_to_id(self, row_name):
+        if not self.output:
+            return False
+        i = next(index for (index, d) in
+                 enumerate(self.output_json['dsc_full_data']['rows']) if
+                 d['row_name'] == row_name)
+        return self.output_json['dsc_full_data']['rows'][i]['row_id']
+
+    def get_features_in_cluster(self, k_value, cluster):
+        if not self.output:
+            return False
+        features = ','.join(
+            self.output_json['fc_clusters'][str(k_value)][str(cluster)]
+        )
+        return features
+
+    def get_feature_data(self, feature_name):
+        if not self.output:
+            return False
+        return self.output_json['fc_vectors']['vectors'][feature_name]
+
+    def get_k_clust_heatmap(self, k_value, dim_x, dim_y):
+        fc_vectors = self.output_json['fc_vectors']['vectors']
+        fc_clusters = self.output_json['fc_clusters'][str(k_value)]
+
+        display_values = []
+        cluster_sizes = dict()
+        for cluster in sorted(fc_clusters, key=lambda x: int(x)):
+            cluster_sizes[cluster] = len(fc_clusters[cluster])
+            for member in fc_clusters[cluster]:
+                display_values.append(fc_vectors[member])
+
+        display_values = numpy.array(display_values)
+        display_values = display_values.astype(float)
+
+        ncols = len(display_values[0])
+        nrows = len(display_values)
+
+        if ncols > dim_x:
+            zoom_x = dim_x/ncols
+        else:
+            zoom_x = 1
+        if nrows > dim_y:
+            zoom_y = dim_y/nrows
+        else:
+            zoom_y = 1
+
+        zoomed_data = ndimage.zoom(
+            display_values, (zoom_y, zoom_x), order=0)
+
+        return {
+            'display_data': zoomed_data,
+            'cluster_sizes': cluster_sizes,
+            'col_names': self.output_json['fc_vectors']['col_names'],
         }
 
     def get_ks(self, vector_id, matrix_id):
@@ -1013,11 +1163,12 @@ class Analysis(GenomicBinSettings):
 
     def create_zip(self):
         """
-        Create a zip file of output, specifically designed to recreate analysis,
+        Create a zip file of output, specifically designed to recreate analysis
         or to load analysis onto local development computers.
         """
         f = io.BytesIO()
-        with zipfile.ZipFile(f, mode='w', compression=zipfile.ZIP_DEFLATED) as z:
+        with zipfile.ZipFile(f, mode='w',
+                             compression=zipfile.ZIP_DEFLATED) as z:
 
             # write feature list
             z.write(self.feature_list.dataset.path, arcname='feature_list.txt')
@@ -1032,9 +1183,36 @@ class Analysis(GenomicBinSettings):
 
             # write all intermediate count matrices
             for ds in self.analysisdatasets_set.all():
-                z.write(ds.count_matrix.matrix.path, 'count_matrix/{}.txt'.format(ds.display_name))
+                z.write(ds.count_matrix.matrix.path,
+                        'count_matrix/{}.txt'.format(ds.display_name))
 
-        return f
+        tf = self._save_zip_download(f)
+        self._send_zip_email(tf)
+
+    def _save_zip_download(self, zipfile):
+        zipfile.seek(0)
+        cf = ContentFile(zipfile.read())
+        fn = '{}.zip'.format(slugify(str(self)))
+        tf = TemporaryDownload(owner=self.owner)
+        tf.file.save(fn, cf)
+        tf.save()
+        return tf
+
+    def _send_zip_email(self, download):
+        context = {
+            'object': self,
+            'tf': download,
+            'domain': Site.objects.get_current().domain
+        }
+        send_mail(
+            subject='[ORIO]: analysis zip available',
+            message=render_to_string(
+                'analysis/analysis_zip_email.txt', context),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[self.owner.email],
+            html_message=render_to_string(
+                'analysis/analysis_zip_email.html', context)
+        )
 
     def send_completion_email(self):
         context = {
@@ -1042,7 +1220,7 @@ class Analysis(GenomicBinSettings):
             'domain': Site.objects.get_current().domain
         }
         send_mail(
-            subject='Genomics: analysis complete',
+            subject='[ORIO]: analysis complete',
             message=render_to_string(
                 'analysis/analysis_complete_email.txt', context),
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -1156,3 +1334,123 @@ class FeatureListCountMatrix(GenomicBinSettings):
                 obj = f.read()
             cache.set(key, obj)
         return obj
+
+    def get_sorted_data(self, dim_x, dim_y, analysis_sort, sort_matrix_id):
+        # TODO: refactor so we don't load self.matrix.path twice; cache?
+        # TODO: move to orio instead of orio-web?
+        with open(self.matrix.path, 'r') as f:
+            bin_labels = f.readline().split('\t')[1:]
+            ncols = len(bin_labels)
+
+        flcm_data = numpy.loadtxt(
+            self.matrix.path, delimiter='\t', skiprows=1,
+            usecols=range(1, ncols+1))
+
+        if analysis_sort and sort_matrix_id:
+            raise ValueError('Two sort procedures specifed')
+
+        elif analysis_sort:
+            sorted_flcm = []
+            sort_list = self.analysisdatasets_set.get()\
+                .analysis.sort_vector_df.as_matrix(columns=[1])
+            for i in numpy.argsort(sort_list.flatten())[::-1]:
+                sorted_flcm.append(flcm_data[i])
+            sorted_flcm = numpy.array(sorted_flcm)
+
+        elif sort_matrix_id:
+            sorted_flcm = []
+            sort_matrix = FeatureListCountMatrix.objects\
+                .filter(id=sort_matrix_id).first()
+            with open(sort_matrix.matrix.path, 'r') as f:
+                ncols = len(f.readline().split('\t')[1:])
+            sort_data = numpy.loadtxt(
+                sort_matrix.matrix.path, delimiter='\t', skiprows=1,
+                usecols=range(1, ncols+1)
+            )
+            for i in numpy.argsort(numpy.sum(sort_data, axis=1))[::-1]:
+                sorted_flcm.append(flcm_data[i])
+            sorted_flcm = numpy.array(sorted_flcm)
+
+        else:
+            sorted_flcm = flcm_data
+
+        nrows = len(sorted_flcm[0])
+        ncols = len(sorted_flcm)
+
+        zoom_x = 1
+        if nrows > dim_x:
+            zoom_x = dim_x/nrows
+        zoom_y = 1
+        if ncols > dim_y:
+            zoom_y = dim_y/ncols
+
+        quartiles = numpy.array_split(sorted_flcm, 4)
+        quartile_averages = []
+        quartile_vector_sums = [[] for i in range(4)]
+        for i, quartile in enumerate(quartiles):
+            quartile_averages.append(numpy.mean(quartile, axis=0))
+
+            if quartile_vector_sums[i] is None:
+                quartile_vector_sums[i] = []
+            for vector in quartile:
+                quartile_vector_sums[i].append(
+                    numpy.sum(vector)
+                )
+
+        ad_results = dict()
+        for key, value in zip(['test_statistic', 'critical_values', 'pvalue'],
+                              stats.anderson_ksamp(quartile_vector_sums)):
+            ad_results[key] = value
+
+        zoomed_data = ndimage.zoom(
+            sorted_flcm, (zoom_y, zoom_x), order=5, prefilter=False)
+        smoothed_data = ndimage.median_filter(zoomed_data, size=(1, 5))
+
+        return {
+            'bin_labels': bin_labels,
+            'quartile_averages': quartile_averages,
+            'bin_averages': numpy.mean(sorted_flcm, axis=0),
+            'norm_val': {
+                'lower_quartile': numpy.percentile(smoothed_data, 25),
+                'median': numpy.percentile(smoothed_data, 50),
+                'upper_quartile': numpy.percentile(smoothed_data, 75),
+                'max': numpy.max(smoothed_data),
+                'min': numpy.min(smoothed_data),
+                'average': numpy.mean(smoothed_data),
+                'stddev': numpy.std(smoothed_data),
+                'variance': numpy.var(smoothed_data),
+            },
+            'smoothed_data': smoothed_data,
+            'ad_results': ad_results,
+        }
+
+
+def get_temporary_download_path(instance, filename):
+    user = hashlib.md5(instance.owner.email.encode('utf-8')).hexdigest()
+    return 'downloads/{0}/{1}'.format(user, filename)
+
+
+class TemporaryDownload(models.Model):
+
+    EXPIRATION_HOURS = 48
+
+    file = models.FileField(
+        upload_to=get_temporary_download_path,
+        max_length=256)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='%(class)s',)
+    created = models.DateTimeField(
+        auto_now_add=True)
+
+    @property
+    def expiration_date(self):
+        return self.created + datetime.timedelta(hours=self.EXPIRATION_HOURS)
+
+    @classmethod
+    def remove_expired(cls):
+        expired_time = now() - datetime.timedelta(hours=cls.EXPIRATION_HOURS)
+        expired = cls.objects.filter(created__lte=expired_time)
+        for exp in expired:
+            exp.file.delete()
+        expired.delete()

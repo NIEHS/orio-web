@@ -20,6 +20,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='datasetdownload',
             name='data',
-            field=models.FileField(blank=True, max_length=256, storage=utils.models.ReadOnlyFileSystemStorage(location='/Users/shapiroaj4/dev/genomics/data/users'), upload_to=''),
+            field=models.FileField(blank=True, max_length=256, storage=utils.models.ReadOnlyFileSystemStorage(location='path/to/orio/data/users'), upload_to=''),
         ),
     ]

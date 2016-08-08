@@ -7,20 +7,23 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href='{% url "home" %}'>Genomics tools</a>
+      <a class="navbar-brand" href='{% url "home" %}'>ORIO</a>
     </div>
     <div class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-        <li><a href="mailto:nobody@niehs.nih.gov?subject=feedback">
-          <i class="fa fa-fixed fa-envelope-o"></i>&nbsp;Contact Us</a></li>
+        {% if user.is_staff %}
+          <li><a href="{% url "admin:index" %}">
+            <i class="fa fa-fixed fa-rebel"></i>&nbsp;Admin</a></li>
+        {% endif %}
+        <li><a href="mailto:orio@niehs.nih.gov?subject=feedback">
+          <i class="fa fa-fixed fa-envelope-o"></i>&nbsp;Contact us</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
+        <li><a href="{% url "about" %}">About</a></li>
+        <li><a href="{% url "help" %}">Help</a></li>
         {% if not user.is_authenticated %}
             <li><a href="{% url "user:login" %}">Log in</a></li>
         {% else %}
-            {% if user.is_staff %}
-                <li><a href="{% url "admin:index" %}">Admin</a></li>
-            {% endif %}
             <li><a href="{% url "user:logout" %}">Log out</a></li>
         {% endif %}
       </ul>

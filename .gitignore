@@ -2,17 +2,20 @@
 *.py[co]
 *.djcache
 celerybeat-schedule
-project/django_project/settings/local.py
 tmux.sh
 public
 *celerybeat.pid
 notebooks/.ipynb_checkpoints/*
+
+project/templates/niehs/header.html
+project/templates/niehs/footer.html
+project/templates/niehs/assets.html
+project/templates/niehs/menu.html
+
+project/.cache/*
 project/node_modules/*
 project/static/bundles*
 project/webpack-stats.json
-project/django_project/apache_wsgi.py
-
-project/analysis/workflow/validateFiles
-project/analysis/workflow/bigWigAverageOverBed
+project/django_project/settings/local.py
 
 data/*

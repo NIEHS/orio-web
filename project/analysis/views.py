@@ -2,22 +2,30 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages import get_messages
 from django.core.urlresolvers import reverse_lazy
 from django.http import HttpResponseRedirect, JsonResponse
-from django.shortcuts import HttpResponse, get_object_or_404
-from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
 from django.views.generic import TemplateView, CreateView, UpdateView, \
         DetailView, DeleteView, ListView, View
 
-from utils.views import UserCanEdit, UserCanView, AddUserToFormMixin, MessageMixin
+from utils.views import UserCanEdit, UserCanView, \
+    AddUserToFormMixin, MessageMixin
 from . import models, forms, tasks
 
 
 class Home(TemplateView):
-    template_name = 'analysis/home.html'
+    template_name = 'niehs/base.html'
 
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated():
             return HttpResponseRedirect(reverse_lazy('analysis:dashboard'))
         return super(Home, self).get(request, *args, **kwargs)
+
+
+class About(TemplateView):
+    template_name = 'about.html'
+
+
+class Help(TemplateView):
+    template_name = 'help.html'
 
 
 class ShortPollMessages(View):
@@ -58,22 +66,31 @@ class ManageData(LoginRequiredMixin, TemplateView):
         return context
 
 
+class ValidatedSuccessMixin(object):
+    def get_success_url(self):
+        self.object.validate_and_save()
+        if self.object.validated:
+            return reverse_lazy('analysis:manage_data')
+        else:
+            return self.object.get_absolute_url()
+
+
 # User dataset CRUD
 class UserDatasetDetail(UserCanView, DetailView):
     model = models.UserDataset
 
 
-class UserDatasetCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class UserDatasetCreate(ValidatedSuccessMixin, MessageMixin,
+                        AddUserToFormMixin, LoginRequiredMixin, CreateView):
     model = models.UserDataset
     form_class = forms.UserDatasetForm
-    success_url = reverse_lazy('analysis:manage_data')
     success_message = 'User dataset created; datasets will begin downloading.'
 
 
-class UserDatasetUpdate(MessageMixin, UserCanEdit, UpdateView):
+class UserDatasetUpdate(ValidatedSuccessMixin, MessageMixin,
+                        UserCanEdit, UpdateView):
     model = models.UserDataset
     form_class = forms.UserDatasetForm
-    success_url = reverse_lazy('analysis:manage_data')
     success_message = 'User dataset updated; datasets will begin downloading.'
 
 
@@ -103,18 +120,15 @@ class FeatureListDetail(UserCanView, DetailView):
     model = models.FeatureList
 
 
-class FeatureListCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class FeatureListCreate(ValidatedSuccessMixin, AddUserToFormMixin,
+                        LoginRequiredMixin, CreateView):
     model = models.FeatureList
     form_class = forms.FeatureListForm
-    success_url = reverse_lazy('analysis:manage_data')
-    success_message = 'Feature-list created.'
 
 
-class FeatureListUpdate(MessageMixin, UserCanEdit, UpdateView):
+class FeatureListUpdate(ValidatedSuccessMixin, UserCanEdit, UpdateView):
     model = models.FeatureList
     form_class = forms.FeatureListForm
-    success_url = reverse_lazy('analysis:manage_data')
-    success_message = 'Feature-list updated.'
 
 
 class FeatureListDelete(MessageMixin, UserCanEdit, DeleteView):
@@ -128,18 +142,15 @@ class SortVectorDetail(UserCanView, DetailView):
     model = models.SortVector
 
 
-class SortVectorCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class SortVectorCreate(ValidatedSuccessMixin, AddUserToFormMixin,
+                       LoginRequiredMixin, CreateView):
     model = models.SortVector
     form_class = forms.SortVectorForm
-    success_url = reverse_lazy('analysis:manage_data')
-    success_message = 'Sort-vector created.'
 
 
-class SortVectorUpdate(MessageMixin, UserCanEdit, UpdateView):
+class SortVectorUpdate(ValidatedSuccessMixin, UserCanEdit, UpdateView):
     model = models.SortVector
     form_class = forms.SortVectorForm
-    success_url = reverse_lazy('analysis:manage_data')
-    success_message = 'Sort-vector updated.'
 
 
 class SortVectorDelete(MessageMixin, UserCanEdit, DeleteView):
@@ -153,11 +164,17 @@ class AnalysisDetail(UserCanView, DetailView):
     model = models.Analysis
 
 
-class AnalysisCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class AnalysisCreate(AddUserToFormMixin, LoginRequiredMixin, CreateView):
     model = models.Analysis
     form_class = forms.AnalysisForm
     success_url = reverse_lazy('analysis:dashboard')
-    success_message = 'Analysis created.'
+
+    def get_success_url(self):
+        self.object.validate_and_save()
+        if self.object.is_ready_to_run:
+            return self.object.get_execute_url()
+        else:
+            return self.object.get_absolute_url()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -166,10 +183,16 @@ class AnalysisCreate(MessageMixin, AddUserToFormMixin, LoginRequiredMixin, Creat
         return context
 
 
-class AnalysisUpdate(MessageMixin, UserCanEdit, UpdateView):
+class AnalysisUpdate(UserCanEdit, UpdateView):
     model = models.Analysis
     form_class = forms.AnalysisForm
-    success_message = 'Analysis updated.'
+
+    def get_success_url(self):
+        self.object.validate_and_save()
+        if self.object.is_ready_to_run:
+            return self.object.get_execute_url()
+        else:
+            return self.object.get_absolute_url()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -200,19 +223,21 @@ class AnalysisExecute(UserCanEdit, DetailView):
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
 
+        if self.object.is_complete:
+            return HttpResponseRedirect(self.object.get_visuals_url())
+
         if self.object.is_ready_to_run:
             self.object.execute()
 
         return super().get(request, *args, **kwargs)
 
 
-class AnalysisZip(UserCanView, DetailView):
+class AnalysisZip(MessageMixin, UserCanView, DetailView):
     model = models.Analysis
+    success_message = "Zip file being created; we will email you the link once it's complete."  # noqa
 
-    def get(self, context, **response_kwargs):
-        obj = self.get_object()
-        zip_ = obj.create_zip()
-        zip_.seek(0)
-        response = HttpResponse(zip_, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="{}.zip"'.format(obj)
-        return response
+    def get(self, request, *args, **kwargs):
+        object = self.get_object()
+        tasks.analysis_zip.delay(object.id)
+        self.send_message()
+        return HttpResponseRedirect(object.get_absolute_url())

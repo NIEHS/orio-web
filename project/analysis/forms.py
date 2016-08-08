@@ -160,14 +160,7 @@ class FeatureListForm(BaseFormMixin, forms.ModelForm):
 
     class Meta:
         model = models.FeatureList
-        exclude = ('owner', 'public', 'borrowers',
-                   'validated', 'validation_notes')
-
-    def save(self, commit=True):
-        if commit:
-            self.instance.validated = False
-            self.instance.validation_notes = ''
-        return super().save(commit=commit)
+        exclude = ('owner', 'public', 'validated', 'validation_notes')
 
 
 class SortVectorForm(BaseFormMixin, forms.ModelForm):
@@ -175,53 +168,40 @@ class SortVectorForm(BaseFormMixin, forms.ModelForm):
 
     class Meta:
         model = models.SortVector
-        exclude = ('owner', 'public', 'borrowers',
-                   'validated', 'validation_notes')
+        exclude = ('owner', 'public', 'validated', 'validation_notes')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['feature_list'].queryset = \
             models.FeatureList.usable(self.instance.owner)
 
-    def save(self, commit=True):
-        if commit:
-            self.instance.validated = False
-            self.instance.validation_notes = ''
-        return super().save(commit=commit)
-
 
 class DatasetField(forms.CharField):
 
-    def get_datasets(self, value):
-        d = json.loads(value)
-        return {
-            'userDatasets': d.get('userDatasets', []),
-            'encodeDatasets': d.get('encodeDatasets', []),
-        }
-
     def get_dataset_ids(self, value):
-        ds = self.get_datasets(value)
         return [
             d['dataset'] for d in
-            itertools.chain(ds['userDatasets'], ds['encodeDatasets'])]
+            itertools.chain(value['userDatasets'], value['encodeDatasets'])]
 
-    def is_valid(self, cleaned):
-        d = self.get_datasets(cleaned)
-        if len(d['userDatasets']) + len(d['encodeDatasets']) < 2:
+    def validate(self, cleaned):
+        if len(cleaned['userDatasets']) + len(cleaned['encodeDatasets']) < 2:
             raise forms.ValidationError("At least two datasets are required.")
 
-        for obj in itertools.chain(d['userDatasets'], d['encodeDatasets']):
+        for obj in itertools.chain(
+                cleaned['userDatasets'], cleaned['encodeDatasets']):
             if 'dataset' not in obj or 'display_name' not in obj:
-                raise forms.ValidationError("At least two datasets are required.")
+                raise forms.ValidationError("2+ datasets are required.")
 
         return True
 
-    def clean(self, value):
-        # ensure valid JSON
+    def to_python(self, value):
         try:
-            json.loads(value)
-            return value
-        except json.decoder.JSONDecodeError:
+            value = json.loads(value)
+            return {
+                'userDatasets': value.get('userDatasets', []),
+                'encodeDatasets': value.get('encodeDatasets', []),
+            }
+        except (TypeError, json.decoder.JSONDecodeError):
             raise forms.ValidationError('JSON format required.')
 
 
@@ -233,8 +213,8 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
     class Meta:
         model = models.Analysis
         fields = (
-            'name', 'description', 'genome_assembly',
-            'feature_list', 'sort_vector', 'public',
+            'name', 'description', 'public',
+            'genome_assembly', 'feature_list', 'sort_vector',
             'anchor', 'bin_start', 'bin_size',
             'bin_number',
         )
@@ -247,13 +227,8 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
             models.SortVector.usable(self.instance.owner)
 
         if self.instance.id:
-            self.fields['datasets_json'].initial = self.instance.get_form_datasets()
-
-    def clean(self):
-        cleaned_data = super().clean()
-        ds = cleaned_data['datasets_json']
-        if not self.fields['datasets_json'].is_valid(ds):
-            raise forms.ValidationError("Improper dataset specification")
+            self.fields['datasets_json'].initial = \
+                self.instance.get_form_datasets()
 
     def save(self, commit=True):
         if commit:
@@ -269,8 +244,7 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
             return
 
         logger.info("Resetting analysis m2m relations")
-        ds = self.fields['datasets_json']\
-                .get_datasets(self.cleaned_data['datasets_json'])
+        ds = self.cleaned_data['datasets_json']
 
         # out with the old
         models.AnalysisDatasets.objects\
@@ -283,6 +257,7 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
                 analysis_id=self.instance.id,
                 dataset_id=d['dataset'],
                 display_name=d['display_name']
-            ) for d in itertools.chain(ds['userDatasets'], ds['encodeDatasets'])
+            ) for d in itertools.chain(
+                ds['userDatasets'], ds['encodeDatasets'])
         ]
         models.AnalysisDatasets.objects.bulk_create(objects)

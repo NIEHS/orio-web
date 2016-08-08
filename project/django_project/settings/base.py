@@ -11,7 +11,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'genomics',
+        'NAME': 'orio',
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
@@ -21,10 +21,13 @@ DATABASES = {
 
 SITE_ID = 1
 
+CSRF_COOKIE_HTTPONLY = True
+# currently disabled; would prefer consistent cookies for better UX
+# CSRF_COOKIE_AGE = None
+# SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 LANGUAGE_CODE = 'en-us'
 USE_I18N = True
-
-
 USE_TZ = True
 USE_L10N = True
 TIME_ZONE = 'America/New_York'
@@ -108,8 +111,8 @@ INSTALLED_APPS = (
 AUTH_USER_MODEL = 'myuser.User'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_SUBJECT_PREFIX = '[genomics] '
-DEFAULT_FROM_EMAIL = 'webmaster@genomics.com'
+EMAIL_SUBJECT_PREFIX = '[orio] '
+DEFAULT_FROM_EMAIL = 'webmaster@orio.com'
 
 LOGGING = {
     'version': 1,
@@ -139,7 +142,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'basic',
-            'filename': os.path.join(PROJECT_ROOT, 'genomics.log'),
+            'filename': os.path.join(PROJECT_ROOT, 'orio.log'),
             'maxBytes': 100 * 1024 * 1024,  # 10 MB
             'backupCount': 10,
         },
@@ -194,6 +197,7 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+CELERY_SEND_TASK_ERROR_EMAILS = True
 CELERY_TIMEZONE = 'US/Eastern'
 
 # Application settings
