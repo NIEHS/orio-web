@@ -5,7 +5,7 @@ from . import models
 
 class GenomeAssemblyAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'chromosome_size_file',
+        'name', 'chromosome_size_file', 'annotation_file',
     )
     search_fields = ('name', )
 
