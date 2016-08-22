@@ -1403,6 +1403,16 @@ class FeatureListCountMatrix(GenomicBinSettings):
                               stats.anderson_ksamp(quartile_vector_sums)):
             ad_results[key] = value
 
+        kw_results = dict()
+        for key, value in zip(['test_statistic', 'pvalue'],
+                              stats.mstats.kruskalwallis(
+                                quartile_vector_sums[0],
+                                quartile_vector_sums[1],
+                                quartile_vector_sums[2],
+                                quartile_vector_sums[3],
+                              )):
+            kw_results[key] = value
+
         zoomed_data = ndimage.zoom(
             sorted_flcm, (zoom_y, zoom_x), order=5, prefilter=False)
         smoothed_data = ndimage.median_filter(zoomed_data, size=(1, 5))
@@ -1423,6 +1433,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
             },
             'smoothed_data': smoothed_data,
             'ad_results': ad_results,
+            'kw_results': kw_results,
         }
 
 
