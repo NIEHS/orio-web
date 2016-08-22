@@ -91,3 +91,14 @@ path {
 g.labels text {
     font-weight: bold;
 }
+
+.cluster_bar {
+    cursor: pointer;
+    stroke: transparent;
+    stroke-width: 2px;
+}
+.cluster_bar:hover {
+    fill: yellow !important;
+    stroke: black;
+    stroke-width: 5px;
+}
