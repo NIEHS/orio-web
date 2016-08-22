@@ -1,8 +1,10 @@
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages import get_messages
 from django.core.urlresolvers import reverse_lazy
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, CreateView, UpdateView, \
         DetailView, DeleteView, ListView, View
 
@@ -38,10 +40,16 @@ class ShortPollMessages(View):
         })
 
 
-class CeleryTester(Home):
+# ensure errors are raised appropriately
+class CeleryErrorTester(Home):
+
+    @method_decorator(staff_member_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request, *args, **kwargs):
-        tasks.debug_task.delay()
-        return super().get(request, *args, **kwargs)
+        tasks.raise_error.delay()
+        return HttpResponseRedirect(reverse_lazy('home'))
 
 
 # Dashboard CRUD views
