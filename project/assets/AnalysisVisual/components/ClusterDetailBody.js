@@ -1,8 +1,15 @@
 import $ from 'jquery';
 import React from 'react';
+import {saveAs} from 'filesaver.js';
 
 
 class ClusterDetailBody extends React.Component {
+
+    constructor(){
+        super();
+        this.handleDownloadFeaturesClick.bind(this);
+        this.handleDownloadGenesClick.bind(this);
+    }
 
     componentDidMount(){
         $(this.refs.tabs)
@@ -11,7 +18,19 @@ class ClusterDetailBody extends React.Component {
             .dispatchEvent(new MouseEvent('click', {bubbles: true,}));
     }
 
-    onTabClick(e){
+    handleDownloadFeaturesClick(){
+        var txt = 'feature text placeholder',
+            blob = new Blob([txt], {type: 'text/plain; charset=utf-8'});
+        saveAs(blob, 'features.txt');
+    }
+
+    handleDownloadGenesClick(){
+        var txt = 'genes placeholder',
+            blob = new Blob([txt], {type: 'text/plain; charset=utf-8'});
+        saveAs(blob, 'genes.txt');
+    }
+
+    handleTabClick(e){
         e.preventDefault();
         $(e.nativeEvent.target).tab('show');
     }
@@ -20,7 +39,10 @@ class ClusterDetailBody extends React.Component {
         return <div className="container-fluid">
             <br/>
             <pre className="pre-scrollable validation_notes"></pre>
-            <button type="button" className="btn btn-primary">Download</button>
+            <button
+                type="button"
+                className="btn btn-primary"
+                onClick={this.handleDownloadFeaturesClick}>Download</button>
         </div>;
     }
 
@@ -28,7 +50,10 @@ class ClusterDetailBody extends React.Component {
         return <div className="container-fluid">
             <br/>
             <pre className="pre-scrollable validation_notes"></pre>
-            <button type="button" className="btn btn-primary">Download</button>
+            <button
+                type="button"
+                className="btn btn-primary"
+                onClick={this.handleDownloadGenesClick}>Download</button>
         </div>;
     }
 
@@ -37,10 +62,10 @@ class ClusterDetailBody extends React.Component {
             <ul className="nav nav-tabs" ref="tabs">
                 <li role="presentation">
                     <a href="#fcdm_features"
-                       onClick={this.onTabClick}>Features</a></li>
+                       onClick={this.handleTabClick}>Features</a></li>
                 <li role="presentation">
                     <a href="#fcdm_genes"
-                       onClick={this.onTabClick}>Genes</a></li>
+                       onClick={this.handleTabClick}>Genes</a></li>
             </ul>
             <div className="tab-content">
                 <div role="tabpanel" className="tab-pane" id='fcdm_features'>

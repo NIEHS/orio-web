@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom';
 import ClusterDetailBody from './components/ClusterDetailBody';
 
 
+
 class FeatureClusterDetailModal{
 
     constructor($modal, d, id){
