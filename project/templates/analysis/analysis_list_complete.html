@@ -23,7 +23,7 @@
             <tr>
                 <td><a href="{{object.get_absolute_url}}">{{object.name}}</a></td>
                 <td>{{object.genome_assembly}}</td>
-                <td>{{object.feature_list}}</td>
+                <td>{{object.feature_list|safe}}</td>
                 <td>{{object.public|fabool}}</td>
                 <td>{{object.datasets.count}}</td>
                 <td>{{object.last_updated}}</td>
