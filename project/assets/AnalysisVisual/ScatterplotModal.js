@@ -1,6 +1,6 @@
 import _ from 'underscore';
 import $ from 'jquery';
-import d3 from 'd3';
+import * as d3 from 'd3';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -125,15 +125,11 @@ class ScatterplotModal {
             .clamp(true)
             .nice();
 
-        xAxis = d3.svg.axis()
-            .scale(x)
-            .orient('bottom')
+        xAxis = d3.axisBottom(x)
             .ticks(Math.ceil(Math.log10(x.domain()[1])), ',d')
             .tickSize(6, 0);
 
-        yAxis = d3.svg.axis()
-            .scale(y)
-            .orient('left')
+        yAxis = d3.axisLeft(y)
             .ticks(Math.ceil(Math.log10(y.domain()[1])), ',d')
             .tickSize(6, 0);
 

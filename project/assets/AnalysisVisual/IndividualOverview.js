@@ -1,6 +1,6 @@
 import _ from 'underscore';
 import $ from 'jquery';
-import d3 from 'd3';
+import * as d3 from 'd3';
 
 import IndividualHeatmap from './IndividualHeatmap';
 import Loader from './Loader';
@@ -139,22 +139,18 @@ class IndividualOverview {
             .attr('height', height)
             .append('g');
 
-        var x = d3.scale.ordinal()
+        var x = d3.scaleBand()
             .domain(sortable.map(function(d) {return d[0];}))
-            .rangeBands([6,width - offset.left - offset.right]);
+            .range([6,width - offset.left - offset.right]);
 
-        var y = d3.scale.linear()
+        var y = d3.scaleLinear()
             .domain([-1,1])
             .range([height - offset.top - offset.bottom,0]);
 
-        var xAxis = d3.svg.axis()
-            .scale(x)
-            .orient('bottom')
-            .outerTickSize(0);
+        var xAxis = d3.axisBottom(x)
+            .tickSizeOuter(0);
 
-        var yAxis = d3.svg.axis()
-            .scale(y)
-            .orient('left')
+        var yAxis = d3.axisLeft(y)
             .ticks(5);
 
         var handleMouseOver = function (d) {
@@ -175,7 +171,7 @@ class IndividualOverview {
             .append('rect')
             .style('fill', (d) => {return (d[1] >= 0)? 'red': 'blue';})
             .attr('x', (d) => offset.left + x(d[0]))
-            .attr('width', x.rangeBand() - 2)
+            .attr('width', x.bandwidth() - 2)
             .attr('y', (d) => offset.top + y(Math.max(0,d[1])))
             .attr('height', (d) => Math.abs(y(0) - y(d[1])));
 
@@ -186,7 +182,7 @@ class IndividualOverview {
             .append('rect')
             .style('fill', 'transparent')
             .attr('x', (d) => offset.left + x(d[0]))
-            .attr('width', x.rangeBand() - 2)
+            .attr('width', x.bandwidth() - 2)
             .attr('y', offset.top)
             .attr('height', y(-1))
             .on('mouseover', handleMouseOver);

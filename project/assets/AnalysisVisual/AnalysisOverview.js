@@ -1,6 +1,6 @@
 import _ from 'underscore';
 import $ from 'jquery';
-import d3 from 'd3';
+import * as d3 from 'd3';
 
 import ScatterplotModal from './ScatterplotModal';
 import SortVectorScatterplotModal from './SortVectorScatterplotModal';
@@ -32,35 +32,36 @@ class AnalysisOverview{
     drawHeatmap(data) {
         this.loadingSpinner.fadeOut();
 
+        console.log(data)
+
         var sort_vector = window.sort_vector,
             heatmap = this.heatmap,
             height = heatmap.height(),
             width = heatmap.width(),
             cell_height = height/data.rows.length,
             cell_width = width/data.col_names.length,
-            colorScale = d3.scale.linear()
+            colorScale = d3.scaleLinear()
                 .domain([-1, 0, 1])
                 .range(['blue', 'white', 'red']);
 
         var showTooltip = function (d, i, j) {
-            d3.select(this)
-                .style('stroke', 'black')
-                .style('stroke-width', '1');
+                d3.select(this)
+                    .style('stroke', 'black')
+                    .style('stroke-width', '1');
 
-            $(this).tooltip({
-                container: 'body',
-                title: `${data.col_names[i]}<br/>${data.rows[j].row_name}<br/>${d.toFixed(2)}`,
-                html: true,
-                animation: false,
-            }).tooltip('show');
-        };
-
-        var hideTooltip = function () {
-            $(this)
-                .tooltip('destroy');
-            d3.select(this)
-                .style('stroke', 'none');
-        };
+                $(this).tooltip({
+                    container: 'body',
+                    title: `${data.col_names[i]}<br/>${data.rows[j].row_name}<br/>${d.toFixed(2)}`,
+                    html: true,
+                    animation: false,
+                }).tooltip('show');
+            },
+            hideTooltip = function () {
+                $(this)
+                    .tooltip('destroy');
+                d3.select(this)
+                    .style('stroke', 'none');
+            };
 
         var showScatterplot = function(d, i, j){
             var modalTitle = $('#ind_heatmap_modal_title'),
@@ -89,7 +90,6 @@ class AnalysisOverview{
                     modal.render();
                 }).modal('show');
         };
-
         d3.select(heatmap.get(0))
             .append('svg')
             .attr('height', height)
@@ -99,13 +99,13 @@ class AnalysisOverview{
             .data(data.rows)
             .enter()
             .append('g')
+            .attr('transform', (d, i) => `translate(0, ${i*cell_height})`)
             .selectAll('rect')
             .data((d) => d.row_data)
             .enter()
             .append('rect')
             .text((d) => d)
-            .attr('x', (d,i,j) => i * cell_width)
-            .attr('y', (d,i,j) => j * cell_height)
+            .attr('x', (d,i) => i * cell_width)
             .attr('width', cell_width)
             .attr('height', cell_height)
             .style('fill', (d) => colorScale(d))

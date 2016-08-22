@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import d3 from 'd3';
+import * as d3 from 'd3';
 
 import Loader from './Loader';
 import FeatureClusterDetailModal from './FeatureClusterDetailModal';
@@ -70,7 +70,7 @@ class FeatureClusteringOverview{
 
         var context = heatmap.get(0).getContext('2d');
 
-        var colorScale = d3.scale.linear()
+        var colorScale = d3.scaleLinear()
             .domain([0, 1])
             .range(['white', 'red']);
 
@@ -374,33 +374,27 @@ class FeatureClusteringOverview{
             .attr('height', this.el.find('#centroid_plot').height())
             .append('g');
 
-        var y = d3.scale.linear()
+        var y = d3.scaleLinear()
             .domain([0,plot_max])
             .range([this.el.find('#centroid_plot').height() - offset.bottom, offset.top]);
 
-        var x = d3.scale.ordinal()
+        var x = d3.scalePoint()
             .domain(window.matrix_names)
-            .rangePoints([offset.left,this.el.find('#centroid_plot').width() - offset.right], 1);
+            .range([offset.left,this.el.find('#centroid_plot').width() - offset.right], 1);
 
         var line = d3.svg.line()
             .x((d,i) => x(window.matrix_names[i]))
             .y((d) => y(d));
 
-        var xAxis = d3.svg.axis()
-            .scale(x)
-            .orient('bottom')
-            .outerTickSize(0);
+        var xAxis = d3.axisBottom(x)
+            .tickSizeOuter(0);
 
-        var xGrid = d3.svg.axis()
-            .scale(x)
-            .orient('bottom')
-            .outerTickSize(0)
-            .innerTickSize(-(this.el.find('#centroid_plot').height() - offset.top - offset.bottom))
+        var xGrid = d3.axisBottom(x)
+            .tickSizeOuter(0)
+            .tickSizeInner(-(this.el.find('#centroid_plot').height() - offset.top - offset.bottom))
             .tickFormat('');
 
-        var yAxis = d3.svg.axis()
-            .scale(y)
-            .orient('left')
+        var yAxis = d3.axisLeft(y)
             .ticks(5);
 
         graph.append('g')

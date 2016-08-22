@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import d3 from 'd3';
+import * as d3 from 'd3';
 import _ from 'underscore';
 
 import Loader from './Loader';
@@ -235,10 +235,10 @@ class IndividualHeatmap {
 
         var max_value = Math.max(...[].concat.apply([],quartile_averages));
 
-        var y = d3.scale.linear()
+        var y = d3.scaleLinear()
             .domain([0, max_value])
             .range([(height - margins.top - margins.bottom), 0]);
-        var x = d3.scale.linear()
+        var x = d3.scaleLinear()
             .domain([parseInt(bin_labels[0].split(':')[0]), parseInt(bin_labels[bin_labels.length-1].split(':')[1])])
             .range([0, (width - margins.left - margins.right)]);
 
@@ -253,13 +253,13 @@ class IndividualHeatmap {
             .append('svg:g')
             .attr('transform', 'translate(' + margins.left + ',' + margins.top + ')');
 
-        var xAxis = d3.svg.axis().scale(x).ticks(4).tickSubdivide(true);
+        var xAxis = d3.axisBottom.ticks(4);
         graph.append('svg:g')
             .attr('class', 'x axis')
             .attr('transform', 'translate(0,' + (height - margins.top - margins.bottom) + ')')
             .call(xAxis);
 
-        var yAxisLeft = d3.svg.axis().scale(y).ticks(2).orient('left');
+        var yAxisLeft = d3.axisLeft(y).ticks(2);
         graph.append('svg:g')
             .attr('class', 'y axis')
             .call(yAxisLeft);
@@ -326,10 +326,10 @@ class IndividualHeatmap {
             scatter.push([window_values[i], averages[i]]);
         }
 
-        var y = d3.scale.linear()
+        var y = d3.scaleLinear()
             .domain([0, d3.max(averages)])
             .range([(height - margins.top - margins.bottom), 0]);
-        var x = d3.scale.linear()
+        var x = d3.scaleLinear()
             .domain([bin_labels[0].split(':')[0], bin_labels[bin_labels.length-1].split(':')[1]])
             .range([0, (width - margins.left - margins.right)]);
 
@@ -344,13 +344,13 @@ class IndividualHeatmap {
             .append('svg:g')
             .attr('transform', `translate(${margins.left},${margins.top})`);
 
-        var xAxis = d3.svg.axis().scale(x).ticks(4).tickSubdivide(true);
+        var xAxis = d3.axisBottom(x).ticks(4);
         graph.append('svg:g')
             .attr('class', 'x axis')
             .attr('transform', `translate(0,${(height - margins.top - margins.bottom)})`)
             .call(xAxis);
 
-        var yAxisLeft = d3.svg.axis().scale(y).ticks(2).orient('left');
+        var yAxisLeft = d3.axisLeft(y).ticks(2);
         graph.append('svg:g')
             .attr('class', 'y axis')
             .call(yAxisLeft);
@@ -446,7 +446,7 @@ class IndividualHeatmap {
 
         context.scale(scale_x, scale_y);
 
-        var colorScale = d3.scale.linear()
+        var colorScale = d3.scaleLinear()
             .domain([
                 norm_val.lower_quartile,
                 norm_val.median,
