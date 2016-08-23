@@ -5,47 +5,33 @@
     margin-top: 20px;
 }
 
-.panel {
-    height: 750px;
-    width: 95%;
-    position: relative;
-    margin-top: 20px;
+/* for debugging placement */
+/*
+.layouts {
+     border: 1px solid red;
 }
+*/
 
-#dataClusterSubpanel1 {
-    height: 500px;
-    width: 100%;
-    position: absolute;
-}
-
-#dataClusterSubpanel2 {
-    height: 250px;
-    width: 100%;
-    position: absolute;
-    top: 500px;
-}
-
+/* modal settings */
 #flcModal .modal-dialog {
     width: 95%;
     height: 95%;
     padding: 0;
 }
-
 #flcModal .modal-content {
     height: 100%;
     width: 100%;
 }
-
 #flcModal .modal-header {
     height: 50px;
     width: 100%;
 }
-
 #flcModal .modal-body{
     height: calc(100% - 50px);
     width: 100%;
 }
 
+/* bootstrap inner tooltip override */
 .tooltip-inner {
     max-width: 350px;
 }
@@ -92,6 +78,7 @@ g.labels text {
     font-weight: bold;
 }
 
+/* cluster rectangles */
 .cluster_bar {
     cursor: pointer;
     stroke: transparent;

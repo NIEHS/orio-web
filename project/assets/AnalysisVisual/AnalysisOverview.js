@@ -20,15 +20,59 @@ class AnalysisOverview{
         };
     }
 
-    renderHeatmapContainer(){
-        // create heatmap
-        this.heatmap = $('<div id="heatmap">')
+    renderContainers(){
+
+        this.el.css('position', 'relative');
+        this.el.empty();
+
+        this.heatmap = $('<div id="heatmap" class="layouts">')
             .css({
                 height: '80%',
                 width: '60%',
                 position: 'absolute',
                 left: '40%',
                 top: '20%',
+            }).appendTo(this.el);
+
+        this.vert = $('<div id="vert_names" class="layouts">')
+            .css({
+                position: 'absolute',
+                left: '40%',
+                top: '1%',
+                overflow: 'visible',
+                height: '18%',
+                width: '60%',
+            }).appendTo(this.el);
+
+        this.dendro = $('<div id="dendrogram" class="layouts">')
+            .css({
+                float: 'left',
+                position: 'absolute',
+                left: '0%',
+                top: '20%',
+                overflow: 'hidden',
+                height: '80%',
+                width: '20%',
+            }).appendTo(this.el);
+
+        this.row_names = $('<div id="row_names" class="layouts">')
+            .css({
+                position: 'absolute',
+                left: '21%',
+                top: '20%',
+                overflow: 'hidden',
+                height: '80%',
+                width: '18%',
+            }).appendTo(this.el);
+
+        this.legend = $('<div id="legend" class="layouts">')
+            .css({
+                position: 'absolute',
+                left: '5%',
+                top: '8%',
+                overflow: 'visible',
+                height: '5%',
+                width: '20%',
             }).appendTo(this.el);
     }
 
@@ -118,21 +162,9 @@ class AnalysisOverview{
     }
 
     writeColNames(data) {
-        // remove existing
-        this.el.find('#vert_names').remove();
 
-        // create new
-        var vert = $('<div id="vert_names">')
-            .css({
-                'position': 'absolute',
-                'left': '40%',
-                'top': '1%',
-                'overflow': 'visible',
-                'height': '18%',
-                'width': '60%',
-            }).appendTo(this.el);
-
-        var height = vert.height(),
+        var vert = this.vert,
+            height = vert.height(),
             width = vert.width(),
             ncols = data.col_names.length,
             svg;
@@ -162,21 +194,9 @@ class AnalysisOverview{
     }
 
     writeRowNames(data) {
-
-        this.el.find('#row_names').remove();
-
-        var row_names = $('<div id="row_names">')
-            .css({
-                position: 'absolute',
-                left: '21%',
-                top: '20%',
-                overflow: 'hidden',
-                height: '80%',
-                width: '18%',
-            }).appendTo(this.el);
-
         //Draw SVGs
-        var height = row_names.height(),
+        var row_names = this.row_names,
+            height = row_names.height(),
             width = row_names.width(),
             row_number = data.rows.length;
 
@@ -203,19 +223,8 @@ class AnalysisOverview{
     }
 
     writeDendrogram(data) {
-        this.el.find('#dendrogram').remove();
-
-        var dendro = $('<div id="dendrogram">')
-            .css({
-                position: 'absolute',
-                left: '0%',
-                top: '20%',
-                overflow: 'hidden',
-                height: '80%',
-                width: '20%',
-            }).appendTo(this.el);
-
-        var height = dendro.height(),
+        var dendro = this.dendro,
+            height = dendro.height(),
             width = dendro.width();
 
         var icoords = data.icoord,
@@ -265,20 +274,7 @@ class AnalysisOverview{
     }
 
     drawLegend() {
-        // remove existing
-        this.el.find('#legend').remove();
-
-        var $legend = $('<div id="legend">')
-            .css({
-                position: 'absolute',
-                left: '5%',
-                top: '8%',
-                overflow: 'visible',
-                height: '5%',
-                width: '20%',
-            }).appendTo(this.el);
-
-        let hl = new HeatmapLegend($legend);
+        let hl = new HeatmapLegend(this.legend);
         hl.render();
     }
 
@@ -298,7 +294,7 @@ class AnalysisOverview{
         });
     }
 
-    render() {
+    render(){
         var url = this.analysisOverviewInitURL(window.analysisObjectID),
             cb = function(data) {
                 window.sort_vector = data.sort_vector;
@@ -308,7 +304,7 @@ class AnalysisOverview{
                 this.writeDendrogram(data.dendrogram);
             };
 
-        this.renderHeatmapContainer();
+        this.renderContainers();
         this.renderLoader();
         this.drawLegend();
         $.get(url, cb.bind(this));
