@@ -9,6 +9,14 @@ from django.utils import timezone
 logger = get_task_logger(__name__)
 
 
+@task()
+def raise_error():
+    """
+    DEBUG task added to ensure that celery errors are handled correctly.
+    """
+    raise NotImplementedError('Successful raising of error')
+
+
 @task(bind=True)
 def execute_analysis(self, analysis_id, silent):
     # run all feature-list count matrix in parallel

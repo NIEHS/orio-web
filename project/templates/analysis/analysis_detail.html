@@ -83,13 +83,13 @@
         </tr>
         <tr>
             <th>Feature list</th>
-            <td><a href="{{object.feature_list.get_absolute_url}}">{{object.feature_list}}</a></td>
+            <td><a href="{{object.feature_list.get_absolute_url}}">{{object.feature_list|safe}}</a></td>
         </tr>
         <tr>
             <th>Sort vector</th>
             <td>
                 {% if object.sort_vector %}
-                <a href="{{object.sort_vector.get_absolute_url}}">{{object.sort_vector}}</a>
+                <a href="{{object.sort_vector.get_absolute_url}}">{{object.sort_vector|safe}}</a>
                 {% else %}
                 <span>&lt;none&gt;</span>
                 {% endif %}

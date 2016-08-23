@@ -2,6 +2,7 @@ import $ from 'jquery';
 import d3 from 'd3';
 
 import Loader from './Loader';
+import FeatureClusterDetailModal from './FeatureClusterDetailModal';
 
 
 const LABEL_COLORS = [
@@ -132,21 +133,16 @@ class FeatureClusteringOverview{
         $('[data-toggle="tooltip"]').tooltip();
 
         var handleMouseOver = function (d, i) {
-                d3.select(this)
-                    .style('stroke', 'black')
-                    .style('stroke-width', '1');
-
                 $(this).tooltip({
                     container: 'body',
-                    title: `Cluster ${(i+1)}<br/>${d.entry} entries<br/>`,
+                    title: `Cluster ${(i+1)}<br/>${d.entry} entries<br/>(click to show details)`,
                     html: true,
                     animation: false,
                 }).tooltip('show');
 
             },
             handleMouseOut = function () {
-                d3.select(this)
-                    .style('stroke', 'none');
+                $(this).tooltip('hide');
             };
 
         var cluster_sizes = [],
@@ -167,13 +163,15 @@ class FeatureClusteringOverview{
             .data(cluster_sizes)
             .enter()
             .append('rect')
+            .attr('class', 'cluster_bar')
             .attr('x', 0)
             .attr('y', (d) => (d.cume/entry_count)*heatmap_clusters.height())
             .attr('width', heatmap_clusters.width())
             .attr('height', (d) => (d.entry/entry_count)*heatmap_clusters.height())
             .style('fill', (d, i) => colors[i])
             .on('mouseover', handleMouseOver)
-            .on('mouseout', handleMouseOut);
+            .on('mouseout', handleMouseOut)
+            .on('click', (d, i) => new FeatureClusterDetailModal($('#flcModal'), d, parseInt(this.id), i+1));
     }
 
     drawHeatmap(k) {

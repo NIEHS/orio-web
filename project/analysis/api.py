@@ -230,6 +230,18 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         object = self.get_object()
         return Response(object.get_bin_names())
 
+    @detail_route(methods=['get'])
+    def cluster_details(self, request, pk=None):
+        # TODO - fix!
+        k_value = tryParseInt(self.request.GET.get('k'), -1)
+        if k_value == -1:
+            raise NotAcceptable("k value `id` parameter required")
+        object = self.get_object()
+        return Response({
+            'features': 'example features',
+            'genes': 'example genes',
+        })
+
     def get_serializer_class(self):
         return serializers.AnalysisSerializer
 
