@@ -93,6 +93,11 @@ class GenomeAssembly(models.Model):
         max_length=128,
         path=get_data_path,
         recursive=False)
+    annotation_file = DynamicFilePathField(
+        unique=True,
+        max_length=128,
+        path=get_data_path,
+        recursive=False)
 
     class Meta:
         verbose_name_plural = 'genome assemblies'
@@ -847,6 +852,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             sv = self.sort_vector.vector.path
 
         mm = MatrixByMatrix(
+            feature_bed=self.feature_list.dataset.path,
+            annotation=self.genome_assembly.annotation_file,
             matrix_list=matrix_list,
             window_start=self.bin_start,
             bin_number=self.bin_number,
