@@ -1,7 +1,9 @@
 import _ from 'underscore';
 import $ from 'jquery';
 import d3 from 'd3';
+import {interpolateInferno} from 'd3-scale';
 
+import {heatmapColorScale} from './utils';
 import IndividualHeatmap from './IndividualHeatmap';
 import Loader from './Loader';
 
@@ -173,7 +175,7 @@ class IndividualOverview {
             .data(sortable)
             .enter()
             .append('rect')
-            .style('fill', (d) => {return (d[1] >= 0)? 'red': 'blue';})
+            .style('fill', (d) => interpolateInferno(heatmapColorScale(d[1])))
             .attr('x', (d) => offset.left + x(d[0]))
             .attr('width', x.rangeBand() - 2)
             .attr('y', (d) => offset.top + y(Math.max(0,d[1])))

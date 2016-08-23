@@ -426,7 +426,7 @@ class IndividualHeatmap {
 
         this.modal_body.find('#heatmap_canvas').remove();
 
-        $('<canvas id="heatmap_canvas"></canvas>')
+        $('<canvas id="heatmap_canvas">')
             .prop({
                 'height': this.heatmap_dim.h,
                 'width': this.heatmap_dim.w,

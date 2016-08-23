@@ -1,9 +1,12 @@
 import _ from 'underscore';
 import $ from 'jquery';
 import d3 from 'd3';
+import {interpolateInferno} from 'd3-scale';
 
+import {heatmapColorScale} from './utils';
 import ScatterplotModal from './ScatterplotModal';
 import SortVectorScatterplotModal from './SortVectorScatterplotModal';
+import HeatmapLegend from './HeatmapLegend';
 import Loader from './Loader';
 
 
@@ -37,10 +40,7 @@ class AnalysisOverview{
             height = heatmap.height(),
             width = heatmap.width(),
             cell_height = height/data.rows.length,
-            cell_width = width/data.col_names.length,
-            colorScale = d3.scale.linear()
-                .domain([-1, 0, 1])
-                .range(['blue', 'white', 'red']);
+            cell_width = width/data.col_names.length;
 
         var showTooltip = function (d, i, j) {
             d3.select(this)
@@ -108,7 +108,7 @@ class AnalysisOverview{
             .attr('y', (d,i,j) => j * cell_height)
             .attr('width', cell_width)
             .attr('height', cell_height)
-            .style('fill', (d) => colorScale(d))
+            .style('fill', (d) => interpolateInferno(heatmapColorScale(d)))
             .style('cursor', 'pointer')
             .on('mouseover', showTooltip)
             .on('mouseout', hideTooltip)
@@ -268,8 +268,7 @@ class AnalysisOverview{
         // remove existing
         this.el.find('#legend').remove();
 
-        // create new
-        var legend = $('<div id="legend">')
+        var $legend = $('<div id="legend">')
             .css({
                 position: 'absolute',
                 left: '5%',
@@ -279,78 +278,8 @@ class AnalysisOverview{
                 width: '20%',
             }).appendTo(this.el);
 
-        var height = legend.height(),
-            width = legend.width(),
-            legend_lines = [
-                {text: '-1', position: 0},
-                {text: '0', position: 0.5 * width},
-                {text: '1', position: width},
-            ],
-            svg, gradient;
-
-        svg = d3.select(legend.get(0))
-            .append('svg')
-            .attr('width', width)
-            .attr('height', height)
-            .style('overflow', 'visible');
-
-        gradient = svg
-            .append('linearGradient')
-            .attr('y1', '0')
-            .attr('y2', '0')
-            .attr('x1', '0')
-            .attr('x2', width)
-            .attr('id', 'gradient')
-            .attr('gradientUnits', 'userSpaceOnUse');
-
-        gradient
-            .append('stop')
-            .attr('offset', '0')
-            .attr('stop-color', 'blue');
-
-        gradient
-            .append('stop')
-            .attr('offset', '0.5')
-            .attr('stop-color', 'white');
-
-        gradient
-            .append('stop')
-            .attr('offset', '1')
-            .attr('stop-color', 'red');
-
-        svg.append('rect')
-            .attr('width', width)
-            .attr('height', 0.5 * height)
-            .attr('x', '0')
-            .attr('y', 0.5 * height)
-            .attr('fill', 'url(#gradient)')
-            .attr('stroke', 'black')
-            .attr('stroke-width', '1');
-
-        svg.append('g')
-            .selectAll('line')
-            .data(legend_lines)
-            .enter()
-            .append('line')
-            .attr('x1', (d)=>d.position)
-            .attr('x2', (d)=>d.position)
-            .attr('y1', 0.3 * height)
-            .attr('y2', 0.5 * height)
-            .style('stroke', 'black')
-            .style('stroke-width', 1);
-
-        svg.append('g')
-            .selectAll('text')
-            .data(legend_lines)
-            .enter()
-            .append('text')
-            .text((d)=>d.text)
-            .attr('x', (d)=>d.position)
-            .attr('y', 0.25*height)
-            .attr('font-family', 'sans-serif')
-            .attr('font-size', '12px')
-            .attr('fill', 'black')
-            .style('text-anchor', 'middle');
+        let hl = new HeatmapLegend($legend);
+        hl.render();
     }
 
     renderLoader(){
@@ -367,7 +296,6 @@ class AnalysisOverview{
             'border-radius': '10px',
             'padding': '1em',
         });
-
     }
 
     render() {

@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import d3 from 'd3';
+import {interpolateInferno} from 'd3-scale';
 
 import Loader from './Loader';
 import FeatureClusterDetailModal from './FeatureClusterDetailModal';
@@ -72,7 +73,7 @@ class FeatureClusteringOverview{
 
         var colorScale = d3.scale.linear()
             .domain([0, 1])
-            .range(['white', 'red']);
+            .range(['white', '#cc4248']);
 
         var scale_y =  data['display_data'].length < heatmap.height()
             ? heatmap.height() / data['display_data'].length
@@ -573,7 +574,7 @@ class FeatureClusteringOverview{
         gradient
             .append('stop')
             .attr('offset', '1')
-            .attr('stop-color', 'red');
+            .attr('stop-color', '#cc4248');
 
         svg.append('rect')
             .attr('width', width)
