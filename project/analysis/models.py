@@ -991,13 +991,41 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                  d['row_name'] == row_name)
         return self.output_json['dsc_full_data']['rows'][i]['row_id']
 
-    def get_features_in_cluster(self, k_value, cluster):
+    def get_cluster_members(self, k, cluster):
+        entry_list = []
+        gene_list = []
+
+        # READ FEATURE LIST
+        feature_to_line = dict()
+        count = 0
+        total_valid_lines = BedMatrix.countValidBedLines(
+                self.feature_list.dataset.path)
+
+        with open(self.feature_list.dataset.path) as f:
+            for line in f:
+                if not BedMatrix.checkHeader(line):
+                    bed_fields = len(line.strip().split())
+
+                    name = None
+                    if bed_fields >= 4:  # Contains name information?
+                        name = line.strip().split()[3]
+                    if name is None or name in BedMatrix.DUMMY_VALUES:
+                        name = BedMatrix.generateFeatureName(
+                            "feature", count, total_valid_lines)
+                    count += 1
+
+                    feature_to_line[name] = line.strip()
+
+        # GET GENE ASSOCIATIONS FROM JSON
         if not self.output:
             return False
-        features = ','.join(
-            self.output_json['fc_clusters'][str(k_value)][str(cluster)]
-        )
-        return features
+        feature_to_gene = self.output_json['feature_to_gene']
+
+        # CREATE ENTRY LINES AND GENE LISTS, RETURN ZIPPED
+        for feature in self.output_json['fc_clusters'][str(k)][str(cluster)]:
+            entry_list.append(feature_to_line[feature])
+            gene_list.append(feature_to_gene[feature])
+        return(zip(entry_list, gene_list))
 
     def get_feature_data(self, feature_name):
         if not self.output:

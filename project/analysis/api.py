@@ -232,15 +232,14 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
 
     @detail_route(methods=['get'])
     def cluster_details(self, request, pk=None):
-        # TODO - fix!
         k_value = tryParseInt(self.request.GET.get('k'), -1)
+        cluster_value = tryParseInt(self.request.GET.get('clust'), -1)
         if k_value == -1:
-            raise NotAcceptable("k value `id` parameter required")
+            raise NotAcceptable('k value `id` parameter required')
+        if cluster_value == -1:
+            raise NotAcceptable('cluster value `id` parameter required')
         object = self.get_object()
-        return Response({
-            'features': 'example features',
-            'genes': 'example genes',
-        })
+        return Response(object.get_cluster_members(k_value, cluster_value))
 
     def get_serializer_class(self):
         return serializers.AnalysisSerializer
