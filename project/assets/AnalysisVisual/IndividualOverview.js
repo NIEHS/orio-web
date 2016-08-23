@@ -243,7 +243,7 @@ class IndividualOverview {
                 position: 'absolute',
                 left: '32%',
                 top: '0%',
-                overflow: 'scroll',
+                overflow: 'hide',
                 display: 'flex',
                 'flex-direction': 'column',
                 'justify-content': 'center',
