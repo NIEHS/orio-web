@@ -69,8 +69,8 @@ class IndividualOverview {
         var cp = this.el.find('#correlation_plot'),
             num = row_data.length - 1,
             entry_length = 6,
-            margin = {top: 0, right: 0, bottom: 20, left: 0},
-            offset = {top: 20, right: 0, bottom: 100, left: 40},
+            margin = {top: 0, right: 10, bottom: 0, left: 0},
+            offset = {top: 0, right: 10, bottom: 35, left: 250},
             width = (num*entry_length > cp.width())
                 ? (num*entry_length - margin.left - margin.right)
                 : (cp.width() - margin.left - margin.right),
@@ -89,90 +89,84 @@ class IndividualOverview {
             sortable.sort(function(a, b) {return Math.abs(b[1]) - Math.abs(a[1]);});
         }
 
-        var $graph = $('<div id="graph">')
-            .css({
-                'height': height,
-                'width': width,
-                'position': 'absolute',
-                'left': '0%',
-                'top': margin.top,
-            }).appendTo(cp);
-
-        var graph = d3.select($graph.get(0)).append('svg')
+        cp.empty();
+        var graph = d3.select(cp.get(0)).append('svg')
             .attr('width', width)
             .attr('height', height)
             .append('g');
 
-        var x = d3.scale.ordinal()
-            .domain(sortable.map(function(d) {return d[0];}))
-            .rangeBands([6,width - offset.left - offset.right]);
+        var x = d3.scale.linear()
+            .domain([-1, 1])
+            .range([0, width - offset.left - offset.right]);
 
-        var y = d3.scale.linear()
-            .domain([-1,1])
-            .range([height - offset.top - offset.bottom,0]);
+        var y = d3.scale.ordinal()
+            .domain(sortable.map((d) => d[0]))
+            .rangeBands([0, height - offset.top - offset.bottom]);
 
         var xAxis = d3.svg.axis()
             .scale(x)
             .orient('bottom')
-            .outerTickSize(0);
+            .ticks(5);
 
         var yAxis = d3.svg.axis()
             .scale(y)
             .orient('left')
-            .ticks(5);
+            .outerTickSize(0);
 
-        var handleMouseOver = function (d) {
-            $(this).tooltip({
-                container: 'body',
-                title: `${d[0]}<br/>${d[1].toFixed(2)}`,
-                html: true,
-                animation: false,
-            }).tooltip('show');
-        };
-
-        var lines = [-1, 0, 1];
-
+        // add reference lines
         graph.append('g')
+            .attr('transform', `translate(${offset.left},${offset.top})`)
+            .selectAll('line')
+            .data([-1, -0.5, 0, 0.5, 1])
+            .enter()
+            .append('line')
+            .attr('x1', (d) => x(d))
+            .attr('x2', (d) => x(d))
+            .attr('y1', y.rangeExtent()[0])
+            .attr('y2', y.rangeExtent()[1])
+            .style('stroke', 'black')
+            .style('stroke-width', 1)
+            .style('stroke-dasharray', (d) => {return (d===0)? 'none': '5,5';});
+
+        // add data
+        graph.append('g')
+            .attr('transform', `translate(${offset.left},${offset.top})`)
             .selectAll('rect')
             .data(sortable)
             .enter()
             .append('rect')
             .style('fill', (d) => interpolateInferno(heatmapColorScale(d[1])))
-            .attr('x', (d) => offset.left + x(d[0]))
-            .attr('width', x.rangeBand() - 2)
-            .attr('y', (d) => offset.top + y(Math.max(0,d[1])))
-            .attr('height', (d) => Math.abs(y(0) - y(d[1])));
+            .attr('x', (d) => x(Math.min(0, d[1])))
+            .attr('width', (d) => Math.abs(x(0) - x(d[1])))
+            .attr('y', (d) => y(d[0]) + 2)
+            .attr('height', y.rangeBand() - 4)
+            .each(function(d){
+                $(this).tooltip({
+                    container: 'body',
+                    title: `${d[0]}<br/>${d[1].toFixed(2)}`,
+                    html: true,
+                    animation: false,
+                });
+            });
 
-        graph.append('g')
-            .selectAll('rect')
-            .data(sortable)
-            .enter()
-            .append('rect')
-            .style('fill', 'transparent')
-            .attr('x', (d) => offset.left + x(d[0]))
-            .attr('width', x.rangeBand() - 2)
-            .attr('y', offset.top)
-            .attr('height', y(-1))
-            .on('mouseover', handleMouseOver);
-
-        $('[data-toggle="tooltip"]').tooltip();
-
+        // add x-axis
         graph.append('g')
             .attr('class', 'x axis')
-            .attr('transform', `translate(${offset.left},${height - offset.bottom})`)
+            .attr('transform', `translate(${offset.left},${height-offset.bottom-offset.top})`)
             .call(xAxis)
             .style('fill', 'none')
             .selectAll('text')
             .style('fill', 'black')
-            .attr('font-size', '8px')
+            .attr('font-size', '12px')
             .style('text-anchor', 'end')
             .attr('transform', 'rotate(-90)' )
-            .attr('dx', '-8px')
-            .attr('dy', '-8px');
+            .attr('dx', '-6px')
+            .attr('dy', '-6px');
 
+        // add y-axis
         graph.append('g')
             .attr('class', 'y axis')
-            .attr('transform', `translate(${offset.left},${offset.top})`)
+            .attr('transform', `translate(${offset.left-10},0)`)
             .style('fill', 'none')
             .style('stroke', 'black')
             .style('stroke-width', '1px')
@@ -181,19 +175,6 @@ class IndividualOverview {
             .attr('font-size','8px')
             .style('fill', 'black')
             .style('stroke', 'none');
-
-        graph.append('g')
-            .selectAll('line')
-            .data(lines)
-            .enter()
-            .append('line')
-            .attr('x1', offset.left)
-            .attr('x2', width - offset.right)
-            .attr('y1', (d) => offset.top + y(d))
-            .attr('y2', (d) => offset.top + y(d))
-            .style('stroke', 'black')
-            .style('stroke-width', 1)
-            .style('stroke-dasharray', (d) => {return (d===0)? 'none': '5,5';});
     }
 
     displayCorrelations(){
