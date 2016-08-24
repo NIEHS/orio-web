@@ -4,6 +4,7 @@ import d3 from 'd3';
 import {interpolateInferno} from 'd3-scale';
 
 import {heatmapColorScale} from './utils';
+import HeatmapLegend from './HeatmapLegend';
 import IndividualHeatmap from './IndividualHeatmap';
 import Loader from './Loader';
 
@@ -213,6 +214,11 @@ class IndividualOverview {
             .modal('show');
     }
 
+    drawLegend() {
+        let hl = new HeatmapLegend(this.legend);
+        hl.render();
+    }
+
     renderContainers(){
         this.el.css('position', 'relative');
         this.el.empty();
@@ -260,15 +266,25 @@ class IndividualOverview {
 
         this.cp = $('<div id="correlation_plot" class="layouts">')
             .css({
-                height: '100%',
+                height: '92%',
                 width: '68%',
                 position: 'absolute',
                 left: '32%',
-                top: '0%',
+                top: '8%',
                 overflow: 'hide',
                 display: 'flex',
                 'flex-direction': 'column',
                 'justify-content': 'center',
+            }).appendTo(this.el);
+
+        this.legend = $('<div id="legend" class="layouts">')
+            .css({
+                position: 'absolute',
+                left: '66.3%',
+                top: '0%',
+                overflow: 'visible',
+                height: '5%',
+                width: '20%',
             }).appendTo(this.el);
     }
 
@@ -282,6 +298,7 @@ class IndividualOverview {
                 window.name_to_id = _.object(data['matrix_names'], data['matrix_IDs']);
                 this.renderSelectList();
                 this.addDisplayButton();
+                this.drawLegend();
             };
 
         this.renderContainers();
