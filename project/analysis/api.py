@@ -221,14 +221,14 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
 
     @detail_route(methods=['get'])
     def cluster_details(self, request, pk=None):
-        k_value = tryParseInt(self.request.GET.get('k'), -1)
-        cluster_value = tryParseInt(self.request.GET.get('clust'), -1)
-        if k_value == -1:
-            raise NotAcceptable('k value `id` parameter required')
-        if cluster_value == -1:
-            raise NotAcceptable('cluster value `id` parameter required')
+        k = tryParseInt(self.request.GET.get('k'), -1)
+        cluster_id = tryParseInt(self.request.GET.get('cluster_id'), -1)
+        if k == -1:
+            raise NotAcceptable('`k` parameter required')
+        if cluster_id == -1:
+            raise NotAcceptable('`cluster_id` parameter required')
         object = self.get_object()
-        return Response(object.get_cluster_members(k_value, cluster_value))
+        return Response(object.get_cluster_members(k, cluster_id))
 
     def get_serializer_class(self):
         return serializers.AnalysisSerializer

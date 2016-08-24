@@ -7,9 +7,10 @@ import ClusterDetailBody from './components/ClusterDetailBody';
 
 class FeatureClusterDetailModal{
 
-    constructor($modal, d, analysis_id, cluster_id){
+    constructor($modal, d, analysis_id, k, cluster_id){
         this.data = d;
         this.analysis_id = analysis_id;
+        this.k = k;
         this.cluster_id = cluster_id;
         this.$modal = $modal;
         this.$title = $modal.find('.modal-header > h4');
@@ -26,6 +27,7 @@ class FeatureClusterDetailModal{
         ReactDOM.render(
             <ClusterDetailBody
                 analysis_id={this.analysis_id}
+                k={this.k}
                 cluster_id={this.cluster_id} />,
             this.$body.get(0)
         );

@@ -152,7 +152,8 @@ class FeatureClusteringOverview{
             .style('fill', (d, i) => colors[i])
             .on('mouseover', handleMouseOver)
             .on('mouseout', handleMouseOut)
-            .on('click', (d, i) => new FeatureClusterDetailModal($('#flcModal'), d, parseInt(this.id), i+1));
+            .on('click', (d, i) => new FeatureClusterDetailModal(
+                $('#flcModal'), d, parseInt(this.id), cluster_sizes.length, i+1));
     }
 
     drawHeatmap(k) {

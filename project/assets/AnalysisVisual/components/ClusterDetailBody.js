@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import _ from 'underscore';
 import React from 'react';
 import {saveAs} from 'filesaver.js';
 
@@ -12,19 +13,31 @@ class ClusterDetailBody extends React.Component {
         this.handleDownloadFeaturesClick = this.handleDownloadFeaturesClick.bind(this);
         this.handleDownloadGenesClick = this.handleDownloadGenesClick.bind(this);
 
+        // set initial state
         this.state = {
+            featuresCount: null,
             features: null,
+            genesCount: null,
             genes: null,
         };
     }
 
     componentWillMount(){
-        // TODO - remove timeout
-        setTimeout(()=>{
-            $.get(`/dashboard/api/analysis/${this.props.analysis_id}/cluster_details/?k=${this.props.cluster_id}`, (d)=>{
-                this.setState(d);
+        $.get(`/dashboard/api/analysis/${this.props.analysis_id}/cluster_details/?k=${this.props.k}&cluster_id=${this.props.cluster_id}`, (d)=>{
+            let d2 = _.unzip(d),
+                features = d2[0],
+                genes = _.chain(d2[1].join(',').split(','))
+                        .uniq()
+                        .sort()
+                        .value();
+
+            this.setState({
+                featuresCount: features.length,
+                features: features.join('\n'),
+                genesCount: genes.length,
+                genes: genes.join('\n'),
             });
-        }, 2000);
+        });
     }
 
     componentDidMount(){
@@ -35,7 +48,6 @@ class ClusterDetailBody extends React.Component {
     }
 
     handleDownloadFeaturesClick(){
-        console.log(this)
         let blob = new Blob(
             [this.state.features],
             {type: 'text/plain; charset=utf-8'}
@@ -70,6 +82,7 @@ class ClusterDetailBody extends React.Component {
 
         return <div className="container-fluid">
             <br/>
+            <p><b>{this.state.featuresCount} features identified in this cluster:</b></p>
             <pre className="pre-scrollable validation_notes">{this.state.features}</pre>
             <button
                 type="button"
@@ -85,6 +98,7 @@ class ClusterDetailBody extends React.Component {
 
         return <div className="container-fluid">
             <br/>
+            <p><b>{this.state.genesCount} genes identified near features:</b></p>
             <pre className="pre-scrollable validation_notes">{this.state.genes}</pre>
             <button
                 type="button"
@@ -117,6 +131,7 @@ class ClusterDetailBody extends React.Component {
 
 ClusterDetailBody.propTypes = {
     analysis_id: React.PropTypes.number.isRequired,
+    k: React.PropTypes.number.isRequired,
     cluster_id: React.PropTypes.number.isRequired,
 };
 

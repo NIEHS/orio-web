@@ -880,8 +880,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
         mm = MatrixByMatrix(
             feature_bed=self.feature_list.dataset.path,
-            annotation=self.genome_assembly.annotation_file,
             matrix_list=matrix_list,
+            annotation=self.genome_assembly.annotation_file,
             window_start=self.bin_start,
             bin_number=self.bin_number,
             bin_size=self.bin_size,
