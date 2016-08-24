@@ -4,7 +4,7 @@ import VisualRoot from 'AnalysisVisual/main';
 import AnalysisFormRoot from 'AnalysisForm/main';
 
 
-if (document.getElementById('dataCluster'))
+if (document.getElementById('visual_container'))
     VisualRoot();
 
 if (document.getElementById('analysis_form'))

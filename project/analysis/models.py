@@ -49,6 +49,8 @@ class Dataset(models.Model):
         related_name='%(class)s',)
     name = models.CharField(
         max_length=128)
+    slug = models.CharField(
+        max_length=128)
     description = models.TextField(
         blank=True)
     uuid = models.UUIDField(
@@ -71,6 +73,10 @@ class Dataset(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
     def get_form_cancel_url(self):
         if self.id:
             return self.get_absolute_url()
@@ -89,6 +95,11 @@ class GenomeAssembly(models.Model):
         unique=True,
         max_length=32)
     chromosome_size_file = DynamicFilePathField(
+        unique=True,
+        max_length=128,
+        path=get_data_path,
+        recursive=False)
+    annotation_file = DynamicFilePathField(
         unique=True,
         max_length=128,
         path=get_data_path,
@@ -361,19 +372,22 @@ class UserDataset(ValidationMixin, GenomicDataset):
         return cls.objects.filter(owner=user, validated=True)
 
     def get_absolute_url(self):
-        return reverse('analysis:user_dataset', args=[self.pk, ])
+        return reverse('analysis:user_dataset',
+                       args=[self.pk, self.slug])
+
+    def get_update_url(self):
+        return reverse('analysis:user_dataset_update',
+                       args=[self.pk, self.slug])
+
+    def get_delete_url(self):
+        return reverse('analysis:user_dataset_delete',
+                       args=[self.pk, self.slug])
 
     def get_bigwig_paths(self):
         if self.is_stranded:
             return [self.plus.data.path, self.minus.data.path]
         else:
             return [self.ambiguous.data.path]
-
-    def get_update_url(self):
-        return reverse('analysis:user_dataset_update', args=[self.pk, ])
-
-    def get_delete_url(self):
-        return reverse('analysis:user_dataset_delete', args=[self.pk, ])
 
     def validate_and_save(self):
         # wait until all files are downloaded before attempting validation
@@ -517,13 +531,16 @@ class FeatureList(ValidationMixin, Dataset):
         ))
 
     def get_absolute_url(self):
-        return reverse('analysis:feature_list', args=[self.pk, ])
+        return reverse('analysis:feature_list',
+                       args=[self.pk, self.slug])
 
     def get_update_url(self):
-        return reverse('analysis:feature_list_update', args=[self.pk, ])
+        return reverse('analysis:feature_list_update',
+                       args=[self.pk, self.slug])
 
     def get_delete_url(self):
-        return reverse('analysis:feature_list_delete', args=[self.pk, ])
+        return reverse('analysis:feature_list_delete',
+                       args=[self.pk, self.slug])
 
     def validate(self):
         validator = validators.FeatureListValidator(
@@ -555,13 +572,16 @@ class SortVector(ValidationMixin, Dataset):
         ))
 
     def get_absolute_url(self):
-        return reverse('analysis:sort_vector', args=[self.pk, ])
+        return reverse('analysis:sort_vector',
+                       args=[self.pk, self.slug])
 
     def get_update_url(self):
-        return reverse('analysis:sort_vector_update', args=[self.pk, ])
+        return reverse('analysis:sort_vector_update',
+                       args=[self.pk, self.slug])
 
     def get_delete_url(self):
-        return reverse('analysis:sort_vector_delete', args=[self.pk, ])
+        return reverse('analysis:sort_vector_delete',
+                       args=[self.pk, self.slug])
 
     def validate(self):
         validator = validators.SortVectorValidator(
@@ -629,6 +649,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         settings.AUTH_USER_MODEL)
     name = models.CharField(
         max_length=128)
+    slug = models.CharField(
+        max_length=128)
     description = models.TextField(
         blank=True)
     datasets = models.ManyToManyField(
@@ -677,6 +699,10 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     def complete(cls, owner):
         return cls.objects.filter(end_time__isnull=False, owner=owner)
 
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
     def validate(self):
         validator = validators.AnalysisValidator(
             bin_anchor=self.get_anchor_display(),
@@ -691,13 +717,16 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         return validator.is_valid, validator.display_errors()
 
     def get_absolute_url(self):
-        return reverse('analysis:analysis', args=[self.pk, ])
+        return reverse('analysis:analysis',
+                       args=[self.pk, self.slug])
 
     def get_execute_url(self):
-        return reverse('analysis:analysis_execute', args=[self.pk, ])
+        return reverse('analysis:analysis_execute',
+                       args=[self.pk, self.slug])
 
     def get_visuals_url(self):
-        return reverse('analysis:analysis_visual', args=[self.pk, ])
+        return reverse('analysis:analysis_visual',
+                       args=[self.pk, self.slug])
 
     def get_form_cancel_url(self):
         if self.id:
@@ -706,13 +735,16 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             return reverse('analysis:dashboard')
 
     def get_update_url(self):
-        return reverse('analysis:analysis_update', args=[self.pk, ])
+        return reverse('analysis:analysis_update',
+                       args=[self.pk, self.slug])
 
     def get_delete_url(self):
-        return reverse('analysis:analysis_delete', args=[self.pk, ])
+        return reverse('analysis:analysis_delete',
+                       args=[self.pk, self.slug])
 
     def get_zip_url(self):
-        return reverse('analysis:analysis_zip', args=[self.pk, ])
+        return reverse('analysis:analysis_zip',
+                       args=[self.pk, self.slug])
 
     def is_reset_required(self, dsIds):
         """
@@ -847,7 +879,9 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             sv = self.sort_vector.vector.path
 
         mm = MatrixByMatrix(
+            feature_bed=self.feature_list.dataset.path,
             matrix_list=matrix_list,
+            annotation=self.genome_assembly.annotation_file,
             window_start=self.bin_start,
             bin_number=self.bin_number,
             bin_size=self.bin_size,
@@ -984,13 +1018,41 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                  d['row_name'] == row_name)
         return self.output_json['dsc_full_data']['rows'][i]['row_id']
 
-    def get_features_in_cluster(self, k_value, cluster):
+    def get_cluster_members(self, k, cluster):
+        entry_list = []
+        gene_list = []
+
+        # READ FEATURE LIST
+        feature_to_line = dict()
+        count = 0
+        total_valid_lines = BedMatrix.countValidBedLines(
+                self.feature_list.dataset.path)
+
+        with open(self.feature_list.dataset.path) as f:
+            for line in f:
+                if not BedMatrix.checkHeader(line):
+                    bed_fields = len(line.strip().split())
+
+                    name = None
+                    if bed_fields >= 4:  # Contains name information?
+                        name = line.strip().split()[3]
+                    if name is None or name in BedMatrix.DUMMY_VALUES:
+                        name = BedMatrix.generateFeatureName(
+                            "feature", count, total_valid_lines)
+                    count += 1
+
+                    feature_to_line[name] = line.strip()
+
+        # GET GENE ASSOCIATIONS FROM JSON
         if not self.output:
             return False
-        features = ','.join(
-            self.output_json['fc_clusters'][str(k_value)][str(cluster)]
-        )
-        return features
+        feature_to_gene = self.output_json['feature_to_gene']
+
+        # CREATE ENTRY LINES AND GENE LISTS, RETURN ZIPPED
+        for feature in self.output_json['fc_clusters'][str(k)][str(cluster)]:
+            entry_list.append(feature_to_line[feature])
+            gene_list.append(feature_to_gene[feature])
+        return(zip(entry_list, gene_list))
 
     def get_feature_data(self, feature_name):
         if not self.output:
@@ -1301,7 +1363,8 @@ class FeatureListCountMatrix(GenomicBinSettings):
             bin_size=analysis.bin_size,
             opposite_strand_fn=None,
             stranded_bigwigs=dataset.is_stranded,
-            stranded_bed=analysis.feature_list.stranded
+            stranded_bed=analysis.feature_list.stranded,
+            chrom_sizes=analysis.genome_assembly.chromosome_size_file,
         )
 
         return cls.objects.create(
@@ -1402,6 +1465,16 @@ class FeatureListCountMatrix(GenomicBinSettings):
                               stats.anderson_ksamp(quartile_vector_sums)):
             ad_results[key] = value
 
+        kw_results = dict()
+        for key, value in zip(['test_statistic', 'pvalue'],
+                              stats.mstats.kruskalwallis(
+                                quartile_vector_sums[0],
+                                quartile_vector_sums[1],
+                                quartile_vector_sums[2],
+                                quartile_vector_sums[3],
+                              )):
+            kw_results[key] = value
+
         zoomed_data = ndimage.zoom(
             sorted_flcm, (zoom_y, zoom_x), order=5, prefilter=False)
         smoothed_data = ndimage.median_filter(zoomed_data, size=(1, 5))
@@ -1422,6 +1495,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
             },
             'smoothed_data': smoothed_data,
             'ad_results': ad_results,
+            'kw_results': kw_results,
         }
 
 

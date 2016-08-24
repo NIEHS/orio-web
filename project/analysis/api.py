@@ -182,17 +182,6 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         return Response(object.get_k_clust_heatmap(k_value, dim_x, dim_y))
 
     @detail_route(methods=['get'])
-    def features_in_cluster(self, request, pk=None):
-        k_value = tryParseInt(self.request.GET.get('k'), -1)
-        if k_value == -1:
-            raise NotAcceptable("k value `id` parameter required")
-        cluster = tryParseInt(self.request.GET.get('cluster'), -1)
-        if cluster == -1:
-            raise NotAcceptable("cluster parameter required")
-        object = self.get_object()
-        return Response(object.get_features_in_cluster(k_value, cluster))
-
-    @detail_route(methods=['get'])
     def feature_data(self, request, pk=None):
         feature_name = self.request.GET.get('feature')
         object = self.get_object()
@@ -229,6 +218,17 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
     def bin_names(self, request, pk=None):
         object = self.get_object()
         return Response(object.get_bin_names())
+
+    @detail_route(methods=['get'])
+    def cluster_details(self, request, pk=None):
+        k = tryParseInt(self.request.GET.get('k'), -1)
+        cluster_id = tryParseInt(self.request.GET.get('cluster_id'), -1)
+        if k == -1:
+            raise NotAcceptable('`k` parameter required')
+        if cluster_id == -1:
+            raise NotAcceptable('`cluster_id` parameter required')
+        object = self.get_object()
+        return Response(object.get_cluster_members(k, cluster_id))
 
     def get_serializer_class(self):
         return serializers.AnalysisSerializer

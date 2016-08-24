@@ -3,8 +3,10 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 
 from functools import wraps
+from django.http import Http404
 from django.utils.cache import add_never_cache_headers
 from django.utils.decorators import available_attrs
+from django.utils.translation import ugettext as _
 
 
 def never_cache(view_func):
@@ -24,7 +26,24 @@ def never_cache(view_func):
     return _wrapped_view_func
 
 
-class UserCanEdit(object):
+class SlugIDMixin(object):
+
+    def get_object(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        pk = self.kwargs.get(self.pk_url_kwarg)
+        slug = self.kwargs.get(self.slug_url_kwarg)
+        queryset = queryset.filter(pk=pk, slug=slug)
+        try:
+            # Get the single item from the filtered queryset
+            obj = queryset.get()
+        except queryset.model.DoesNotExist:
+            raise Http404(_("No %(verbose_name)s found matching the query") %
+                          {'verbose_name': queryset.model._meta.verbose_name})
+        return obj
+
+
+class UserCanEdit(SlugIDMixin, object):
 
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)
@@ -33,7 +52,7 @@ class UserCanEdit(object):
         return obj
 
 
-class UserCanView(object):
+class UserCanView(SlugIDMixin, object):
 
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)

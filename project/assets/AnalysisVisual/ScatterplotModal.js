@@ -177,7 +177,7 @@ class ScatterplotModal {
                 .attr('r', 3.5)
                 .attr('cx', (d) => x(d.x))
                 .attr('cy', (d) => y(d.y))
-                .style('fill', '#4682B4')
+                .style('fill', '#cc4248')
                 .style('fill-opacity', 0.5)
                 .on('mouseover', function(d){
                     let txt = `${d.label}<br>x: ${d.x}<br>y: ${d.y}`;
@@ -194,7 +194,6 @@ class ScatterplotModal {
 
         } else {
             //update
-
             let axisDuration = 500;
 
             svg.selectAll('.y')
@@ -208,19 +207,19 @@ class ScatterplotModal {
                .call(xAxis.scale(x));
 
             svg.selectAll('.gdot')
-               .transition()
-               .delay(axisDuration * 0.8)
-               .duration(300)
-               .style('opacity', 0)
-               .each('end', function(){
+                .transition()
+                .delay(axisDuration * 0.8)
+                .duration(300)
+                .style('opacity', 0)
+                .each('end', function(){
                     svg.selectAll('circle')
                         .data(data)
                         .attr('cx', (d) => x(d.x))
                         .attr('cy', (d) => y(d.y));
-               })
-               .transition()
-               .duration(800)
-               .style('opacity', 1);
+                })
+                .transition()
+                .duration(800)
+                .style('opacity', 1);
 
         }
 
