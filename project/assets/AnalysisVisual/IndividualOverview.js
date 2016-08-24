@@ -24,46 +24,49 @@ class IndividualOverview {
         return `/dashboard/api/analysis/${id}/dsc_full_row_value/?row=${row_name}`;
     }
 
-    renderSelectList() {
-        var select_list = this.select_list,
-            el = this.el,
-            input = this.input,
-            selectable,
-            addOptions = function(el, option_array) {
-                var select = el.find('#select_list');
-                select.empty()
-                    .html(option_array.map((d)=>{
-                        return `<option value="${d}">${d}</option>`;
-                    }).join(''));
-            },
-            showMatches = function() {
-                let value = this.value.toLowerCase();
-                if (value === '') {
-                    selectable = window.matrix_names;
-                } else {
-                    selectable = $.grep(window.matrix_names, function(n) {
-                        return (n.toLowerCase().includes(value));
-                    });
+    renderFiltering(){
+        let div = this.selector_div;
+
+        // check to make sure this only occurs if div is empty
+        if (div.children().length>0){
+            return;
+        }
+
+        let select = $('<select id="select_list" size="20" class="form-control col-sm-12 ids_selector">'),
+            filterList = function(e){
+                let v = e.target.value.toLowerCase(),
+                    names = window.matrix_names;
+
+                if (v.length>0){
+                    names = names.filter((d) => d.toLowerCase().indexOf(v)>=0);
                 }
-                addOptions(el, selectable);
+
+                select
+                    .empty()
+                    .html(names.map((d)=> `<option value="${d}">${d}</option>`))
             };
 
-        select_list
+        // show input search
+        let inp = $('<input class="form-control col-sm-12" placeholder="Filter data list">')
+            .appendTo(div)
+            .on('input', filterList);
+
+        // show select list
+        this.select_list = select
+            .appendTo(div)
             .change(this.displayCorrelations.bind(this));
 
-        addOptions(this.el, window.matrix_names);
+        // trigger input change to populate list
+        inp.trigger('input');
 
-        select_list[0].selectedIndex = 0;
+        // show detail button
+        $('<button type="button" class="btn btn-primary btn-block">Display individual heatmap</button>')
+            .appendTo(div)
+            .click(this.displayIndividualHeatmap.bind(this));
 
-        input
-            .on('input', showMatches);
+        $(select.find('option:first'))
+            .prop('selected', true);
 
-        this.displayCorrelations();
-    }
-
-    addDisplayButton() {
-        this.button.click(
-            this.displayIndividualHeatmap.bind(this));
     }
 
     renderCorrelations(selected, row_data){
@@ -215,7 +218,7 @@ class IndividualOverview {
             .modal('show');
     }
 
-    drawLegend() {
+    renderLegend() {
         let hl = new HeatmapLegend(this.legend);
         hl.render();
     }
@@ -224,46 +227,12 @@ class IndividualOverview {
         this.el.css('position', 'relative');
         this.el.empty();
 
-        this.select_list = $('<select id="select_list" class="layouts">')
-            .attr({
-                size: '12',
-            })
-            .css({
-                'font-size': '8px',
-                height: '55%',
-                width: '30%',
-                position: 'absolute',
-                top: '20%',
-            })
-            .appendTo(this.el);
-
-        this.input = $('<input class="layouts">')
-            .attr({
-                type: 'text',
-                id: 'search_field',
-                placeholder: 'Filter data list',
-                outerWidth: '30%',
-                outerHeight: '15%',
-            }).css({
-                position: 'absolute',
-                left: '0%',
-                top: '0%',
-                width: '30%',
-                height: '15%',
-                overflow: 'scroll',
-            })
-            .appendTo(this.el);
-
-        this.button = $('<button>Display individual heatmap</button>')
-            .attr({
-                type: 'button',
-                class: 'btn btn-primary layouts',
-            }).css({
-                position: 'absolute',
-                left: '0%',
-                top: '80%',
-                width: '30%',
-            }).appendTo(this.el);
+        this.selector_div = $('<div>').css({
+            position: 'absolute',
+            top: '6%',
+            height: '100%',
+            width: '30%',
+        }).appendTo(this.el);
 
         this.cp = $('<div id="correlation_plot" class="layouts">')
             .css({
@@ -293,9 +262,9 @@ class IndividualOverview {
                 window.matrix_ids = data['matrix_IDs'],
                 window.sort_vector = data['sort_vector'];
                 window.name_to_id = _.object(data['matrix_names'], data['matrix_IDs']);
-                this.renderSelectList();
-                this.addDisplayButton();
-                this.drawLegend();
+                this.renderFiltering();
+                this.displayCorrelations();
+                this.renderLegend();
             };
 
         this.renderContainers();

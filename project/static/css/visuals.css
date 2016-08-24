@@ -78,7 +78,13 @@ g.labels text {
     font-weight: bold;
 }
 
-/* cluster rectangles */
+/* dataset correlation dataset selector */
+.ids_selector{
+    font-size: 12px;
+    margin: 10px 0;
+}
+
+/* feature clustering rectangles */
 .cluster_bar {
     cursor: pointer;
     stroke: transparent;
