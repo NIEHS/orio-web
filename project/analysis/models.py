@@ -73,6 +73,10 @@ class Dataset(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
     def get_form_cancel_url(self):
         if self.id:
             return self.get_absolute_url()
@@ -694,6 +698,10 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     @classmethod
     def complete(cls, owner):
         return cls.objects.filter(end_time__isnull=False, owner=owner)
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def validate(self):
         validator = validators.AnalysisValidator(
