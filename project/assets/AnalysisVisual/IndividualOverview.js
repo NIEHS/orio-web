@@ -80,6 +80,7 @@ class IndividualOverview {
                 : (cp.width() - margin.left - margin.right),
             height = cp.height();
 
+        this.removeLoader();
         cp.empty();
 
         var sortable = [];
@@ -183,12 +184,31 @@ class IndividualOverview {
     }
 
     displayCorrelations(){
-        var cp = this.cp,
-            selected = this.el.find('#select_list').find('option:selected').text(),
+        var selected = this.el.find('#select_list').find('option:selected').text(),
             url = this.dscFullRowValueURL(this.id, selected);
 
-        new Loader(cp);
+        this.renderLoader();
         $.get(url, this.renderCorrelations.bind(this, selected));
+    }
+
+    renderLoader(){
+        var par = this.el;
+        new Loader(par);
+        this.loadingSpinner = par.find('.loadingSpinner');
+        this.loadingSpinner.css({
+            position: 'absolute',
+            left: '65%',
+            top: '8%',
+            'z-index': 10,
+            'background': 'white',
+            'border': '2px solid gray',
+            'border-radius': '10px',
+            'padding': '1em',
+        });
+    }
+
+    removeLoader(){
+        this.loadingSpinner.remove();
     }
 
     displayIndividualHeatmap () {
