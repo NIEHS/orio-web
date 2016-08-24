@@ -49,6 +49,8 @@ class Dataset(models.Model):
         related_name='%(class)s',)
     name = models.CharField(
         max_length=128)
+    slug = models.CharField(
+        max_length=128)
     description = models.TextField(
         blank=True)
     uuid = models.UUIDField(
@@ -633,6 +635,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL)
     name = models.CharField(
+        max_length=128)
+    slug = models.CharField(
         max_length=128)
     description = models.TextField(
         blank=True)
