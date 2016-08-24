@@ -125,9 +125,9 @@ class IndividualOverview {
             .attr('x2', (d) => x(d))
             .attr('y1', y.rangeExtent()[0])
             .attr('y2', y.rangeExtent()[1])
-            .style('stroke', 'black')
-            .style('stroke-width', 1)
-            .style('stroke-dasharray', (d) => {return (d===0)? 'none': '5,5';});
+            .style('stroke', (d) => (d===0)? 'black': '#c5c5c5')
+            .style('stroke-width', (d) => (d===0)? 3: 2)
+            .style('stroke-dasharray', (d) => (d % 1 === 0)? 'none': '5,5');
 
         // add data
         graph.append('g')
