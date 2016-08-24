@@ -93,6 +93,11 @@ class GenomeAssembly(models.Model):
         max_length=128,
         path=get_data_path,
         recursive=False)
+    annotation_file = DynamicFilePathField(
+        unique=True,
+        max_length=128,
+        path=get_data_path,
+        recursive=False)
 
     class Meta:
         verbose_name_plural = 'genome assemblies'
@@ -847,6 +852,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             sv = self.sort_vector.vector.path
 
         mm = MatrixByMatrix(
+            feature_bed=self.feature_list.dataset.path,
+            annotation=self.genome_assembly.annotation_file,
             matrix_list=matrix_list,
             window_start=self.bin_start,
             bin_number=self.bin_number,
@@ -984,13 +991,41 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                  d['row_name'] == row_name)
         return self.output_json['dsc_full_data']['rows'][i]['row_id']
 
-    def get_features_in_cluster(self, k_value, cluster):
+    def get_cluster_members(self, k, cluster):
+        entry_list = []
+        gene_list = []
+
+        # READ FEATURE LIST
+        feature_to_line = dict()
+        count = 0
+        total_valid_lines = BedMatrix.countValidBedLines(
+                self.feature_list.dataset.path)
+
+        with open(self.feature_list.dataset.path) as f:
+            for line in f:
+                if not BedMatrix.checkHeader(line):
+                    bed_fields = len(line.strip().split())
+
+                    name = None
+                    if bed_fields >= 4:  # Contains name information?
+                        name = line.strip().split()[3]
+                    if name is None or name in BedMatrix.DUMMY_VALUES:
+                        name = BedMatrix.generateFeatureName(
+                            "feature", count, total_valid_lines)
+                    count += 1
+
+                    feature_to_line[name] = line.strip()
+
+        # GET GENE ASSOCIATIONS FROM JSON
         if not self.output:
             return False
-        features = ','.join(
-            self.output_json['fc_clusters'][str(k_value)][str(cluster)]
-        )
-        return features
+        feature_to_gene = self.output_json['feature_to_gene']
+
+        # CREATE ENTRY LINES AND GENE LISTS, RETURN ZIPPED
+        for feature in self.output_json['fc_clusters'][str(k)][str(cluster)]:
+            entry_list.append(feature_to_line[feature])
+            gene_list.append(feature_to_gene[feature])
+        return(zip(entry_list, gene_list))
 
     def get_feature_data(self, feature_name):
         if not self.output:
@@ -1301,7 +1336,8 @@ class FeatureListCountMatrix(GenomicBinSettings):
             bin_size=analysis.bin_size,
             opposite_strand_fn=None,
             stranded_bigwigs=dataset.is_stranded,
-            stranded_bed=analysis.feature_list.stranded
+            stranded_bed=analysis.feature_list.stranded,
+            chrom_sizes=analysis.genome_assembly.chromosome_size_file,
         )
 
         return cls.objects.create(
@@ -1402,6 +1438,16 @@ class FeatureListCountMatrix(GenomicBinSettings):
                               stats.anderson_ksamp(quartile_vector_sums)):
             ad_results[key] = value
 
+        kw_results = dict()
+        for key, value in zip(['test_statistic', 'pvalue'],
+                              stats.mstats.kruskalwallis(
+                                quartile_vector_sums[0],
+                                quartile_vector_sums[1],
+                                quartile_vector_sums[2],
+                                quartile_vector_sums[3],
+                              )):
+            kw_results[key] = value
+
         zoomed_data = ndimage.zoom(
             sorted_flcm, (zoom_y, zoom_x), order=5, prefilter=False)
         smoothed_data = ndimage.median_filter(zoomed_data, size=(1, 5))
@@ -1422,6 +1468,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
             },
             'smoothed_data': smoothed_data,
             'ad_results': ad_results,
+            'kw_results': kw_results,
         }
 
 
