@@ -368,19 +368,22 @@ class UserDataset(ValidationMixin, GenomicDataset):
         return cls.objects.filter(owner=user, validated=True)
 
     def get_absolute_url(self):
-        return reverse('analysis:user_dataset', args=[self.pk, ])
+        return reverse('analysis:user_dataset',
+                       args=[self.pk, self.slug])
+
+    def get_update_url(self):
+        return reverse('analysis:user_dataset_update',
+                       args=[self.pk, self.slug])
+
+    def get_delete_url(self):
+        return reverse('analysis:user_dataset_delete',
+                       args=[self.pk, self.slug])
 
     def get_bigwig_paths(self):
         if self.is_stranded:
             return [self.plus.data.path, self.minus.data.path]
         else:
             return [self.ambiguous.data.path]
-
-    def get_update_url(self):
-        return reverse('analysis:user_dataset_update', args=[self.pk, ])
-
-    def get_delete_url(self):
-        return reverse('analysis:user_dataset_delete', args=[self.pk, ])
 
     def validate_and_save(self):
         # wait until all files are downloaded before attempting validation
@@ -524,13 +527,16 @@ class FeatureList(ValidationMixin, Dataset):
         ))
 
     def get_absolute_url(self):
-        return reverse('analysis:feature_list', args=[self.pk, ])
+        return reverse('analysis:feature_list',
+                       args=[self.pk, self.slug])
 
     def get_update_url(self):
-        return reverse('analysis:feature_list_update', args=[self.pk, ])
+        return reverse('analysis:feature_list_update',
+                       args=[self.pk, self.slug])
 
     def get_delete_url(self):
-        return reverse('analysis:feature_list_delete', args=[self.pk, ])
+        return reverse('analysis:feature_list_delete',
+                       args=[self.pk, self.slug])
 
     def validate(self):
         validator = validators.FeatureListValidator(
@@ -562,13 +568,16 @@ class SortVector(ValidationMixin, Dataset):
         ))
 
     def get_absolute_url(self):
-        return reverse('analysis:sort_vector', args=[self.pk, ])
+        return reverse('analysis:sort_vector',
+                       args=[self.pk, self.slug])
 
     def get_update_url(self):
-        return reverse('analysis:sort_vector_update', args=[self.pk, ])
+        return reverse('analysis:sort_vector_update',
+                       args=[self.pk, self.slug])
 
     def get_delete_url(self):
-        return reverse('analysis:sort_vector_delete', args=[self.pk, ])
+        return reverse('analysis:sort_vector_delete',
+                       args=[self.pk, self.slug])
 
     def validate(self):
         validator = validators.SortVectorValidator(
@@ -700,13 +709,16 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         return validator.is_valid, validator.display_errors()
 
     def get_absolute_url(self):
-        return reverse('analysis:analysis', args=[self.pk, ])
+        return reverse('analysis:analysis',
+                       args=[self.pk, self.slug])
 
     def get_execute_url(self):
-        return reverse('analysis:analysis_execute', args=[self.pk, ])
+        return reverse('analysis:analysis_execute',
+                       args=[self.pk, self.slug])
 
     def get_visuals_url(self):
-        return reverse('analysis:analysis_visual', args=[self.pk, ])
+        return reverse('analysis:analysis_visual',
+                       args=[self.pk, self.slug])
 
     def get_form_cancel_url(self):
         if self.id:
@@ -715,13 +727,16 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             return reverse('analysis:dashboard')
 
     def get_update_url(self):
-        return reverse('analysis:analysis_update', args=[self.pk, ])
+        return reverse('analysis:analysis_update',
+                       args=[self.pk, self.slug])
 
     def get_delete_url(self):
-        return reverse('analysis:analysis_delete', args=[self.pk, ])
+        return reverse('analysis:analysis_delete',
+                       args=[self.pk, self.slug])
 
     def get_zip_url(self):
-        return reverse('analysis:analysis_zip', args=[self.pk, ])
+        return reverse('analysis:analysis_zip',
+                       args=[self.pk, self.slug])
 
     def is_reset_required(self, dsIds):
         """
