@@ -70,8 +70,8 @@ class IndividualOverview {
         var cp = this.el.find('#correlation_plot'),
             num = row_data.length - 1,
             entry_length = 6,
-            margin = {top: 0, right: 10, bottom: 0, left: 0},
-            offset = {top: 0, right: 10, bottom: 35, left: 250},
+            margin = {top: 10, right: 10, bottom: 0, left: 0},
+            offset = {top: 0, right: 10, bottom: 320, left: 50},
             width = (num*entry_length > cp.width())
                 ? (num*entry_length - margin.left - margin.right)
                 : (cp.width() - margin.left - margin.right),
@@ -94,61 +94,26 @@ class IndividualOverview {
         var graph = d3.select(cp.get(0)).append('svg')
             .attr('width', width)
             .attr('height', height)
-            .append('g');
+            .append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        var x = d3.scale.linear()
-            .domain([-1, 1])
-            .range([0, width - offset.left - offset.right]);
-
-        var y = d3.scale.ordinal()
+        var x = d3.scale.ordinal()
             .domain(sortable.map((d) => d[0]))
-            .rangeBands([0, height - offset.top - offset.bottom]);
+            .rangeBands([0, width - offset.left - offset.right]);
+
+        var y = d3.scale.linear()
+            .domain([-1, 1])
+            .range([height - offset.top - offset.bottom, 0]);
 
         var xAxis = d3.svg.axis()
             .scale(x)
             .orient('bottom')
-            .ticks(5);
+            .outerTickSize(0);
 
         var yAxis = d3.svg.axis()
             .scale(y)
             .orient('left')
-            .outerTickSize(0);
-
-        // add reference lines
-        graph.append('g')
-            .attr('transform', `translate(${offset.left},${offset.top})`)
-            .selectAll('line')
-            .data([-1, -0.5, 0, 0.5, 1])
-            .enter()
-            .append('line')
-            .attr('x1', (d) => x(d))
-            .attr('x2', (d) => x(d))
-            .attr('y1', y.rangeExtent()[0])
-            .attr('y2', y.rangeExtent()[1])
-            .style('stroke', (d) => (d===0)? 'black': '#c5c5c5')
-            .style('stroke-width', (d) => (d===0)? 3: 2)
-            .style('stroke-dasharray', (d) => (d % 1 === 0)? 'none': '5,5');
-
-        // add data
-        graph.append('g')
-            .attr('transform', `translate(${offset.left},${offset.top})`)
-            .selectAll('rect')
-            .data(sortable)
-            .enter()
-            .append('rect')
-            .style('fill', (d) => interpolateInferno(heatmapColorScale(d[1])))
-            .attr('x', (d) => x(Math.min(0, d[1])))
-            .attr('width', (d) => Math.abs(x(0) - x(d[1])))
-            .attr('y', (d) => y(d[0]) + 2)
-            .attr('height', y.rangeBand() - 4)
-            .each(function(d){
-                $(this).tooltip({
-                    container: 'body',
-                    title: `${d[0]}<br/>${d[1].toFixed(2)}`,
-                    html: true,
-                    animation: false,
-                });
-            });
+            .ticks(5);
 
         // add x-axis
         graph.append('g')
@@ -167,15 +132,51 @@ class IndividualOverview {
         // add y-axis
         graph.append('g')
             .attr('class', 'y axis')
-            .attr('transform', `translate(${offset.left-10},0)`)
+            .attr('transform', `translate(${offset.left-5},0)`)
             .style('fill', 'none')
             .style('stroke', 'black')
             .style('stroke-width', '1px')
             .call(yAxis)
             .selectAll('text')
-            .attr('font-size','8px')
+            .attr('font-size','12px')
             .style('fill', 'black')
             .style('stroke', 'none');
+
+        // add reference lines
+        graph.append('g')
+            .attr('transform', `translate(${offset.left},${offset.top})`)
+            .selectAll('line')
+            .data([-1, -0.5, 0, 0.5, 1])
+            .enter()
+            .append('line')
+            .attr('x1', x.rangeExtent()[0])
+            .attr('x2', x.rangeExtent()[1])
+            .attr('y1', (d) => y(d))
+            .attr('y2', (d) => y(d))
+            .style('stroke', '#c5c5c5')
+            .style('stroke-width', 2)
+            .style('stroke-dasharray', (d) => (d % 1 === 0)? 'none': '5,5');
+
+        // add data
+        graph.append('g')
+            .attr('transform', `translate(${offset.left},${offset.top})`)
+            .selectAll('rect')
+            .data(sortable)
+            .enter()
+            .append('rect')
+            .style('fill', (d) => interpolateInferno(heatmapColorScale(d[1])))
+            .attr('x', (d) => x(d[0]) + 2)
+            .attr('width', x.rangeBand() - 4)
+            .attr('y', (d) => y(Math.max(0, d[1])))
+            .attr('height', (d) => Math.abs(y(0) - y(d[1])))
+            .each(function(d){
+                $(this).tooltip({
+                    container: 'body',
+                    title: `${d[0]}<br/>${d[1].toFixed(2)}`,
+                    html: true,
+                    animation: false,
+                });
+            });
     }
 
     displayCorrelations(){
@@ -266,21 +267,17 @@ class IndividualOverview {
 
         this.cp = $('<div id="correlation_plot" class="layouts">')
             .css({
-                height: '92%',
+                height: '95%',
                 width: '68%',
                 position: 'absolute',
                 left: '32%',
-                top: '8%',
-                overflow: 'hide',
-                display: 'flex',
-                'flex-direction': 'column',
-                'justify-content': 'center',
+                top: '5%',
             }).appendTo(this.el);
 
         this.legend = $('<div id="legend" class="layouts">')
             .css({
                 position: 'absolute',
-                left: '66.3%',
+                left: '75%',
                 top: '0%',
                 overflow: 'visible',
                 height: '5%',
