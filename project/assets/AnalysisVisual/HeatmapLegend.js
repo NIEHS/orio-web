@@ -1,14 +1,16 @@
 import $ from 'jquery';
 import d3 from 'd3';
 import {interpolateInferno} from 'd3-scale';
+import {interpolateRdYlBu} from 'd3-scale-chromatic';
 
 import {heatmapColorScale} from './utils';
 
 
 class HeatmapLegend {
 
-    constructor($parent, scale){
+    constructor($parent, title, scale){
         this.$parent = $parent;
+        this.title = title;
         this.scale = scale;
     }
 
@@ -27,16 +29,22 @@ class HeatmapLegend {
             .attr('height', height)
             .style('overflow', 'visible');
 
+        svg.append('text')
+            .text(this.title)
+            .attr('x', 0.5 * width)
+            .attr('y', 0.15 * height)
+            .attr('text-anchor', 'middle');
+
         svg.append('g')
             .selectAll('rect')
             .data(gradient)
             .enter()
             .append('rect')
             .attr('width', cellWidth)
-            .attr('height', 0.5 * height)
+            .attr('height', 0.15 * height)
             .attr('x', (d, i) => i*cellWidth)
             .attr('y', 0.5 * height)
-            .attr('fill', (d) => interpolateInferno(heatmapColorScale(d)))
+            .attr('fill', (d) => interpolateRdYlBu(heatmapColorScale(-d)))
             .each(function(d){
                 $(this).tooltip({
                     container: 'body',
@@ -52,7 +60,7 @@ class HeatmapLegend {
             .append('line')
             .attr('x1', (d, i)=>i*0.25*width)
             .attr('x2', (d, i)=>i*0.25*width)
-            .attr('y1', 0.3 * height)
+            .attr('y1', 0.45 * height)
             .attr('y2', 0.5 * height)
             .style('stroke', 'black')
             .style('stroke-width', 1);
@@ -64,7 +72,7 @@ class HeatmapLegend {
             .append('text')
             .text((d) => d)
             .attr('x', (d, i) => i*0.25*width)
-            .attr('y', 0.25*height)
+            .attr('y', 0.4*height)
             .attr('font-family', 'sans-serif')
             .attr('font-size', '12px')
             .attr('fill', 'black')

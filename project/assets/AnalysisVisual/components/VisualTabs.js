@@ -69,7 +69,7 @@ class VisualTabs extends React.Component {
     }
 
     render() {
-        return <div style={{paddingTop: '1em'}}>
+        return <div style={{paddingTop: '1em', paddingBottom: '2em'}}>
             <ul className="nav nav-pills nav-justified well well-sm" ref="tabs">
                 <li role="presentation">
                     <a href="#vt_dataset"
@@ -81,7 +81,7 @@ class VisualTabs extends React.Component {
                     <a href="#vt_feature"
                        onClick={this.handleTabClick}>Feature clustering</a></li>
             </ul>
-            <div className="tab-content" ref="contents">
+            <div style={{paddingTop: '2em', paddingRight: '1em', paddingLeft: '1em'}} className="tab-content" ref="contents">
                 <div role="tabpanel" className="tab-pane" id='vt_dataset'>
                     {this.renderDataset()}
                 </div>

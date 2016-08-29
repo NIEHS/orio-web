@@ -2,6 +2,7 @@ import _ from 'underscore';
 import $ from 'jquery';
 import d3 from 'd3';
 import {interpolateInferno} from 'd3-scale';
+import {interpolateRdYlBu} from 'd3-scale-chromatic';
 
 import {heatmapColorScale} from './utils';
 import ScatterplotModal from './ScatterplotModal';
@@ -68,10 +69,10 @@ class AnalysisOverview{
         this.legend = $('<div id="legend" class="layouts">')
             .css({
                 position: 'absolute',
-                left: '5%',
-                top: '8%',
+                left: '8%',
+                top: '0%',
                 overflow: 'visible',
-                height: '5%',
+                height: '20%',
                 width: '20%',
             }).appendTo(this.el);
     }
@@ -152,7 +153,7 @@ class AnalysisOverview{
             .attr('y', (d,i,j) => j * cell_height)
             .attr('width', cell_width)
             .attr('height', cell_height)
-            .style('fill', (d) => interpolateInferno(heatmapColorScale(d)))
+            .style('fill', (d) => interpolateRdYlBu(heatmapColorScale(-d)))
             .style('cursor', 'pointer')
             .on('mouseover', showTooltip)
             .on('mouseout', hideTooltip)
@@ -274,7 +275,7 @@ class AnalysisOverview{
     }
 
     drawLegend() {
-        let hl = new HeatmapLegend(this.legend);
+        let hl = new HeatmapLegend(this.legend, 'Spearman\'s \u03C1');
         hl.render();
     }
 

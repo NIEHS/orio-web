@@ -2,6 +2,7 @@ import _ from 'underscore';
 import $ from 'jquery';
 import d3 from 'd3';
 import {interpolateInferno} from 'd3-scale';
+import {interpolateRdYlBu} from 'd3-scale-chromatic';
 
 import {heatmapColorScale} from './utils';
 import HeatmapLegend from './HeatmapLegend';
@@ -32,7 +33,7 @@ class IndividualOverview {
             return;
         }
 
-        let select = $('<select id="select_list" size="20" class="form-control col-sm-12 ids_selector">'),
+        let select = $('<select id="select_list" size="12" class="form-control col-sm-12 ids_selector">'),
             filterList = function(e){
                 let v = e.target.value.toLowerCase(),
                     names = window.matrix_names;
@@ -72,9 +73,9 @@ class IndividualOverview {
     renderCorrelations(selected, row_data){
         var cp = this.el.find('#correlation_plot'),
             num = row_data.length - 1,
-            entry_length = 6,
-            margin = {top: 10, right: 10, bottom: 0, left: 0},
-            offset = {top: 0, right: 10, bottom: 320, left: 50},
+            entry_length = 50,
+            margin = {top: 10, right: 10, bottom: 0, left: 20},
+            offset = {top: 0, right: 10, bottom: 160, left: 100},
             width = (num*entry_length > cp.width())
                 ? (num*entry_length - margin.left - margin.right)
                 : (cp.width() - margin.left - margin.right),
@@ -130,8 +131,14 @@ class IndividualOverview {
             .attr('font-size', '12px')
             .style('text-anchor', 'end')
             .attr('transform', 'rotate(-90)' )
-            .attr('dx', '-6px')
+            .attr('dx', '-10px')
             .attr('dy', '-6px');
+
+        graph.append('text')
+            .text('Spearman\'s \u03C1')
+            .attr('transform', 'rotate(-90)' )
+            .attr('dx', -height * 0.4)
+            .attr('dy', '50px');
 
         // add y-axis
         graph.append('g')
@@ -168,7 +175,7 @@ class IndividualOverview {
             .data(sortable)
             .enter()
             .append('rect')
-            .style('fill', (d) => interpolateInferno(heatmapColorScale(d[1])))
+            .style('fill', (d) => interpolateRdYlBu(heatmapColorScale(-d[1])))
             .attr('x', (d) => x(d[0]) + 2)
             .attr('width', x.rangeBand() - 4)
             .attr('y', (d) => y(Math.max(0, d[1])))
@@ -239,7 +246,7 @@ class IndividualOverview {
     }
 
     renderLegend() {
-        let hl = new HeatmapLegend(this.legend);
+        let hl = new HeatmapLegend(this.legend, 'Spearman\'s \u03C1');
         hl.render();
     }
 
@@ -249,8 +256,8 @@ class IndividualOverview {
 
         this.selector_div = $('<div>').css({
             position: 'absolute',
-            top: '6%',
-            height: '100%',
+            top: '20%',
+            height: '80%',
             width: '30%',
         }).appendTo(this.el);
 
@@ -266,10 +273,10 @@ class IndividualOverview {
         this.legend = $('<div id="legend" class="layouts">')
             .css({
                 position: 'absolute',
-                left: '75%',
+                left: '8%',
                 top: '0%',
                 overflow: 'visible',
-                height: '5%',
+                height: '20%',
                 width: '20%',
             }).appendTo(this.el);
     }

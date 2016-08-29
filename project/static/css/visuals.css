@@ -83,15 +83,3 @@ g.labels text {
     font-size: 12px;
     margin: 10px 0;
 }
-
-/* feature clustering rectangles */
-.cluster_bar {
-    cursor: pointer;
-    stroke: transparent;
-    stroke-width: 2px;
-}
-.cluster_bar:hover {
-    fill: yellow !important;
-    stroke: black;
-    stroke-width: 5px;
-}
