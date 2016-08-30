@@ -13,7 +13,7 @@ class UserDatasetSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = (
             'validated', 'validation_notes',
-            'expiration_date', 'owner',
+            'expiration_date', 'owner', 'slug'
         )
 
 
@@ -24,7 +24,7 @@ class FeatureListSerializer(serializers.ModelSerializer):
         model = models.FeatureList
         fields = '__all__'
         read_only_fields = (
-            'validated', 'validation_notes', 'owner')
+            'validated', 'validation_notes', 'owner', 'slug')
 
 
 class SortVectorSerializer(serializers.ModelSerializer):
@@ -33,7 +33,7 @@ class SortVectorSerializer(serializers.ModelSerializer):
         model = models.SortVector
         fields = '__all__'
         read_only_fields = (
-            'validated', 'validation_notes', 'owner')
+            'validated', 'validation_notes', 'owner', 'slug')
 
 
 class EncodeDatasetSerializer(serializers.ModelSerializer):
@@ -66,7 +66,8 @@ class AnalysisSerializer(serializers.ModelSerializer):
         model = models.Analysis
         exclude = ('output', )
         read_only_fields = (
-            'validated', 'validation_notes', 'start_time', 'end_time', 'owner')
+            'validated', 'validation_notes',
+            'start_time', 'end_time', 'owner', 'slug')
 
     def create_analysis_datasets(self, analysis, datasets):
         objects = [
