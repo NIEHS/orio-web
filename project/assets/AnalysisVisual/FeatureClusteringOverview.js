@@ -3,20 +3,40 @@ import d3 from 'd3';
 
 import Loader from './Loader';
 import FeatureClusterDetailModal from './FeatureClusterDetailModal';
+import {interpolateRdYlBu} from 'd3-scale-chromatic';
+import {interpolateSpectral} from 'd3-scale-chromatic';
 
+import {heatmapColorScale} from './utils';
 
-const LABEL_COLORS = [
-    '#a50026',
-    '#e0f3f8',
-    '#d73027',
-    '#abd9e9',
-    '#f46d43',
-    '#74add1',
-    '#fdae61',
-    '#4575b4',
-    '#fee090',
-    '#313695',
-];
+var label_vals = [1, 0, 0.9, 0.1, 0.8, 0.2, 0.7, 0.3, 0.6, 0.4];
+const LABEL_COLORS = [];
+
+for (var i in label_vals) {
+    LABEL_COLORS.push(interpolateSpectral(label_vals[i]));
+}
+
+const GOOGLE_LABELS = [
+    "#3366cc",
+    "#dc3912",
+    "#ff9900",
+    "#109618",
+    "#990099",
+    "#0099c6",
+    "#dd4477",
+    "#66aa00",
+    "#b82e2e",
+    "#316395",
+    "#994499",
+    "#22aa99",
+    "#aaaa11",
+    "#6633cc",
+    "#e67300",
+    "#8b0707",
+    "#651067",
+    "#329262",
+    "#5574a6",
+    "#3b3eac",
+]
 
 class FeatureClusteringOverview{
 
@@ -24,6 +44,7 @@ class FeatureClusteringOverview{
         this.el = el;
         this.id = window.analysisObjectID;
         this.colors = LABEL_COLORS;
+        window.clustHeatmapOffset = {left:60};
     }
 
     featureClusteringOverviewInitURL(id) {
@@ -55,30 +76,34 @@ class FeatureClusteringOverview{
             .domain([0, 1])
             .range(['white', '#cc4248']);
 
+        var display_width = heatmap.width() - window.clustHeatmapOffest.left;
+
+        context.translate(window.clustHeatmapOffest.left,0);
         var scale_y =  data['display_data'].length < heatmap.height()
             ? heatmap.height() / data['display_data'].length
             : 1;
-        var scale_x =  data['display_data'][0].length < heatmap.width()
-            ? heatmap.width() / data['display_data'][0].length
+        var scale_x =  data['display_data'][0].length < display_width
+            ? display_width / data['display_data'][0].length
             : 1;
         context.scale(scale_x, scale_y);
 
         for (var i in data['display_data']) {
             for (var j in data['display_data'][i]) {
-                context.fillStyle=colorScale(data['display_data'][i][j]);
+                context.fillStyle=interpolateRdYlBu(heatmapColorScale(-data['display_data'][i][j]))
+                // context.fillStyle=colorScale(data['display_data'][i][j]);
                 context.fillRect(j,i,1,1);
             }
         }
 
         var height = heatmap_col_tooltips.height(),
-            width = heatmap_col_tooltips.width(),
+            width = heatmap_col_tooltips.width() - window.clustHeatmapOffset.left,
             col_number = data['col_names'].length;
 
         var cell_width = width/col_number;
         var svg = d3.select(heatmap_col_tooltips.get(0))
             .append('svg')
-            .attr('height', height)
-            .attr('width', width);
+            .attr('height', heatmap_col_tooltips.height())
+            .attr('width', heatmap_col_tooltips.width());
 
         var handleHeatmapMouseOver = function(d) {
                 d3.select(this)
@@ -103,7 +128,7 @@ class FeatureClusteringOverview{
             .enter()
             .append('rect')
             .text((d) => d)
-            .attr('x', (d, i) => (i * cell_width))
+            .attr('x', (d, i) => (i * cell_width + window.clustHeatmapOffset.left))
             .attr('y', 0)
             .attr('width', cell_width)
             .attr('height', height)
@@ -121,9 +146,15 @@ class FeatureClusteringOverview{
                     animation: false,
                 }).tooltip('show');
 
+                d3.select(this)
+                    .style('fill', d3.hsl(colors[i]).brighter(1))
+                    .style('cursor', 'pointer');
             },
-            handleMouseOut = function () {
+            handleMouseOut = function (d, i) {
                 $(this).tooltip('hide');
+
+                d3.select(this)
+                    .style('fill', colors[i]);
             };
 
         var cluster_sizes = [],
@@ -145,15 +176,20 @@ class FeatureClusteringOverview{
             .enter()
             .append('rect')
             .attr('class', 'cluster_bar')
-            .attr('x', 0)
+            .attr('x', window.clustHeatmapOffset.left - 24)
             .attr('y', (d) => (d.cume/entry_count)*heatmap_clusters.height())
-            .attr('width', heatmap_clusters.width())
+            .attr('width', 16)
             .attr('height', (d) => (d.entry/entry_count)*heatmap_clusters.height())
             .style('fill', (d, i) => colors[i])
             .on('mouseover', handleMouseOver)
             .on('mouseout', handleMouseOut)
             .on('click', (d, i) => new FeatureClusterDetailModal(
                 $('#flcModal'), d, parseInt(this.id), cluster_sizes.length, i+1));
+
+        svg.append('text')
+            .text('Clusters')
+            .attr('text-anchor', 'middle')
+            .attr('transform', `translate(24,${0.5*height}) rotate(-90)`);
     }
 
     drawHeatmap(k) {
@@ -167,6 +203,8 @@ class FeatureClusteringOverview{
                 'width': heatmapDiv.width(),
             }).appendTo(heatmapDiv);
 
+        window.clustHeatmapOffest = {left: 60};
+
         $.get(url, this.renderHeatmap.bind(this, heatmap));
     }
 
@@ -178,7 +216,7 @@ class FeatureClusteringOverview{
             x_min = parseFloat(Math.min(...[].concat.apply([], data['icoord']))),
             y_min = parseFloat(Math.min(...[].concat.apply([], data['dcoord']))),
             height = dendro.height(),
-            width = dendro.width(),
+            width = dendro.width() - window.clustHeatmapOffset.left,
             ceiling = 0.05*dendro.height(),
             leaf_num = data['leaves'].length,
             icoords = data['icoord'],
@@ -198,8 +236,8 @@ class FeatureClusteringOverview{
 
         var svg = d3.select(dendro.get(0))
             .append('svg')
-            .attr('width', width)
-            .attr('height', height);
+            .attr('width', dendro.width())
+            .attr('height', dendro.height());
 
         svg.append('g')
             .selectAll('line')
@@ -207,8 +245,8 @@ class FeatureClusteringOverview{
             .enter()
             .append('line')
             .attr('class', 'dendroLine')
-            .attr('x1', (d) => d.x1)
-            .attr('x2', (d) => d.x2)
+            .attr('x1', (d) => window.clustHeatmapOffset.left + d.x1)
+            .attr('x2', (d) => window.clustHeatmapOffset.left + d.x2)
             .attr('y1', (d) => d.y1)
             .attr('y2', (d) => d.y2);
     }
@@ -217,15 +255,16 @@ class FeatureClusteringOverview{
         //Draw SVGs
         var vert = this.vert,
             height = vert.height(),
-            width = vert.width(),
+            width = vert.width() - window.clustHeatmapOffset.left,
             col_number = col_names.length;
 
         var svg = d3.select(vert.get(0))
             .append('svg')
-            .attr('height', height)
-            .attr('width', width);
+            .attr('height', vert.height())
+            .attr('width', vert.width());
 
         svg.append('g')
+            .attr('transform', `translate(${window.clustHeatmapOffset.left},0)`)
             .selectAll('text')
             .data(col_names)
             .enter()
@@ -268,12 +307,35 @@ class FeatureClusteringOverview{
                 self.drawHeatmap(this.value);
                 self.drawCentroidPlot(this.value, null);
                 self.drawCentroidPlotLegend(this.value);
+                self.populateClusterSelect(this.value);
             };
 
         select_list
             .change(resetDisplayFlags);
 
         addOptions(this.el, d3.range(2,11));
+        select_list[0].selectedIndex = 0;
+    }
+
+    populateClusterSelect(k) {
+        function addOptions(el_1, option_array) {
+            var select = el_1.find('#select_cluster');
+
+            select.empty();
+
+            d3.select(select.get(0))
+                .selectAll('option')
+                .data(option_array)
+                .enter()
+                .append('option')
+                .text((d) => d)
+                .attr('value', (d) => d);
+        }
+
+        var self = this,
+            select_list = this.clust_select_list;
+
+        addOptions(this.el, d3.range(1,parseInt(k)+1));
         select_list[0].selectedIndex = 0;
     }
 
@@ -357,14 +419,18 @@ class FeatureClusteringOverview{
             .attr('transform', `translate(${offset.left},0)`)
             .call(yAxis);
 
-        graph.append('text')
+        var _text = ['Upper quartile-normalized', 'counts'];
+        graph.append('g')
+            .selectAll('text')
+            .data(_text)
+            .enter()
+            .append('text')
+            .text((d) => d)
             .attr('class', 'y label')
-            .attr('text-anchor', 'end')
-            .attr('y', (1/8) * $graph.width())
-            .attr('dy', '0.75em')
-            .attr('x', -(1/7) * $graph.height())
-            .attr('transform', 'rotate(-90)')
-            .text('Upper quartile-normalized counts');
+            .attr('text-anchor', 'middle')
+            .attr('transform', (d,i) => {
+                return `translate(${offset.left-52+(i*12)}, ${0.4*$graph.height()}) rotate(-90)`
+            });
 
         var colors = this.colors;
         graph.append('g')
@@ -430,7 +496,7 @@ class FeatureClusteringOverview{
         var offset = {
             'top': (1/20)*this.graph.height(),
             'bottom': (3/10)*this.graph.height(),
-            'left': (1/4)*this.graph.width(),
+            'left': 80,
             'right': 0,
         };
 
@@ -446,73 +512,134 @@ class FeatureClusteringOverview{
     }
 
     drawHeatmapLegend() {
+
+        var legendScale = d3.scale.linear()
+            .domain([0, 1])
+            .range([0, 1]);
+
         var legend = this.legend,
             height = legend.height(),
-            width = legend.width();
+            width = legend.width(),
+            legend_text = ['0','Upper quartile'],
+            gradient = legendScale.ticks(20),
+            cellWidth = width/gradient.length,
+            svg;
 
-        var svg = d3.select(legend.get(0))
+        svg = d3.select(legend.get(0))
             .append('svg')
             .attr('width', width)
             .attr('height', height)
             .style('overflow', 'visible');
 
-        var gradient = svg
-            .append('linearGradient')
-            .attr('y1', '0')
-            .attr('y2', '0')
-            .attr('x1', '0')
-            .attr('x2', width)
-            .attr('id', 'gradient')
-            .attr('gradientUnits', 'userSpaceOnUse');
+        svg.append('text')
+            .text(this.title)
+            .attr('x', 0.5 * width)
+            .attr('y', 0.15 * height)
+            .attr('text-anchor', 'middle');
 
-        gradient
-            .append('stop')
-            .attr('offset', '0')
-            .attr('stop-color', 'white');
-
-        gradient
-            .append('stop')
-            .attr('offset', '1')
-            .attr('stop-color', '#cc4248');
-
-        svg.append('rect')
-            .attr('width', width)
-            .attr('height', 0.2 * height)
-            .attr('x', '0')
+        svg.append('g')
+            .selectAll('rect')
+            .data(gradient)
+            .enter()
+            .append('rect')
+            .attr('width', cellWidth)
+            .attr('height', 0.15 * height)
+            .attr('x', (d, i) => i*cellWidth)
             .attr('y', 0.5 * height)
-            .attr('fill', 'url(#gradient)')
-            .attr('stroke', 'black')
-            .attr('stroke-width', '1');
-
-        var legend_lines = [
-            {text: '0', position: 0},
-            {text: 'Upper Quartile', position: width},
-        ];
+            .attr('fill', (d) => interpolateRdYlBu(heatmapColorScale(-d)));
 
         svg.append('g')
             .selectAll('line')
-            .data(legend_lines)
+            .data(legend_text)
             .enter()
             .append('line')
-            .attr('x1', function(d) {return d.position;})
-            .attr('x2', function(d) {return d.position;})
-            .attr('y1', 0.3 * height)
+            .attr('x1', (d, i)=>i*1*width)
+            .attr('x2', (d, i)=>i*1*width)
+            .attr('y1', 0.45 * height)
             .attr('y2', 0.5 * height)
             .style('stroke', 'black')
             .style('stroke-width', 1);
 
         svg.append('g')
             .selectAll('text')
-            .data(legend_lines)
+            .data(legend_text)
             .enter()
             .append('text')
-            .text(function(d) { return d.text;})
-            .attr('x', function(d) {return d.position;})
-            .attr('y', 0.25*height)
+            .text((d) => d)
+            .attr('x', (d, i) => i*1*width)
+            .attr('y', 0.4*height)
             .attr('font-family', 'sans-serif')
             .attr('font-size', '12px')
             .attr('fill', 'black')
             .style('text-anchor', 'middle');
+        //
+        // var legend = this.legend,
+        //     height = legend.height(),
+        //     width = legend.width();
+        //
+        // var svg = d3.select(legend.get(0))
+        //     .append('svg')
+        //     .attr('width', width)
+        //     .attr('height', height)
+        //     .style('overflow', 'visible');
+        //
+        // var gradient = svg
+        //     .append('linearGradient')
+        //     .attr('y1', '0')
+        //     .attr('y2', '0')
+        //     .attr('x1', '0')
+        //     .attr('x2', width)
+        //     .attr('id', 'gradient')
+        //     .attr('gradientUnits', 'userSpaceOnUse');
+        //
+        // gradient
+        //     .append('stop')
+        //     .attr('offset', '0')
+        //     .attr('stop-color', 'white');
+        //
+        // gradient
+        //     .append('stop')
+        //     .attr('offset', '1')
+        //     .attr('stop-color', '#cc4248');
+        //
+        // svg.append('rect')
+        //     .attr('width', width)
+        //     .attr('height', 0.15 * height)
+        //     .attr('x', '0')
+        //     .attr('y', 0.5 * height)
+        //     .attr('fill', 'url(#gradient)')
+        //     .attr('stroke', 'black')
+        //     .attr('stroke-width', '1');
+        //
+        // var legend_lines = [
+        //     {text: '0', position: 0},
+        //     {text: 'Upper Quartile', position: width},
+        // ];
+        //
+        // svg.append('g')
+        //     .selectAll('line')
+        //     .data(legend_lines)
+        //     .enter()
+        //     .append('line')
+        //     .attr('x1', function(d) {return d.position;})
+        //     .attr('x2', function(d) {return d.position;})
+        //     .attr('y1', 0.45 * height)
+        //     .attr('y2', 0.5 * height)
+        //     .style('stroke', 'black')
+        //     .style('stroke-width', 1);
+        //
+        // svg.append('g')
+        //     .selectAll('text')
+        //     .data(legend_lines)
+        //     .enter()
+        //     .append('text')
+        //     .text(function(d) { return d.text;})
+        //     .attr('x', function(d) {return d.position;})
+        //     .attr('y', 0.4*height)
+        //     .attr('font-family', 'sans-serif')
+        //     .attr('font-size', '12px')
+        //     .attr('fill', 'black')
+        //     .style('text-anchor', 'middle');
     }
 
     drawCentroidPlotLegend(k) {
@@ -576,87 +703,89 @@ class FeatureClusteringOverview{
         this.dendro = $('<div id="dendrogram" class="layouts">')
             .css({
                 position: 'absolute',
-                left: '10%',
+                left: '0%',
                 top: '2%',
                 overflow: 'visible',
                 height: '10%',
-                width: '40%',
+                width: '50%',
             }).appendTo(this.el);
 
         this.vert = $('<div id="vert_names" class="layouts">')
             .css({
                 position: 'absolute',
-                left: '10%',
+                left: '0%',
                 top: '13%',
                 overflow: 'hidden',
                 height: '8%',
-                width: '40%',
+                width: '50%',
             }).appendTo(this.el);
 
         this.heatmapDiv = $('<div class="layouts">')
             .css({
                 position: 'absolute',
-                left: '10%',
+                left: '0%',
                 top: '22%',
                 height: '60%',
-                width: '40%',
+                width: '50%',
             })
             .appendTo(this.el);
 
         this.heatmap_col_tooltips = $('<div id="heatmap_col_tooltips" class="layouts">')
             .css({
                 height: '60%',
-                width: '40%',
+                width: '50%',
                 position: 'absolute',
-                left: '10%',
+                left: '0%',
                 top: '22%',
             }).appendTo(this.el);
 
         this.heatmap_clusters = $('<div id="heatmap_clusters" class="layouts">')
             .css({
                 height: '60%',
-                width: '2%',
+                width: window.clustHeatmapOffset.left,
                 position: 'absolute',
-                left: '7%',
+                left: '0%',
                 top: '22%',
             }).appendTo(this.el);
 
         this.legend = $('<div id="heatmap_legend" class="layouts">')
             .css({
                 position: 'absolute',
-                left: '20%',
-                top: '86%',
+                left: window.clustHeatmapOffset.left + 0.15 * (this.el.width() - window.clustHeatmapOffset.left),
+                top: '82%',
                 overflow: 'visible',
-                height: '5%',
-                width: '20%',
+                height: '20%',
+                width: 0.20 * (this.el.width() - window.clustHeatmapOffset.left),
             }).appendTo(this.el);
 
         this.graph = $('<div id="graph" class="layouts">')
             .css({
                 height: '50%',
-                width: '50%',
+                width: '48%',
                 position: 'absolute',
-                left: '50%',
-                top: '20%',
+                left: '52%',
+                top: '16%',
             }).appendTo(this.el);
 
-        this.select_list_div = $('<div id="k_prompt" class="layouts">')
+        this.select_list_div = $('<div align="right" id="k_prompt" class="layouts">')
             .css({
                 height: '8%',
-                width: '22%',
+                width: '100px',
                 position: 'absolute',
-                top: '14%',
-                left: '64%',
+                top: '0%',
+                left: 0.52 * this.el.width(),
             })
             .appendTo(this.el)
-            .append('<label>Select k-value:</label>');
+            .append('text')
+            .text('k:')
+            .css('font-weight', 'bold');
 
         this.select_list = $('<select id="select_k" class="layouts">')
             .css({
                 position: 'absolute',
-                width: '80px',
-                top: '14.2%',
-                left: '85%',
+                width: '50px',
+                top: '0.2%',
+                left: 0.52 * this.el.width() + 110,
             })
             .appendTo(this.el);
 
@@ -665,7 +794,7 @@ class FeatureClusteringOverview{
                 height: '5%',
                 width: '40%',
                 position: 'absolute',
-                top: '72%',
+                top: '69%',
                 left: '60%',
             })
             .appendTo(this.el)
@@ -677,9 +806,48 @@ class FeatureClusteringOverview{
                 left: '60%',
                 top: '76%',
                 overflow: 'visible',
-                height: '8%',
+                height: '16%',
                 width: '40%',
             }).appendTo(this.el);
+
+        this.clust_select_list_div = $('<div align="right" id="cluster_prompt" class="layouts">')
+            .css({
+                height: '8%',
+                width: '100px',
+                position: 'absolute',
+                top: '6%',
+                left: 0.52 * this.el.width(),
+            })
+            .appendTo(this.el)
+            .append('text')
+            .text('Cluster:')
+            .css('font-weight', 'bold');
+
+        this.clust_select_list = $('<select id="select_cluster" class="layouts">')
+            .css({
+                position: 'absolute',
+                width: '50px',
+                top: '6.2%',
+                left: 0.52 * this.el.width() + 110,
+            })
+            .appendTo(this.el);
+
+        $('<button type="button" class="btn btn-primary btn-block">Display cluster<br>detail</button>')
+            .css({
+                position: 'absolute',
+                left: 0.52 * this.el.width() + 180,
+                width: 0.52 * this.el.width() - 200,
+                height: '12%',
+                padding: 0,
+            })
+            .appendTo(this.el)
+            .click(function () { new FeatureClusterDetailModal(
+                $('#flcModal'),
+                null,
+                parseInt(window.analysisObjectID),
+                parseInt($( "#select_k option:selected" ).text()),
+                parseInt($( "#select_cluster option:selected" ).text()),
+            )});
     }
 
     renderLoader(){
@@ -700,6 +868,7 @@ class FeatureClusteringOverview{
 
     render() {
         window.show_centroid = [true, true];
+
         this.renderContainers();
         this.renderLoader();
         this.makeKSelect();
@@ -714,6 +883,7 @@ class FeatureClusteringOverview{
                 this.drawHeatmap(2);
                 this.drawCentroidPlot(2, null);
                 this.drawCentroidPlotLegend(2);
+                this.populateClusterSelect(2);
             };
 
         this.loadingSpinner.show();
