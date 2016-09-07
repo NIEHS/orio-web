@@ -138,6 +138,22 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         return Response({"is_complete": object.is_complete})
 
     @detail_route(methods=['get'])
+    def clust_boxplot(self, request, pk=None):
+        k = tryParseInt(self.request.GET.get('k'), -1)
+        col_index = tryParseInt(self.request.GET.get('index'), -1)
+        if k == -1:
+            raise NotAcceptable("k parameter required")
+        if col_index == -1:
+            raise NotAcceptable("col_index parameter required")
+        object = self.get_object()
+        return Response(object.get_clust_boxplot_values(k, col_index))
+
+    @detail_route(methods=['get'])
+    def fc_vector_col_names(self, request, pk=None):
+        object = self.get_object()
+        return Response(object.get_fc_vectors_ngs_list())
+
+    @detail_route(methods=['get'])
     def user_sort_ks(self, request, pk=None):
         matrix_id = tryParseInt(self.request.GET.get('matrix_id'), -1)
         if matrix_id == -1:

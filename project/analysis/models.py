@@ -12,6 +12,7 @@ import pandas as pd
 import math
 import numpy
 from scipy import stats, ndimage
+from collections import defaultdict
 
 from django.db import models
 from django.conf import settings
@@ -961,6 +962,11 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             'bin_parameters': output['bin_parameters'],
         }
 
+    def get_fc_vectors_ngs_list(self):
+        if not self.output:
+            return False
+        return self.output_json['fc_vectors']['col_names']
+
     def get_analysis_overview_init(self):
         if not self.output:
             return False
@@ -995,12 +1001,85 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         return data
 
     def get_feature_clustering_overview_init(self):
+        centroids = self.output_json['fc_centroids']
+
+        upper_quartile = numpy.array(self.output_json['fc_vectors']['q3'],
+                                     dtype=numpy.float)
+        for k in centroids:
+            for cluster in centroids[k]:
+                centroids[k][cluster] = numpy.nan_to_num(
+                    numpy.array(centroids[k][cluster], dtype=numpy.float) /
+                    upper_quartile)
+
         data = {
             'dendrogram': self.output_json['dsc_dendrogram'],
             'matrix_names': self.matrices['names'],
-            'fcCentroids': self.output_json['fc_centroids'],
+            'fcCentroids': centroids,
         }
         return data
+
+    def get_clust_boxplot_values(self, k, col_index):
+        box_plot_values = dict()
+        cluster_values = defaultdict(list)
+
+        vectors = self.output_json['fc_vectors']['vectors']
+
+        for cluster, features in \
+                self.output_json['fc_clusters'][str(k)].items():
+            for feature in features:
+                cluster_values[cluster].append(vectors[feature][col_index])
+                cluster_values['all'].append(vectors[feature][col_index])
+
+        for key, _list in cluster_values.items():
+            _array = numpy.array(_list, dtype=numpy.float)
+
+            q1 = numpy.percentile(_array, 25)
+            q2 = numpy.percentile(_array, 50)
+            q3 = numpy.percentile(_array, 75)
+
+            iqr = q3 - q1
+
+            lower = q1 - 1.5 * iqr
+            upper = q3 + 1.5 * iqr
+
+            outliers = []
+            _max = float('-inf')
+            _min = float('inf')
+
+            for val in numpy.nditer(_array):
+                if val < lower or val > upper:
+                    outliers.append(val)
+                else:
+                    if val > _max:
+                        _max = val
+                    elif val < _min:
+                        _min = val
+
+            box_plot_values[key] = {
+                'q1': q1,
+                'q2': q2,
+                'q3': q3,
+                'min': _min,
+                'max': _max,
+                'outliers': outliers,
+            }
+
+        clusters = list(cluster_values.keys())
+        p_values = []
+
+        for i, c_1 in enumerate(clusters):
+            for c_2 in clusters[i+1:]:
+                clust_1 = cluster_values[c_1]
+                clust_2 = cluster_values[c_2]
+                statistic, p_value = stats.mannwhitneyu(clust_1, clust_2)
+                p_values.append(p_value)
+
+        mann_whitney_results = {
+            'clusters': clusters,
+            'p_values': p_values,
+        }
+
+        return box_plot_values, mann_whitney_results
 
     def get_dsc_full_row_value(self, row_name):
         if not self.output:
@@ -1062,6 +1141,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     def get_k_clust_heatmap(self, k_value, dim_x, dim_y):
         fc_vectors = self.output_json['fc_vectors']['vectors']
         fc_clusters = self.output_json['fc_clusters'][str(k_value)]
+        upper_quartile = numpy.array(self.output_json['fc_vectors']['q3'],
+                                     dtype=numpy.float)
 
         display_values = []
         cluster_sizes = dict()
@@ -1070,8 +1151,9 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             for member in fc_clusters[cluster]:
                 display_values.append(fc_vectors[member])
 
-        display_values = numpy.array(display_values)
-        display_values = display_values.astype(float)
+        display_values = numpy.array(display_values, dtype=numpy.float)
+        display_values = display_values/upper_quartile
+        display_values = numpy.nan_to_num(display_values)
 
         ncols = len(display_values[0])
         nrows = len(display_values)

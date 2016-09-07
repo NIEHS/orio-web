@@ -46,6 +46,14 @@ path {
     shape-rendering: crispEdges;
 }
 
+.axis line {
+    stroke: #000;
+}
+
+.axis path {
+    stroke: #000;
+}
+
 .x.axis line {
     stroke: #000;
 }
