@@ -465,11 +465,11 @@ class ClusterDetailBody extends React.Component {
             let d2 = _.unzip(d),
                 features = d2[0],
                 genes = _.chain(d2[1].join(',').split(','))
-                        .compact() // Remove falsy
+                        .compact()  // Remove falsy
+                        .without('None')  // case where no genes were found for feature
                         .uniq()
                         .sort()
                         .value();
-                genes = _.without(genes, 'None'); // Python 'None' persist?
 
             this.setState({
                 featuresCount: features.length,
