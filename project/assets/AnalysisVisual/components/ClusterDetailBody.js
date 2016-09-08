@@ -7,13 +7,53 @@ import {saveAs} from 'filesaver.js';
 
 import Loader from './Loader';
 
+var PValueTable = React.createClass({
+    propTypes: {
+        data: React.PropTypes.object,
+        height: React.PropTypes.number,
+        width: React.PropTypes.number,
+    },
+
+    render: function () {
+        var makeHeader = function(x, i) {
+            return <th className="pTh" key={i}>{x}</th>;
+        };
+        var makeRow = function(x, i) {
+            return <td className="pTd" key={i}>{parseFloat(x).toPrecision(2)}</td>;
+        };
+
+        var rows = [],
+            clusters = this.props.data['clusters'],
+            p_values = this.props.data['p_values'];
+
+        var header = (<tr><th className="pTh"></th>{clusters.map(makeHeader)}</tr>);
+
+        for (let index in p_values) {
+            rows.push(
+                <tr className="pTr" key={index}>
+                    <th className="pTh">{clusters[index]}</th>
+                    {p_values[index].map(makeRow)}
+                </tr>
+            );
+        }
+
+        return (
+            <div>
+                <p>Pairwise p-values from Mann-Whitney test:</p>
+                <table className="pTable">
+                    <tbody>{header}{rows}</tbody>
+                </table>
+            </div>
+        );
+    },
+})
+
 var Axis = React.createClass({
     propTypes: {
         h: React.PropTypes.number,
         margins: React.PropTypes.object,
         axis: React.PropTypes.func,
         axisType: React.PropTypes.oneOf(['x','y'])
-
     },
 
     componentDidUpdate: function () { this.renderAxis(); },
@@ -39,6 +79,7 @@ var Axis = React.createClass({
 var Outliers = React.createClass({
     propTypes: {
         data: React.PropTypes.object,
+        cluster_id: React.PropTypes.number,
         height: React.PropTypes.number,
         width: React.PropTypes.number,
         x: React.PropTypes.func,
@@ -60,6 +101,10 @@ var Outliers = React.createClass({
 
         var outliers = [];
         data_array.map(function(d,i) {
+
+            var cluster = Object.keys(self.props.data)[i],
+                color = (cluster == self.props.cluster_id) ? "red" : "black";
+
             for (let index in d.outliers) {
                 outliers.push(
                     <circle
@@ -68,7 +113,7 @@ var Outliers = React.createClass({
                         cy={self.props.y(d.outliers[index])}
                         r={0.05*cell_width}
                         fill="none"
-                        stroke="black"
+                        stroke={color}
                     />
                 );
             }
@@ -81,6 +126,7 @@ var Outliers = React.createClass({
 var Whiskers = React.createClass({
     propTypes: {
         data: React.PropTypes.object,
+        cluster_id: React.PropTypes.number,
         height: React.PropTypes.number,
         width: React.PropTypes.number,
         x: React.PropTypes.func,
@@ -101,6 +147,10 @@ var Whiskers = React.createClass({
         }
 
         var whiskers = data_array.map(function(d,i) {
+
+            var cluster = Object.keys(self.props.data)[i],
+                color = (cluster == self.props.cluster_id) ? "red" : "black";
+
             return (
                 <g key={i}>
                     <line
@@ -108,28 +158,28 @@ var Whiskers = React.createClass({
                         x2={self.props.x(Object.keys(self.props.data)[i])+cell_width}
                         y1={self.props.y(d.min)}
                         y2={self.props.y(d.min)}
-                        stroke="black"
+                        stroke={color}
                     />
                     <line
                         x1={self.props.x(Object.keys(self.props.data)[i])+0.5*cell_width}
                         x2={self.props.x(Object.keys(self.props.data)[i])+0.5*cell_width}
                         y1={self.props.y(d.max)}
                         y2={self.props.y(d.q3)}
-                        stroke="black"
+                        stroke={color}
                     />
                     <line
                         x1={self.props.x(Object.keys(self.props.data)[i])+0.5*cell_width}
                         x2={self.props.x(Object.keys(self.props.data)[i])+0.5*cell_width}
                         y1={self.props.y(d.min)}
                         y2={self.props.y(d.q1)}
-                        stroke="black"
+                        stroke={color}
                     />
                     <line
                         x1={self.props.x(Object.keys(self.props.data)[i])}
                         x2={self.props.x(Object.keys(self.props.data)[i])+cell_width}
                         y1={self.props.y(d.max)}
                         y2={self.props.y(d.max)}
-                        stroke="black"
+                        stroke={color}
                     />
                 </g>
             );
@@ -143,6 +193,7 @@ var Whiskers = React.createClass({
 var Boxes = React.createClass({
     propTypes: {
         data: React.PropTypes.object,
+        cluster_id: React.PropTypes.number,
         height: React.PropTypes.number,
         width: React.PropTypes.number,
         x: React.PropTypes.func,
@@ -166,6 +217,10 @@ var Boxes = React.createClass({
         var keys = ["lower", "upper"];
 
         var boxes = data_array.map(function(d,i) {
+
+            var cluster = Object.keys(self.props.data)[i],
+                color = (cluster == self.props.cluster_id) ? "red" : "black";
+
             return (
                 <g key={i}>
                     <rect
@@ -174,15 +229,14 @@ var Boxes = React.createClass({
                         height={self.props.y(d.q1) - self.props.y(d.q3)}
                         width={cell_width}
                         fill="none"
-                        stroke="black"
-                        style={{}}
+                        stroke={color}
                     />
                     <line
                         x1={self.props.x(Object.keys(self.props.data)[i])}
                         x2={self.props.x(Object.keys(self.props.data)[i]) + cell_width}
                         y1={self.props.y(d.q2)}
                         y2={self.props.y(d.q2)}
-                        stroke="black"
+                        stroke={color}
                     />
                 </g>
             );
@@ -195,9 +249,10 @@ var Boxes = React.createClass({
 var BoxPlot = React.createClass({
     propTypes: {
         data: React.PropTypes.object,
+        index: React.PropTypes.number,
         height: React.PropTypes.number,
         width: React.PropTypes.number,
-        index: React.PropTypes.number,
+        cluster_id: React.PropTypes.number,
     },
 
     render: function() {
@@ -206,7 +261,7 @@ var BoxPlot = React.createClass({
             data = this.props.data,
             margins = {
                 left: 100,
-                bottom: 50,
+                bottom: 60,
             },
             h = this.props.height - margins.bottom,
             w = this.props.width - margins.left;
@@ -243,9 +298,11 @@ var BoxPlot = React.createClass({
 
         return (
             <div className="BoxPlot" style={{height: this.props.height, width: this.props.width}}>
+                <p>Read coverage values at clusters:</p>
                 <svg height={this.props.height} width={this.props.width}>
                     <Boxes
                         data={this.props.data}
+                        cluster_id={this.props.cluster_id}
                         height = {h}
                         width = {w}
                         x = {x}
@@ -253,6 +310,7 @@ var BoxPlot = React.createClass({
                         />
                     <Whiskers
                         data={this.props.data}
+                        cluster_id={this.props.cluster_id}
                         height = {h}
                         width = {w}
                         x = {x}
@@ -260,6 +318,7 @@ var BoxPlot = React.createClass({
                         />
                     <Outliers
                         data={this.props.data}
+                        cluster_id={this.props.cluster_id}
                         height = {h}
                         width = {w}
                         x = {x}
@@ -287,6 +346,7 @@ var ClusterQuant = React.createClass({
     propTypes: {
         analysis_id: React.PropTypes.number.isRequired,
         k: React.PropTypes.number.isRequired,
+        cluster_id: React.PropTypes.number,
     },
 
     getInitialState: function() {
@@ -298,7 +358,7 @@ var ClusterQuant = React.createClass({
         };
     },
 
-    componentWillMount: function() {
+    componentDidMount: function() {
         $.get(`/dashboard/api/analysis/${this.props.analysis_id}/fc_vector_col_names`, (d)=>{
             this.setState({
                 col_names: d,
@@ -317,7 +377,7 @@ var ClusterQuant = React.createClass({
 
         return (
             <div>
-                <select id="col_select">{this.state.col_names.map(makeOption)}</select>
+                <select id="col_select" className="clustQuantSelect">{this.state.col_names.map(makeOption)}</select>
             </div>
         );
     },
@@ -327,7 +387,7 @@ var ClusterQuant = React.createClass({
             <div>
                 <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn btn-primary clustQuantButton"
                     onClick={this.handleSelectClick}>Display box plot</button>
             </div>
         );
@@ -351,24 +411,32 @@ var ClusterQuant = React.createClass({
         };
 
         var box_height = 200;
+        var pval_height = 200;
 
         return (
-            <div className="ClustCharts" style={{height: height, width: width}}>
+            <div className="ClustCharts" style={{height: box_height, width: width}}>
                 <BoxPlot
                     data={this.state.box_plot_data}
                     height={box_height}
                     width={width}
-                    index={this.state.selected_col}/>
+                    cluster_id={this.props.cluster_id}/>
+                <PValueTable
+                    data={this.state.mw_values}
+                    height={pval_height}
+                    width={width}/>
             </div>
         );
     },
 
     render: function() {
+
+        var width = $("#ind_heatmap_modal_body").width();
+
         return (
             <div className="ClustQuant">
                 {this.renderSelectList()}
                 {this.renderSelectButton()}
-                {this.renderCharts(400,300)}
+                {this.renderCharts(400,width)}
             </div>
         );
     },
@@ -502,7 +570,8 @@ class ClusterDetailBody extends React.Component {
                 <div role="tabpanel" className="tab-pane" id='fcdm_coverage'>
                     <ClusterQuant
                         analysis_id={this.props.analysis_id}
-                        k={this.props.k}/>
+                        k={this.props.k}
+                        cluster_id={this.props.cluster_id}/>
                 </div>
             </div>
         </div>;

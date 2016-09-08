@@ -91,3 +91,34 @@ g.labels text {
     font-size: 12px;
     margin: 10px 0;
 }
+
+.pTable {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.pTd {
+    border: 1px solid #dddddd;
+    text-align: left;
+    /*padding: 8px;*/
+}
+
+.pTh {
+    border: 1px solid #dddddd;
+    text-align: center;
+    /*padding: 8px;*/
+}
+
+.pTr:nth-child(even) {
+    background-color: #dddddd;
+}
+
+.clustQuantButton {
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.clustQuantSelect {
+    margin-top: 10px;
+    width: 100%;
+}
