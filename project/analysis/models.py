@@ -1064,15 +1064,16 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                 'outliers': outliers,
             }
 
-        clusters = list(cluster_values.keys())
-        p_values = []
+        clusters = list(sorted(cluster_values.keys()))
+        p_values = numpy.empty((len(clusters), len(clusters)))
 
         for i, c_1 in enumerate(clusters):
-            for c_2 in clusters[i+1:]:
+            for j, c_2 in enumerate(clusters[i:]):
                 clust_1 = cluster_values[c_1]
                 clust_2 = cluster_values[c_2]
-                statistic, p_value = stats.mannwhitneyu(clust_1, clust_2)
-                p_values.append(p_value)
+                statistic, p = stats.mannwhitneyu(clust_1, clust_2)
+                p_values[i][i+j] = p
+                p_values[i+j][i] = p
 
         mann_whitney_results = {
             'clusters': clusters,
