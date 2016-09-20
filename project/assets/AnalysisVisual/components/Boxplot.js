@@ -1,3 +1,4 @@
+import _ from 'underscore';
 import React from 'react';
 import d3 from 'd3';
 
@@ -19,18 +20,16 @@ class BoxPlot extends React.Component {
             h = this.props.height - margins.bottom,
             w = this.props.width - margins.left;
 
-        for (var key in data) {
-            if (data.hasOwnProperty(key)) {
-                if (data[key]['max'] > max_value) {
-                    max_value = data[key]['max'];
-                }
-                for (let val of data[key]['outliers'].values()) {
-                    if (val > max_value) {
-                        max_value = val;
-                    }
-                }
+        _.each(data, (v, k)=>{
+            let local_max = v.max,
+                max_outlier = d3.max(v.outliers);
+            if (local_max > max_value) {
+                max_value = local_max;
             }
-        }
+            if (max_outlier > max_value) {
+                max_value = max_outlier;
+            }
+        });
 
         var x = d3.scale.ordinal()
             .domain(Object.keys(this.props.data))
