@@ -4,7 +4,7 @@ import React from 'react';
 import {saveAs} from 'filesaver.js';
 
 import Loader from './Loader';
-import Boxplot from './Boxplot';
+import ClusterQuant from './ClusterQuant';
 
 
 class ClusterDetailBody extends React.Component {
@@ -131,7 +131,7 @@ class ClusterDetailBody extends React.Component {
                     {this.renderGenes()}
                 </div>
                 <div role="tabpanel" className="tab-pane" id='fcdm_coverage'>
-                    <Boxplot
+                    <ClusterQuant
                         analysis_id={this.props.analysis_id}
                         k={this.props.k}
                         cluster_id={this.props.cluster_id}/>
