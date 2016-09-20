@@ -1,36 +1,44 @@
+import _ from 'underscore';
 import React from 'react';
 
 
 class PValueTable extends React.Component {
 
-    render() {
-        var makeHeader = function(x, i) {
-            return <th className="pTh" key={i}>{x}</th>;
-        };
-        var makeRow = function(x, i) {
-            return <td className="pTd" key={i}>{parseFloat(x).toPrecision(2)}</td>;
-        };
+    renderHeaderTh(d, i){
+        return <th key={i}>{d}</th>;
+    }
 
-        var rows = [],
-            clusters = this.props.data['clusters'],
-            p_values = this.props.data['p_values'];
+    renderRowTd(d, i){
+        return <td key={i}>{parseFloat(d).toPrecision(2)}</td>;
+    }
 
-        var header = (<tr><th className="pTh"></th>{clusters.map(makeHeader)}</tr>);
+    renderRow(d, i){
+        return <tr key={i}>
+            <th>{d[0]}</th>
+            {d[1].map(this.renderRowTd.bind(this))}
+        </tr>;
+    }
 
-        for (let index in p_values) {
-            rows.push(
-                <tr className="pTr" key={index}>
-                    <th className="pTh">{clusters[index]}</th>
-                    {p_values[index].map(makeRow)}
-                </tr>
-            );
-        }
+    render(){
+
+        let row_data = _.zip(
+            this.props.data.clusters,
+            this.props.data.p_values
+        );
 
         return (
             <div>
-                <p>Pairwise p-values from Mann-Whitney test:</p>
-                <table className="pTable">
-                    <tbody>{header}{rows}</tbody>
+                <p><b>Pairwise <i>p</i>-values from Mann-Whitney test:</b></p>
+                <table className="table table-condensed table-striped">
+                    <thead>
+                        <tr>
+                        <th></th>
+                        {this.props.data.clusters.map(this.renderHeaderTh)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {row_data.map(this.renderRow.bind(this))}
+                    </tbody>
                 </table>
             </div>
         );
