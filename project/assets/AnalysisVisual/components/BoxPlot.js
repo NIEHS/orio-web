@@ -66,7 +66,6 @@ class BoxPlot extends React.Component {
 
         return (
             <div className="BoxPlot" style={{height: this.props.height, width: this.props.width}}>
-                <p><b>Read coverage values at clusters:</b></p>
                 <svg height={this.props.height} width={this.props.width}>
                     <g transform={`translate(0,${margins.top})`}>
                     <Boxes
