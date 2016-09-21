@@ -16,8 +16,9 @@ class Boxes extends React.Component{
                 y={this.props.y(d.q3)}
                 height={this.props.y(d.q1) - this.props.y(d.q3)}
                 width={cell_width}
-                fill="none"
+                fill={color}
                 stroke={color}
+                style={{fillOpacity: 0.25}}
             />
             <line
                 x1={this.props.x(Object.keys(this.props.data)[i])}
