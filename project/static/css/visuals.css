@@ -29,6 +29,7 @@
 #flcModal .modal-body{
     height: calc(100% - 50px);
     width: 100%;
+    overflow-y: auto;
 }
 
 /* bootstrap inner tooltip override */

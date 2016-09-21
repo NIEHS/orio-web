@@ -41,9 +41,9 @@ class ClusterQuant extends React.Component {
             <div className='row well well-sm' style={{marginTop: 5}}>
                 <div className='col-sm-9'>
                     <form className="form-horizontal">
-                        <label className='col-sm-3 control-label' htmlFor="col_select">Select a dataset:</label>
+                        <label className='col-sm-3 control-label'>Select a dataset:</label>
                         <div className='col-sm-9'>
-                            <select id="col_select" className='form-control'>
+                            <select ref="selector" className='form-control'>
                                 {this.state.col_names.map(makeOption)}
                             </select>
                         </div>
@@ -60,7 +60,7 @@ class ClusterQuant extends React.Component {
     }
 
     handleSelectClick() {
-        var index = $('#col_select option:selected').val(),
+        var index = this.refs.selector.value,
             url = `/dashboard/api/analysis/${this.props.analysis_id}/clust_boxplot/?k=${this.props.k}&index=${index}`;
 
         this.setState({
@@ -97,7 +97,7 @@ class ClusterQuant extends React.Component {
             return null;
         }
 
-        return <div key='a' className='row'>
+        return <div className='row'>
             <div className='col-xs-12'>
                 <p><b>Read coverage values at clusters:</b></p>
                 <BoxPlot
@@ -114,7 +114,7 @@ class ClusterQuant extends React.Component {
     }
 
     render() {
-        var width = $('#ind_heatmap_modal_body').width();
+        var width = $('#ind_heatmap_modal_body').width() - 30;
         return (
             <div className="container-fluid">
                 {this.renderSelector()}
