@@ -25,6 +25,7 @@ class ClusterQuant extends React.Component {
             this.setState({
                 col_names: d,
             });
+            this.handleSelectClick();
         });
     }
 
@@ -39,21 +40,17 @@ class ClusterQuant extends React.Component {
 
         return (
             <div className='row well well-sm' style={{marginTop: 5}}>
-                <div className='col-sm-9'>
+                <div className='col-sm-12'>
                     <form className="form-horizontal">
                         <label className='col-sm-3 control-label'>Select a dataset:</label>
                         <div className='col-sm-9'>
-                            <select ref="selector" className='form-control'>
+                            <select
+                                ref="selector" className='form-control'
+                                onChange={this.handleSelectClick.bind(this)}>
                                 {this.state.col_names.map(makeOption)}
                             </select>
                         </div>
                     </form>
-                </div>
-                <div className='col-sm-3'>
-                    <button
-                        type="button"
-                        className="btn btn-primary btn-block"
-                        onClick={this.handleSelectClick.bind(this)}>Display coverage details</button>
                 </div>
             </div>
         );
