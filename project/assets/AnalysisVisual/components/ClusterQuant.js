@@ -18,7 +18,6 @@ class ClusterQuant extends React.Component {
     }
 
     componentDidMount() {
-        console.log(this.props);
         let url = `/dashboard/api/analysis/${this.props.analysis_id}/fc_vector_col_names/`;
         $.get(url, (d) => {
             this.setState({
@@ -69,25 +68,23 @@ class ClusterQuant extends React.Component {
 
     renderCharts(height, width) {
         if (this.state.selected_col == null) {
-            return false;
+            return null;
         }
 
-        var box_height = 200;
-        var pval_height = 200;
+        var box_height = 200,
+            pval_height = 200;
 
-        return (
-            <div className="ClustCharts" style={{height: box_height, width: width}}>
-                <BoxPlot
-                    data={this.state.box_plot_data}
-                    height={box_height}
-                    width={width}
-                    cluster_id={this.props.cluster_id}/>
-                <PValueTable
-                    data={this.state.mw_values}
-                    height={pval_height}
-                    width={width}/>
-            </div>
-        );
+        return <div className="ClustCharts" style={{height: box_height, width: width}}>
+            <BoxPlot
+                data={this.state.box_plot_data}
+                height={box_height}
+                width={width}
+                cluster_id={this.props.cluster_id}/>
+            <PValueTable
+                data={this.state.mw_values}
+                height={pval_height}
+                width={width}/>
+        </div>;
     }
 
     render() {
@@ -96,7 +93,7 @@ class ClusterQuant extends React.Component {
             <div className="ClustQuant">
                 {this.renderSelectList()}
                 {this.renderSelectButton()}
-                {this.renderCharts(400,width)}
+                {this.renderCharts(400, width)}
             </div>
         );
     }
