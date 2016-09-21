@@ -7,7 +7,7 @@ class Boxes extends React.Component{
     renderBox(data, i){
         var key = data[0],
             d = data[1],
-            color = (key == this.props.cluster_id) ? 'red' : 'black',
+            color = (key == this.props.cluster_id) ? '#d13c4b' : 'black',
             cell_width = this.props.x.rangeBand();
 
         return <g key={i}>

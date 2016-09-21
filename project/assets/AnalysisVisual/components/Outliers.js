@@ -8,7 +8,7 @@ class Outliers extends React.Component {
         var cell_width = this.props.x.rangeBand(),
             key = data[0],
             d = data[1],
-            color = (key == this.props.cluster_id) ? 'red' : 'black';
+            color = (key == this.props.cluster_id) ? '#d13c4b' : 'black',
 
         return d.outliers.map((d, i)=>{
             return <circle
