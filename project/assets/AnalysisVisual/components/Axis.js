@@ -20,8 +20,8 @@ class Axis extends React.Component {
 
     render(){
         var translate = (this.props.axisType == 'x') ?
-            `translate(0,${this.props.h})` :
-            `translate(${this.props.margins.left},0)`;
+            `translate(0,${this.props.h+this.props.margins.top})` :
+            `translate(${this.props.margins.left},${this.props.margins.top})`;
         return <g className="axis" transform={translate}></g>;
     }
 }
