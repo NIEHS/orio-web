@@ -40,7 +40,13 @@
     <tbody>
         <tr>
             <th style='width: 15%'>Description</th>
-            <td style='width: 85%'>{{object.description}}</td>
+            <td style='width: 85%'>
+                {% if object.description %}
+                    {{object.description}}
+                {% else %}
+                    <i>&lt;none&gt;</i>
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <th>Anchor</th>
@@ -89,28 +95,36 @@
                 {% if object.sort_vector %}
                 <a href="{{object.sort_vector.get_absolute_url}}">{{object.sort_vector|safe}}</a>
                 {% else %}
-                <span>&lt;none&gt;</span>
+                <span><i>&lt;none&gt;</i></span>
                 {% endif %}
             </td>
         </tr>
         <tr>
             <th>User datasets</th>
             <td>
+                {% if object.analysis_user_datasets %}
                 <ul>
                     {% for ds in object.analysis_user_datasets %}
                         <li><a href="{{ds.dataset.subclass.get_absolute_url}}">{{ds.display_name}}</a></li>
                     {% endfor %}
                 </ul>
+                {% else %}
+                <span><i>&lt;none&gt;</i></span>
+                {% endif %}
             </td>
         </tr>
         <tr>
             <th>ENCODE datasets</th>
             <td>
+                {% if object.analysis_encode_datasets %}
                 <ul>
                     {% for ds in object.analysis_encode_datasets %}
                         <li>{{ds.display_name}}</li>
                     {% endfor %}
                 </ul>
+                {% else %}
+                <span><i>&lt;none&gt;</i></span>
+                {% endif %}
             </td>
         </tr>
     </tbody>

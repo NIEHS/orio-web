@@ -18,7 +18,13 @@
     <tbody>
         <tr>
             <th style='width: 15%'>Description</th>
-            <td style='width: 85%'>{{object.description}}</td>
+            <td style='width: 85%'>
+                {% if object.description %}
+                    {{object.description}}
+                {% else %}
+                    <i>&lt;none&gt;</i>
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <th>Public</th>
