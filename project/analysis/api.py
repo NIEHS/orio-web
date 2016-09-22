@@ -6,8 +6,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import NotAcceptable
 
-from utils.api import SiteMixin, AnalysisObjectMixin, \
-    NoPagination, PlainTextRenderer
+from utils.api import SiteMixin, AnalysisObjectMixin, NoPagination, PlainTextRenderer
 from utils.base import try_int
 
 from . import models, serializers

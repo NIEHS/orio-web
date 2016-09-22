@@ -26,7 +26,7 @@ class SiteMixin(object):
     )
 
 
-class AnalysisObjectMixin(permissions.BasePermission):
+class AnalysisPermissionMixin(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
@@ -37,7 +37,7 @@ class AnalysisObjectMixin(permissions.BasePermission):
 class AnalysisObjectMixin(SiteMixin):
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
-        AnalysisObjectMixin,
+        AnalysisPermissionMixin,
     )
 
 
