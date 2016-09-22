@@ -4,8 +4,12 @@ import React from 'react';
 
 class PValueTable extends React.Component {
 
+    getHeaderText(d){
+        return parseInt(d)? `Cluster #${d}`: d;
+    }
+
     renderHeaderTh(d, i){
-        return <th key={i}>{d}</th>;
+        return <th key={i}>{this.getHeaderText(d)}</th>;
     }
 
     renderRowTd(d, i){
@@ -14,7 +18,7 @@ class PValueTable extends React.Component {
 
     renderRow(d, i){
         return <tr key={i}>
-            <th>{d[0]}</th>
+            <th>{this.getHeaderText(d[0])}</th>
             {d[1].map(this.renderRowTd.bind(this))}
         </tr>;
     }
@@ -26,29 +30,22 @@ class PValueTable extends React.Component {
             this.props.data.p_values
         );
 
-        return (
-            <div>
-                <p><b>Pairwise <i>p</i>-values from Mann-Whitney test:</b></p>
-                <table className="table table-condensed table-striped">
-                    <thead>
-                        <tr>
-                        <th></th>
-                        {this.props.data.clusters.map(this.renderHeaderTh)}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {row_data.map(this.renderRow.bind(this))}
-                    </tbody>
-                </table>
-            </div>
-        );
+        return <table className="table table-condensed table-striped">
+            <thead>
+                <tr>
+                <th></th>
+                {this.props.data.clusters.map(this.renderHeaderTh.bind(this))}
+                </tr>
+            </thead>
+            <tbody>
+                {row_data.map(this.renderRow.bind(this))}
+            </tbody>
+        </table>;
     }
 }
 
 PValueTable.propTypes = {
-    data: React.PropTypes.object,
-    height: React.PropTypes.number,
-    width: React.PropTypes.number,
+    data: React.PropTypes.object.isRequired,
 };
 
 export default PValueTable;

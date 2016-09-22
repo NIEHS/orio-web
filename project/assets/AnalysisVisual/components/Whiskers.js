@@ -8,7 +8,7 @@ class Whiskers extends  React.Component{
         var key = data[0],
             d = data[1],
             cell_width = this.props.x.rangeBand(),
-            color = (key == this.props.cluster_id) ? 'red': 'black';
+            color = (key == this.props.cluster_id) ? '#d13c4b': 'black';
 
         return (
             <g key={i}>

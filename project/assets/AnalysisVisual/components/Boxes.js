@@ -7,7 +7,7 @@ class Boxes extends React.Component{
     renderBox(data, i){
         var key = data[0],
             d = data[1],
-            color = (key == this.props.cluster_id) ? 'red' : 'black',
+            color = (key == this.props.cluster_id) ? '#d13c4b' : 'black',
             cell_width = this.props.x.rangeBand();
 
         return <g key={i}>
@@ -16,8 +16,9 @@ class Boxes extends React.Component{
                 y={this.props.y(d.q3)}
                 height={this.props.y(d.q1) - this.props.y(d.q3)}
                 width={cell_width}
-                fill="none"
+                fill={color}
                 stroke={color}
+                style={{fillOpacity: 0.25}}
             />
             <line
                 x1={this.props.x(Object.keys(this.props.data)[i])}

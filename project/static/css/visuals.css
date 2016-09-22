@@ -29,6 +29,7 @@
 #flcModal .modal-body{
     height: calc(100% - 50px);
     width: 100%;
+    overflow-y: auto;
 }
 
 /* bootstrap inner tooltip override */
@@ -84,20 +85,4 @@ path {
 
 g.labels text {
     font-weight: bold;
-}
-
-/* dataset correlation dataset selector */
-.ids_selector{
-    font-size: 12px;
-    margin: 10px 0;
-}
-
-.clustQuantButton {
-    margin-bottom: 20px;
-    margin-top: 10px;
-}
-
-.clustQuantSelect {
-    margin-top: 10px;
-    width: 100%;
 }
