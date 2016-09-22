@@ -16,7 +16,7 @@
     <span>{{object.name}}</span>
     <div class='dropdown pull-right'>
         {% if object.is_complete %}
-            <a class='btn btn-primary' href="{{object.get_visuals_url}}" >View visualization</a>
+            <a class='btn btn-primary' href="{{object.get_visuals_url}}" ><i class="fa fa-bar-chart"></i> View visualization</a>
         {% endif %}
 
         <button class='btn btn-primary dropdown-toggle' type='button' data-toggle='dropdown'>
@@ -25,12 +25,12 @@
         <ul class='dropdown-menu'>
             {% if user_can_edit %}
             <li class="dropdown-header">Editing options</li>
-            <li><a href='{{object.get_update_url}}'>Update</a></li>
-            <li><a href='{{object.get_delete_url}}'>Delete</a></li>
+            <li><a href='{{object.get_update_url}}'><i class="fa fa-edit fa-fw"></i> Update</a></li>
+            <li><a href='{{object.get_delete_url}}'><i class="fa fa-trash fa-fw"></i> Delete</a></li>
             {% endif %}
             <li class="dropdown-header">Viewing options</li>
-            <li><a href='{{object.get_visuals_url}}'>View visualization</a></li>
-            <li><a href='{{object.get_zip_url}}'>Download zip</a></li>
+            <li><a href='{{object.get_visuals_url}}'><i class="fa fa-bar-chart fa-fw"></i> View visualization</a></li>
+            <li><a href='{{object.get_zip_url}}'><i class="fa fa-download fa-fw"></i> Download zip</a></li>
         </ul>
     </div>
 </h2>
