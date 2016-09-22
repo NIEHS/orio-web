@@ -61,7 +61,9 @@ class Dataset(models.Model):
         default=False)
     validated = models.BooleanField(
         default=False)
-    validation_notes = models.TextField(
+    validation_errors = models.TextField(
+        blank=True)
+    validation_warnings = models.TextField(
         blank=True)
     created = models.DateTimeField(
         auto_now_add=True)
@@ -122,7 +124,7 @@ class ValidationMixin(object):
     def validate_and_save(self):
         is_valid, text = self.validate()
         self.validated = is_valid
-        self.validation_notes = self.scrub_validation_text(text)
+        self.validation_errors = self.scrub_validation_text(text)
         self.send_validation_message()
         self.save()
 
@@ -668,7 +670,9 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         null=True)
     validated = models.BooleanField(
         default=False)
-    validation_notes = models.TextField(
+    validation_errors = models.TextField(
+        blank=True)
+    validation_warnings = models.TextField(
         blank=True)
     start_time = models.DateTimeField(
         null=True)
@@ -783,7 +787,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     def reset_analysis_object(self):
         formObj = self
         formObj.validated = False
-        formObj.validation_notes = ''
+        formObj.validation_errors = ''
+        formObj.validation_warnings = ''
         formObj.output = None
         formObj.start_time = None
         formObj.end_time = None

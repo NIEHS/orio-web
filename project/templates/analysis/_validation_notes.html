@@ -1,6 +1,17 @@
+{% if object.validation_warnings %}
 <tr>
-    <th>Validation errors</th>
+    <th>Validation warning(s)</th>
     <td>
-        <pre class='pre-scrollable validation_notes'>{{object.validation_notes}}</pre>
+        <pre class='pre-scrollable validation alert alert-warning'>{{object.validation_warnings}}</pre>
     </td>
 </tr>
+{% endif %}
+
+{% if object.validation_errors %}
+<tr>
+    <th>Validation error(s)</th>
+    <td>
+        <pre class='pre-scrollable validation alert alert-danger'>{{object.validation_errors}}</pre>
+    </td>
+</tr>
+{% endif %}

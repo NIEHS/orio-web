@@ -28,9 +28,7 @@
             <th>Validated</th>
             <td>{{object.validated|fabool}}</td>
         </tr>
-        {% if object.validation_notes %}
-            {% include 'analysis/_validation_notes.html' %}
-        {% endif %}
+        {% include 'analysis/_validation_notes.html' %}
         <tr>
             <th>Dataset type</th>
             <td>{{object.data_type}}</td>

@@ -172,8 +172,9 @@ input[type=number] {
     border-right-color: #f7f7f7;
 }
 
-/* validation_notes */
-.validation_notes{
+/* validation warnings/errors */
+.validation {
+  margin-bottom: 0;
   max-width: 70em;
   overflow: auto;
 }

@@ -66,9 +66,7 @@
             <th>Validated</th>
             <td>{{object.validated|fabool}}</td>
         </tr>
-        {% if object.validation_notes %}
-            {% include 'analysis/_validation_notes.html' %}
-        {% endif %}
+        {% include 'analysis/_validation_notes.html' %}
         <tr>
             <th>Genome assembly</th>
             <td>{{object.genome_assembly}}</td>
