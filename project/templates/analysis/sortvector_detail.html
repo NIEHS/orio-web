@@ -17,7 +17,13 @@
     <tbody>
         <tr>
             <th style='width: 15%'>Description</th>
-            <td style='width: 85%'>{{object.description}}</td>
+            <td style='width: 85%'>
+                {% if object.description %}
+                    {{object.description}}
+                {% else %}
+                    <i>&lt;none&gt;</i>
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <th>Public</th>
@@ -29,19 +35,15 @@
         </tr>
         <tr>
             <th>File</th>
-            <td><a href="{{object.vector.url}}">Download</a></td>
+            <td>
+                <a class="btn btn-primary" href="{{object.vector.url}}">
+                   <i class="fa fa-download"></i> Download</a></td>
         </tr>
         <tr>
             <th>Validated</th>
             <td>{{object.validated|fabool}}</td>
         </tr>
-        {% if object.validation_notes %}
-            {% include 'analysis/_validation_notes.html' %}
-        {% endif %}
-        <tr>
-            <th>Content</th>
-            <td>{{object.text}}</td>
-        </tr>
+        {% include 'analysis/_validation_notes.html' %}
         <tr>
             <th>Date created</th>
             <td>{{object.created}}</td>

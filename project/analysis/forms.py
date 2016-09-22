@@ -144,7 +144,8 @@ class UserDatasetForm(BaseFormMixin, forms.ModelForm):
     def save(self, commit=True):
         if commit:
             self.instance.validated = False
-            self.instance.validation_notes = ''
+            self.instance.validation_warnings = ''
+            self.instance.validation_errors = ''
             self.add_data_download(
                 self.cleaned_data.get('url_ambiguous'), 'ambiguous')
             self.add_data_download(
@@ -160,7 +161,10 @@ class FeatureListForm(BaseFormMixin, forms.ModelForm):
 
     class Meta:
         model = models.FeatureList
-        exclude = ('owner', 'slug', 'public', 'validated', 'validation_notes')
+        exclude = (
+            'owner', 'slug', 'public',
+            'validated', 'validation_errors', 'validation_warnings',
+        )
 
 
 class SortVectorForm(BaseFormMixin, forms.ModelForm):
@@ -168,7 +172,10 @@ class SortVectorForm(BaseFormMixin, forms.ModelForm):
 
     class Meta:
         model = models.SortVector
-        exclude = ('owner', 'slug', 'public', 'validated', 'validation_notes')
+        exclude = (
+            'owner', 'slug', 'public',
+            'validated', 'validation_errors', 'validation_warnings',
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

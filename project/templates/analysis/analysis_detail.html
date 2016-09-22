@@ -16,7 +16,7 @@
     <span>{{object.name}}</span>
     <div class='dropdown pull-right'>
         {% if object.is_complete %}
-            <a class='btn btn-primary' href="{{object.get_visuals_url}}" >View visualization</a>
+            <a class='btn btn-primary' href="{{object.get_visuals_url}}" ><i class="fa fa-bar-chart"></i> View visualization</a>
         {% endif %}
 
         <button class='btn btn-primary dropdown-toggle' type='button' data-toggle='dropdown'>
@@ -25,12 +25,12 @@
         <ul class='dropdown-menu'>
             {% if user_can_edit %}
             <li class="dropdown-header">Editing options</li>
-            <li><a href='{{object.get_update_url}}'>Update</a></li>
-            <li><a href='{{object.get_delete_url}}'>Delete</a></li>
+            <li><a href='{{object.get_update_url}}'><i class="fa fa-edit fa-fw"></i> Update</a></li>
+            <li><a href='{{object.get_delete_url}}'><i class="fa fa-trash fa-fw"></i> Delete</a></li>
             {% endif %}
             <li class="dropdown-header">Viewing options</li>
-            <li><a href='{{object.get_visuals_url}}'>View visualization</a></li>
-            <li><a href='{{object.get_zip_url}}'>Download zip</a></li>
+            <li><a href='{{object.get_visuals_url}}'><i class="fa fa-bar-chart fa-fw"></i> View visualization</a></li>
+            <li><a href='{{object.get_zip_url}}'><i class="fa fa-download fa-fw"></i> Download zip</a></li>
         </ul>
     </div>
 </h2>
@@ -40,7 +40,13 @@
     <tbody>
         <tr>
             <th style='width: 15%'>Description</th>
-            <td style='width: 85%'>{{object.description}}</td>
+            <td style='width: 85%'>
+                {% if object.description %}
+                    {{object.description}}
+                {% else %}
+                    <i>&lt;none&gt;</i>
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <th>Anchor</th>
@@ -66,9 +72,7 @@
             <th>Validated</th>
             <td>{{object.validated|fabool}}</td>
         </tr>
-        {% if object.validation_notes %}
-            {% include 'analysis/_validation_notes.html' %}
-        {% endif %}
+        {% include 'analysis/_validation_notes.html' %}
         <tr>
             <th>Genome assembly</th>
             <td>{{object.genome_assembly}}</td>
@@ -91,28 +95,36 @@
                 {% if object.sort_vector %}
                 <a href="{{object.sort_vector.get_absolute_url}}">{{object.sort_vector|safe}}</a>
                 {% else %}
-                <span>&lt;none&gt;</span>
+                <span><i>&lt;none&gt;</i></span>
                 {% endif %}
             </td>
         </tr>
         <tr>
             <th>User datasets</th>
             <td>
+                {% if object.analysis_user_datasets %}
                 <ul>
                     {% for ds in object.analysis_user_datasets %}
                         <li><a href="{{ds.dataset.subclass.get_absolute_url}}">{{ds.display_name}}</a></li>
                     {% endfor %}
                 </ul>
+                {% else %}
+                <span><i>&lt;none&gt;</i></span>
+                {% endif %}
             </td>
         </tr>
         <tr>
             <th>ENCODE datasets</th>
             <td>
+                {% if object.analysis_encode_datasets %}
                 <ul>
                     {% for ds in object.analysis_encode_datasets %}
                         <li>{{ds.display_name}}</li>
                     {% endfor %}
                 </ul>
+                {% else %}
+                <span><i>&lt;none&gt;</i></span>
+                {% endif %}
             </td>
         </tr>
     </tbody>
