@@ -27,8 +27,7 @@ from django.utils.timezone import now
 from django.utils.text import slugify
 from django.template.loader import render_to_string
 
-from utils.models import ReadOnlyFileSystemStorage, get_random_filename, \
-    DynamicFilePathField
+from utils.models import ReadOnlyFileSystemStorage, get_random_filename, DynamicFilePathField
 from async_messages import messages
 
 from .import tasks
@@ -556,7 +555,7 @@ class FeatureList(ValidationMixin, Dataset):
 class SortVector(ValidationMixin, Dataset):
     feature_list = models.ForeignKey(
         FeatureList)
-    vector = models.FileField(
+    dataset = models.FileField(
         max_length=256)
 
     @classmethod
@@ -589,7 +588,7 @@ class SortVector(ValidationMixin, Dataset):
     def validate(self):
         validator = validators.SortVectorValidator(
             self.feature_list.dataset.path,
-            self.vector.path)
+            self.dataset.path)
         validator.validate()
         return validator.is_valid, validator.display_errors()
 
@@ -884,7 +883,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
         sv = None
         if self.sort_vector:
-            sv = self.sort_vector.vector.path
+            sv = self.sort_vector.dataset.path
 
         mm = MatrixByMatrix(
             feature_bed=self.feature_list.dataset.path,
@@ -930,7 +929,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             sv = cache.get(key)
             if sv is None:
                 sv = pd.read_csv(
-                    self.sort_vector.vector.path, sep='\t', header=None
+                    self.sort_vector.dataset.path, sep='\t', header=None
                 )
                 cache.set(key, sv)
         return sv
@@ -1324,7 +1323,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
             # write sort vector
             if self.sort_vector:
-                z.write(self.sort_vector.vector.path, arcname='sort_vector.txt')
+                z.write(self.sort_vector.dataset.path, arcname='sort_vector.txt')
 
             # write output JSON
             if self.output:
