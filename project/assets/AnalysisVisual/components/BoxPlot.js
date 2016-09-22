@@ -26,7 +26,7 @@ class BoxPlot extends React.Component {
             let local_max = v.max,
                 local_min = v.min,
                 max_outlier = d3.max(v.outliers),
-                min_outlier = d3.min(v.outliers);
+                min_outlier = d3.min(v.outliers.filter((d)=>d>0));
 
             if (local_max > max_value) {
                 max_value = local_max;
@@ -35,7 +35,7 @@ class BoxPlot extends React.Component {
                 max_value = max_outlier;
             }
 
-            if (local_min < min_value) {
+            if (local_min > 0 && local_min < min_value) {
                 min_value = local_min;
             }
             if (min_outlier < min_value) {
