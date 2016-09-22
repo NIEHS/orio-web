@@ -1,1 +1,1 @@
-from django_project.settings.staging import *
+from django_project.settings.staging import *  # noqa

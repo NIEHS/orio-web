@@ -1,4 +1,6 @@
 """
+Startup script for celery commands.
+
 Example run command (from django project-path):
 
 celery worker --app=django_project --loglevel=INFO --autoreload

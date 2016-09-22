@@ -2,11 +2,11 @@ import os
 
 from django.db import models
 from django.conf import settings
-from django.contrib.auth import models as authModels
+from django.contrib.auth import models as auth_models
 from django.utils import timezone
 
 
-class UserManager(authModels.BaseUserManager):
+class UserManager(auth_models.BaseUserManager):
 
     use_in_migrations = True
 
@@ -32,7 +32,7 @@ class UserManager(authModels.BaseUserManager):
         return user
 
 
-class User(authModels.AbstractBaseUser):
+class User(auth_models.AbstractBaseUser):
     objects = UserManager()
     email = models.EmailField('email address', unique=True, db_index=True)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -58,7 +58,7 @@ class User(authModels.AbstractBaseUser):
         return self.email
 
     def has_perm(self, perm, obj=None):
-        return authModels._user_has_perm(self, perm, obj=obj)
+        return auth_models._user_has_perm(self, perm, obj=obj)
 
     def has_module_perms(self, module):
-        return authModels._user_has_module_perms(self, module)
+        return auth_models._user_has_module_perms(self, module)

@@ -93,9 +93,9 @@ class AnalysisSerializer(serializers.ModelSerializer):
         self.create_analysis_datasets(instance, datasets)
         return instance
 
-    def update_analysis_datasets(self, analysis, datasets, isUser):
+    def update_analysis_datasets(self, analysis, datasets, is_user):
         # get existing objects queryset
-        if isUser:
+        if is_user:
             existing = analysis.analysis_user_datasets
         else:
             existing = analysis.analysis_encode_datasets
@@ -126,6 +126,8 @@ class AnalysisSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """
+        In addition to default update, make changes to analysis datasets.
+
         Only call `update_analysis_datasets` if any changes were made to the
         models. Note that this requires the complete list for `user_datasets`
         or `encode_datasets`, as anything not in the list will be deleted.

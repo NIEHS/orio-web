@@ -6,7 +6,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, CreateView, UpdateView, \
-        DetailView, DeleteView, ListView, View
+    DetailView, DeleteView, View
 
 from utils.views import UserCanEdit, UserCanView, \
     AddUserToFormMixin, MessageMixin
@@ -217,9 +217,6 @@ class AnalysisDelete(MessageMixin, UserCanEdit, DeleteView):
 
 # analysis non-CRUD
 class AnalysisVisual(UserCanView, DetailView):
-    """
-    Temporary view used for visual testing
-    """
     model = models.Analysis
     template_name = 'analysis/analysis_visual.html'
 

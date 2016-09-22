@@ -14,10 +14,8 @@ class NoPagination(pagination.PageNumberPagination):
 
 
 class SiteMixin(object):
-    """
-    Default settings for view authentication, permissions, filtering
-    and pagination.
-    """
+    """Sitewide default authentication, permissions, filtering, and pagination."""
+
     pagination_class = StandardResultsSetPagination
     authentication_classes = (
         authentication.BasicAuthentication,

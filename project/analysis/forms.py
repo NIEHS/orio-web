@@ -11,10 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseFormMixin(object):
-    """
-    - Set the owner if specified.
-    - Generate basic crispy form template
-    """
+    """Form mixin to generate basic layout and set owner if available."""
 
     CREATE_LEGEND = None
     CREATE_HELP_TEXT = None
@@ -28,9 +25,9 @@ class BaseFormMixin(object):
         if 'description' in self.fields:
             self.fields['description'].widget.attrs['rows'] = 3
 
-        self.helper = self.setHelper()
+        self.helper = self.set_helper()
 
-    def setHelper(self):
+    def set_helper(self):
 
         for fld in self.fields.keys():
             widget = self.fields[fld].widget
@@ -131,15 +128,15 @@ class UserDatasetForm(BaseFormMixin, forms.ModelForm):
             if cleaned_data.get('url_ambiguous') == '':
                 self.add_error('url_ambiguous', 'This field is required.')
 
-    def add_data_download(self, url, fldName):
-        fld = getattr(self.instance, fldName, None)
+    def add_data_download(self, url, fld):
+        fld = getattr(self.instance, fld, None)
         if (url and (
                 (fld is None) or
                 (fld.url != url))):
             obj = models.DatasetDownload.objects.create(
                 owner=self.instance.owner,
                 url=url)
-            setattr(self.instance, fldName, obj)
+            setattr(self.instance, fld, obj)
 
     def save(self, commit=True):
         if commit:
