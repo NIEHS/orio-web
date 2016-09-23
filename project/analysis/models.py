@@ -27,8 +27,7 @@ from django.utils.timezone import now
 from django.utils.text import slugify
 from django.template.loader import render_to_string
 
-from utils.models import ReadOnlyFileSystemStorage, get_random_filename, \
-    DynamicFilePathField
+from utils.models import ReadOnlyFileSystemStorage, get_random_filename, DynamicFilePathField
 from async_messages import messages
 
 from .import tasks
@@ -210,7 +209,7 @@ class DatasetDownload(models.Model):
         logger.info('Setting filename to {}'.format(fn))
 
         # set filename to object
-        self.data.name = fn[len(settings.USERDATA_PATH)+1:]
+        self.data.name = fn[len(settings.USERDATA_PATH) + 1:]
 
         # write a temporary file prevent-overwriting file
         with open(fn, 'w') as f:
@@ -313,22 +312,22 @@ class GenomicDataset(Dataset):
 
 class UserDataset(ValidationMixin, GenomicDataset):
     DATA_TYPES = (
-        ('Cage',        'Cage'),
-        ('ChiaPet',     'ChiaPet'),
-        ('ChipSeq',     'ChipSeq'),
-        ('DnaseDgf',    'DnaseDgf'),
-        ('DnaseSeq',    'DnaseSeq'),
-        ('FaireSeq',    'FaireSeq'),
-        ('Mapability',  'Mapability'),
-        ('Nucleosome',  'Nucleosome'),
-        ('Orchid',      'Orchid'),
-        ('RepliChip',   'RepliChip'),
-        ('RepliSeq',    'RepliSeq'),
-        ('RipSeq',      'RipSeq'),
-        ('RnaPet',      'RnaPet'),
-        ('RnaSeq',      'RnaSeq'),
-        ('SmartSeq',    'SmartSeq'),
-        ('Other',       'Other (describe in "description" field)'),
+        ('Cage', 'Cage'),
+        ('ChiaPet', 'ChiaPet'),
+        ('ChipSeq', 'ChipSeq'),
+        ('DnaseDgf', 'DnaseDgf'),
+        ('DnaseSeq', 'DnaseSeq'),
+        ('FaireSeq', 'FaireSeq'),
+        ('Mapability', 'Mapability'),
+        ('Nucleosome', 'Nucleosome'),
+        ('Orchid', 'Orchid'),
+        ('RepliChip', 'RepliChip'),
+        ('RepliSeq', 'RepliSeq'),
+        ('RipSeq', 'RipSeq'),
+        ('RnaPet', 'RnaPet'),
+        ('RnaSeq', 'RnaSeq'),
+        ('SmartSeq', 'SmartSeq'),
+        ('Other', 'Other (describe in "description" field)'),
     )
 
     data_type = models.CharField(
@@ -365,7 +364,7 @@ class UserDataset(ValidationMixin, GenomicDataset):
         success_code = DatasetDownload.FINISHED_SUCCESS
         if self.is_stranded:
             return self.plus.status_code == success_code and \
-                   self.minus.status_code == success_code
+                self.minus.status_code == success_code
         else:
             return self.ambiguous.status_code == success_code
 
@@ -556,7 +555,7 @@ class FeatureList(ValidationMixin, Dataset):
 class SortVector(ValidationMixin, Dataset):
     feature_list = models.ForeignKey(
         FeatureList)
-    vector = models.FileField(
+    dataset = models.FileField(
         max_length=256)
 
     @classmethod
@@ -589,7 +588,7 @@ class SortVector(ValidationMixin, Dataset):
     def validate(self):
         validator = validators.SortVectorValidator(
             self.feature_list.dataset.path,
-            self.vector.path)
+            self.dataset.path)
         validator.validate()
         return validator.is_valid, validator.display_errors()
 
@@ -751,8 +750,10 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         return reverse('analysis:analysis_zip',
                        args=[self.pk, self.slug])
 
-    def is_reset_required(self, dsIds):
+    def is_reset_required(self, ids):
         """
+        Determine if analysis reset is required (requires re-computation).
+
         If certain settings have changed, reset validation and output results.
         This method should be called from a changed form-instance, before
         saving.
@@ -778,7 +779,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                     break
 
             dbIds = set(dbObj.analysisdatasets_set.values_list('dataset_id', flat=True))
-            formIds = set(dsIds)
+            formIds = set(ids)
             if dbIds != formIds:
                 reset = True
         logger.info('Analysis reset required: %s' % reset)
@@ -799,7 +800,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         n = float(self.datasets.count())
         workers = 10
         base = 300
-        matrices = math.ceil(n/workers) * 90
+        matrices = math.ceil(n / workers) * 90
         agg = 120 + math.log10(n)**2 * 60
         return base + matrices + agg
 
@@ -882,7 +883,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
         sv = None
         if self.sort_vector:
-            sv = self.sort_vector.vector.path
+            sv = self.sort_vector.dataset.path
 
         mm = MatrixByMatrix(
             feature_bed=self.feature_list.dataset.path,
@@ -928,7 +929,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             sv = cache.get(key)
             if sv is None:
                 sv = pd.read_csv(
-                    self.sort_vector.vector.path, sep='\t', header=None
+                    self.sort_vector.dataset.path, sep='\t', header=None
                 )
                 cache.set(key, sv)
         return sv
@@ -1110,8 +1111,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         # READ FEATURE LIST
         feature_to_line = dict()
         count = 0
-        total_valid_lines = BedMatrix.countValidBedLines(
-                self.feature_list.dataset.path)
+        total_valid_lines = BedMatrix.countValidBedLines(self.feature_list.dataset.path)
 
         with open(self.feature_list.dataset.path) as f:
             for line in f:
@@ -1147,8 +1147,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     def get_k_clust_heatmap(self, k_value, dim_x, dim_y):
         fc_vectors = self.output_json['fc_vectors']['vectors']
         fc_clusters = self.output_json['fc_clusters'][str(k_value)]
-        upper_quartile = numpy.array(self.output_json['fc_vectors']['q3'],
-                                     dtype=numpy.float)
+        upper_quartile = numpy.array(
+            self.output_json['fc_vectors']['q3'], dtype=numpy.float)
 
         display_values = []
         cluster_sizes = dict()
@@ -1165,11 +1165,12 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         nrows = len(display_values)
 
         if ncols > dim_x:
-            zoom_x = dim_x/ncols
+            zoom_x = dim_x / ncols
         else:
             zoom_x = 1
+
         if nrows > dim_y:
-            zoom_y = dim_y/nrows
+            zoom_y = dim_y / nrows
         else:
             zoom_y = 1
 
@@ -1197,7 +1198,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         values = list(flcm.count_matrix.df['All bins'])
         quartiles = [[], [], [], []]
         for i, index in enumerate(sort_order):
-            quartiles[math.floor(4*i/n)].append(values[index])
+            quartiles[math.floor(4 * i / n)].append(values[index])
 
         stat, cv, sig = stats.anderson_ksamp(quartiles)
         return {
@@ -1215,7 +1216,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         n = len(flcm.count_matrix.df['All bins'])
         quartiles = [[], [], [], []]
         for i, value in enumerate(flcm.count_matrix.df['All bins']):
-            quartiles[math.floor(4*i/n)].append(value)
+            quartiles[math.floor(4 * i / n)].append(value)
 
         stat, cv, sig = stats.anderson_ksamp(quartiles)
         return {
@@ -1243,7 +1244,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         values = list(flcm.count_matrix.df['All bins'])
         quartiles = [[], [], [], []]
         for i, index in enumerate(sort_order):
-            quartiles[math.floor(4*i/n)].append(values[index])
+            quartiles[math.floor(4 * i / n)].append(values[index])
 
         stat, cv, sig = stats.anderson_ksamp(quartiles)
         return {
@@ -1312,10 +1313,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         return xDf.join(yDf).to_csv()
 
     def create_zip(self):
-        """
-        Create a zip file of output, specifically designed to recreate analysis
-        or to load analysis onto local development computers.
-        """
+        """Return zip of output results and all intermediate files."""
         f = io.BytesIO()
         with zipfile.ZipFile(f, mode='w',
                              compression=zipfile.ZIP_DEFLATED) as z:
@@ -1325,7 +1323,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
             # write sort vector
             if self.sort_vector:
-                z.write(self.sort_vector.vector.path, arcname='sort_vector.txt')
+                z.write(self.sort_vector.dataset.path, arcname='sort_vector.txt')
 
             # write output JSON
             if self.output:
@@ -1413,7 +1411,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
             df.rename(columns={'Unnamed: 0': 'label'}, inplace=True)
             df.set_index('label', inplace=True, drop=True)
             df.insert(0, self.ALL_BINS, df.sum(axis=1))
-            size = round(df.memory_usage(index=True).sum()/(1024*1024), 2)
+            size = round(df.memory_usage(index=True).sum() / (1024 * 1024), 2)
             logger.info('Setting cache: {} ({}mb)'.format(key, size))
             cache.set(key, df)
 
@@ -1516,7 +1514,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
                 ncols = len(f.readline().split('\t')[1:])
             sort_data = numpy.loadtxt(
                 sort_matrix.matrix.path, delimiter='\t', skiprows=1,
-                usecols=range(1, ncols+1)
+                usecols=range(1, ncols + 1)
             )
             for i in numpy.argsort(numpy.sum(sort_data, axis=1))[::-1]:
                 sorted_flcm.append(flcm_data[i])
@@ -1530,10 +1528,11 @@ class FeatureListCountMatrix(GenomicBinSettings):
 
         zoom_x = 1
         if nrows > dim_x:
-            zoom_x = dim_x/nrows
+            zoom_x = dim_x / nrows
+
         zoom_y = 1
         if ncols > dim_y:
-            zoom_y = dim_y/ncols
+            zoom_y = dim_y / ncols
 
         quartiles = numpy.array_split(sorted_flcm, 4)
         quartile_averages = []
@@ -1553,38 +1552,37 @@ class FeatureListCountMatrix(GenomicBinSettings):
                               stats.anderson_ksamp(quartile_vector_sums)):
             ad_results[key] = value
 
+        kruskalwallis = stats.mstats.kruskalwallis(
+            quartile_vector_sums[0],
+            quartile_vector_sums[1],
+            quartile_vector_sums[2],
+            quartile_vector_sums[3],
+        )
         kw_results = dict()
-        for key, value in zip(['test_statistic', 'pvalue'],
-                              stats.mstats.kruskalwallis(
-                                quartile_vector_sums[0],
-                                quartile_vector_sums[1],
-                                quartile_vector_sums[2],
-                                quartile_vector_sums[3],
-                              )):
+        for key, value in zip(['test_statistic', 'pvalue'], kruskalwallis):
             kw_results[key] = value
 
-        zoomed_data = ndimage.zoom(
-            sorted_flcm, (zoom_y, zoom_x), order=5, prefilter=False)
+        zoomed_data = ndimage.zoom(sorted_flcm, (zoom_y, zoom_x), order=5, prefilter=False)
         smoothed_data = ndimage.median_filter(zoomed_data, size=(1, 5))
 
-        return {
-            'bin_labels': bin_labels,
-            'quartile_averages': quartile_averages,
-            'bin_averages': numpy.mean(sorted_flcm, axis=0),
-            'norm_val': {
-                'lower_quartile': numpy.percentile(smoothed_data, 25),
-                'median': numpy.percentile(smoothed_data, 50),
-                'upper_quartile': numpy.percentile(smoothed_data, 75),
-                'max': numpy.max(smoothed_data),
-                'min': numpy.min(smoothed_data),
-                'average': numpy.mean(smoothed_data),
-                'stddev': numpy.std(smoothed_data),
-                'variance': numpy.var(smoothed_data),
-            },
-            'smoothed_data': smoothed_data,
-            'ad_results': ad_results,
-            'kw_results': kw_results,
-        }
+        return dict(
+            bin_labels=bin_labels,
+            quartile_averages=quartile_averages,
+            bin_averages=numpy.mean(sorted_flcm, axis=0),
+            norm_val=dict(
+                lower_quartile=numpy.percentile(smoothed_data, 25),
+                median=numpy.percentile(smoothed_data, 50),
+                upper_quartile=numpy.percentile(smoothed_data, 75),
+                max=numpy.max(smoothed_data),
+                min=numpy.min(smoothed_data),
+                average=numpy.mean(smoothed_data),
+                stddev=numpy.std(smoothed_data),
+                variance=numpy.var(smoothed_data),
+            ),
+            smoothed_data=smoothed_data,
+            ad_results=ad_results,
+            kw_results=kw_results,
+        )
 
 
 def get_temporary_download_path(instance, filename):

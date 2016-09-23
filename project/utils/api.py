@@ -14,10 +14,8 @@ class NoPagination(pagination.PageNumberPagination):
 
 
 class SiteMixin(object):
-    """
-    Default settings for view authentication, permissions, filtering
-    and pagination.
-    """
+    """Sitewide default authentication, permissions, filtering, and pagination."""
+
     pagination_class = StandardResultsSetPagination
     authentication_classes = (
         authentication.BasicAuthentication,
@@ -28,7 +26,7 @@ class SiteMixin(object):
     )
 
 
-class AnalysisObjectMixin(permissions.BasePermission):
+class AnalysisPermissionMixin(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
@@ -39,7 +37,7 @@ class AnalysisObjectMixin(permissions.BasePermission):
 class AnalysisObjectMixin(SiteMixin):
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
-        AnalysisObjectMixin,
+        AnalysisPermissionMixin,
     )
 
 

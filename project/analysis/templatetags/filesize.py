@@ -5,10 +5,9 @@ register = template.Library()
 
 def filesize(value):
     """
-    https://djangosnippets.org/snippets/1866/
-    Simple kb/mb/gb size snippet for templates:
+    Return human-readable filesize string.
 
-    {{ product.file.size|filesize }}
+    Adapted from https://djangosnippets.org/snippets/1866/
     """
     if value is None:
         return '-'
