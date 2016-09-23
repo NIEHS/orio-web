@@ -13,6 +13,8 @@ from . import models, serializers
 
 
 def owner_or_public(user):
+    if user.is_staff:
+        return Q()
     query = Q(public=True)
     if not isinstance(user, AnonymousUser):
         query = query | Q(owner=user)
