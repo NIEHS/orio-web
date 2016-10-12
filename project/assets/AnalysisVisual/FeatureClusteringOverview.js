@@ -8,43 +8,19 @@ import {interpolateSpectral} from 'd3-scale-chromatic';
 
 import {heatmapColorScale} from './utils';
 
-var label_vals = [1, 0, 0.9, 0.1, 0.8, 0.2, 0.7, 0.3, 0.6, 0.4];
-const LABEL_COLORS = [];
-
-for (var i in label_vals) {
-    LABEL_COLORS.push(interpolateSpectral(label_vals[i]));
-}
-
-const GOOGLE_LABELS = [
-    "#3366cc",
-    "#dc3912",
-    "#ff9900",
-    "#109618",
-    "#990099",
-    "#0099c6",
-    "#dd4477",
-    "#66aa00",
-    "#b82e2e",
-    "#316395",
-    "#994499",
-    "#22aa99",
-    "#aaaa11",
-    "#6633cc",
-    "#e67300",
-    "#8b0707",
-    "#651067",
-    "#329262",
-    "#5574a6",
-    "#3b3eac",
-]
 
 class FeatureClusteringOverview{
 
     constructor(el) {
         this.el = el;
         this.id = window.analysisObjectID;
-        this.colors = LABEL_COLORS;
+        this.colors = this.getColors();
         window.clustHeatmapOffset = {left:60};
+    }
+
+    getColors(){
+        var label_vals = [1, 0, 0.9, 0.1, 0.8, 0.2, 0.7, 0.3, 0.6, 0.4];
+        return label_vals.map((d) => interpolateSpectral(d));
     }
 
     featureClusteringOverviewInitURL(id) {
@@ -90,7 +66,6 @@ class FeatureClusteringOverview{
         for (var i in data['display_data']) {
             for (var j in data['display_data'][i]) {
                 context.fillStyle=interpolateRdYlBu(heatmapColorScale(-data['display_data'][i][j]))
-                // context.fillStyle=colorScale(data['display_data'][i][j]);
                 context.fillRect(j,i,1,1);
             }
         }
@@ -572,74 +547,6 @@ class FeatureClusteringOverview{
             .attr('font-size', '12px')
             .attr('fill', 'black')
             .style('text-anchor', 'middle');
-        //
-        // var legend = this.legend,
-        //     height = legend.height(),
-        //     width = legend.width();
-        //
-        // var svg = d3.select(legend.get(0))
-        //     .append('svg')
-        //     .attr('width', width)
-        //     .attr('height', height)
-        //     .style('overflow', 'visible');
-        //
-        // var gradient = svg
-        //     .append('linearGradient')
-        //     .attr('y1', '0')
-        //     .attr('y2', '0')
-        //     .attr('x1', '0')
-        //     .attr('x2', width)
-        //     .attr('id', 'gradient')
-        //     .attr('gradientUnits', 'userSpaceOnUse');
-        //
-        // gradient
-        //     .append('stop')
-        //     .attr('offset', '0')
-        //     .attr('stop-color', 'white');
-        //
-        // gradient
-        //     .append('stop')
-        //     .attr('offset', '1')
-        //     .attr('stop-color', '#cc4248');
-        //
-        // svg.append('rect')
-        //     .attr('width', width)
-        //     .attr('height', 0.15 * height)
-        //     .attr('x', '0')
-        //     .attr('y', 0.5 * height)
-        //     .attr('fill', 'url(#gradient)')
-        //     .attr('stroke', 'black')
-        //     .attr('stroke-width', '1');
-        //
-        // var legend_lines = [
-        //     {text: '0', position: 0},
-        //     {text: 'Upper Quartile', position: width},
-        // ];
-        //
-        // svg.append('g')
-        //     .selectAll('line')
-        //     .data(legend_lines)
-        //     .enter()
-        //     .append('line')
-        //     .attr('x1', function(d) {return d.position;})
-        //     .attr('x2', function(d) {return d.position;})
-        //     .attr('y1', 0.45 * height)
-        //     .attr('y2', 0.5 * height)
-        //     .style('stroke', 'black')
-        //     .style('stroke-width', 1);
-        //
-        // svg.append('g')
-        //     .selectAll('text')
-        //     .data(legend_lines)
-        //     .enter()
-        //     .append('text')
-        //     .text(function(d) { return d.text;})
-        //     .attr('x', function(d) {return d.position;})
-        //     .attr('y', 0.4*height)
-        //     .attr('font-family', 'sans-serif')
-        //     .attr('font-size', '12px')
-        //     .attr('fill', 'black')
-        //     .style('text-anchor', 'middle');
     }
 
     drawCentroidPlotLegend(k) {
@@ -841,28 +748,29 @@ class FeatureClusteringOverview{
                 padding: 0,
             })
             .appendTo(this.el)
-            .click(function () { new FeatureClusterDetailModal(
-                $('#flcModal'),
-                null,
-                parseInt(window.analysisObjectID),
-                parseInt($( "#select_k option:selected" ).text()),
-                parseInt($( "#select_cluster option:selected" ).text()),
-            )});
+            .click(function () {
+                new FeatureClusterDetailModal(
+                    $('#flcModal'),
+                    null,
+                    parseInt(window.analysisObjectID),
+                    parseInt($('#select_k option:selected').text()),
+                    parseInt($('#select_cluster option:selected').text())
+                );
+            });
     }
 
     renderLoader(){
-        var par = this.el;
-        new Loader(par);
-        this.loadingSpinner = par.find('.loadingSpinner');
+        new Loader(this.el);
+        this.loadingSpinner = this.el.find('.loadingSpinner');
         this.loadingSpinner.css({
             position: 'absolute',
             left: '50%',
             top: '35%',
             'z-index': 10,
-            'background': 'white',
-            'border': '2px solid gray',
+            background: 'white',
+            border: '2px solid gray',
             'border-radius': '10px',
-            'padding': '1em',
+            padding: '1em',
         });
     }
 

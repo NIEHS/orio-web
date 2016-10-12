@@ -47,6 +47,7 @@ class BaseFormHelper(cf.FormHelper):
 
         # cancel button
         url = self.form.instance.get_form_cancel_url()
-        btns.append(cfl.HTML('<a role="button" class="btn btn-default" href="{}">Cancel</a>'.format(url)))
+        btns.append(
+            cfl.HTML('<a role="button" class="btn btn-default" href="{}">Cancel</a>'.format(url)))
 
         return cfb.FormActions(*btns, css_class="form-actions")

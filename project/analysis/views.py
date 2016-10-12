@@ -6,7 +6,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, CreateView, UpdateView, \
-        DetailView, DeleteView, ListView, View
+    DetailView, DeleteView, View
 
 from utils.views import UserCanEdit, UserCanView, \
     AddUserToFormMixin, MessageMixin
@@ -58,8 +58,8 @@ class Dashboard(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['analysis_running'] = models.Analysis.running(self.request.user)
-        context['analysis_complete'] = models.Analysis.complete(self.request.user)
+        context['analysis_running'] = models.Analysis.objects.running(self.request.user)
+        context['analysis_complete'] = models.Analysis.objects.complete(self.request.user)
         return context
 
 
@@ -68,9 +68,15 @@ class ManageData(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['feature_lists'] = models.FeatureList.objects.filter(owner=self.request.user)
-        context['sort_vectors'] = models.SortVector.objects.filter(owner=self.request.user)
-        context['user_datasets'] = models.UserDataset.objects.filter(owner=self.request.user)
+        context['feature_lists'] = models.FeatureList.objects\
+            .filter(owner=self.request.user)\
+            .select_related('genome_assembly')
+        context['sort_vectors'] = models.SortVector.objects\
+            .filter(owner=self.request.user)\
+            .select_related('feature_list')
+        context['user_datasets'] = models.UserDataset.objects\
+            .filter(owner=self.request.user)\
+            .select_related('genome_assembly')
         return context
 
 
@@ -217,9 +223,6 @@ class AnalysisDelete(MessageMixin, UserCanEdit, DeleteView):
 
 # analysis non-CRUD
 class AnalysisVisual(UserCanView, DetailView):
-    """
-    Temporary view used for visual testing
-    """
     model = models.Analysis
     template_name = 'analysis/analysis_visual.html'
 

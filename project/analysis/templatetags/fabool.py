@@ -7,9 +7,7 @@ register = template.Library()
 
 @register.filter(is_safe=True)
 def fabool(bool_):
-    """
-    Use font-awesome boolean checkboxes
-    """
+    """Return a font-awesome boolean checkbox icon."""
     if bool_:
         txt = "<i class='fa fa-check-square-o' title'checked'></i>"
     else:

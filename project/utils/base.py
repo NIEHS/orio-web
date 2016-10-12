@@ -1,4 +1,5 @@
-def tryParseInt(val, default=None):
+def try_int(val, default=None):
+    """Return int or default value."""
     try:
         return int(val)
     except (ValueError, TypeError):

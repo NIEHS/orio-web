@@ -1,4 +1,4 @@
-from django_project.settings.base import *
+from django_project.settings.base import *  # noqa
 
 DEBUG = bool(os.environ.get('DJANGO_FORCE_DEBUG', 'False') == 'True')
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split('|')

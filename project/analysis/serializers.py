@@ -12,7 +12,7 @@ class UserDatasetSerializer(serializers.ModelSerializer):
         model = models.UserDataset
         fields = '__all__'
         read_only_fields = (
-            'validated', 'validation_notes',
+            'validated', 'validation_errors', 'validation_warnings',
             'expiration_date', 'owner', 'slug'
         )
 
@@ -24,7 +24,9 @@ class FeatureListSerializer(serializers.ModelSerializer):
         model = models.FeatureList
         fields = '__all__'
         read_only_fields = (
-            'validated', 'validation_notes', 'owner', 'slug')
+            'validated', 'validation_errors', 'validation_warnings',
+            'owner', 'slug'
+        )
 
 
 class SortVectorSerializer(serializers.ModelSerializer):
@@ -33,7 +35,9 @@ class SortVectorSerializer(serializers.ModelSerializer):
         model = models.SortVector
         fields = '__all__'
         read_only_fields = (
-            'validated', 'validation_notes', 'owner', 'slug')
+            'validated', 'validation_errors', 'validation_warnings',
+            'owner', 'slug'
+        )
 
 
 class EncodeDatasetSerializer(serializers.ModelSerializer):
@@ -41,9 +45,9 @@ class EncodeDatasetSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.EncodeDataset
         exclude = (
-           'public', 'validated', 'validation_notes', 'owner',
-           'created', 'last_updated', 'data_plus', 'data_minus',
-           'data_ambiguous', 'uuid',
+            'public', 'validated', 'validation_errors', 'validation_warnings',
+            'owner', 'created', 'last_updated',
+            'data_plus', 'data_minus', 'data_ambiguous', 'uuid',
         )
 
 
@@ -66,8 +70,9 @@ class AnalysisSerializer(serializers.ModelSerializer):
         model = models.Analysis
         exclude = ('output', )
         read_only_fields = (
-            'validated', 'validation_notes',
-            'start_time', 'end_time', 'owner', 'slug')
+            'validated', 'validation_errors', 'validation_warnings',
+            'start_time', 'end_time', 'owner', 'slug',
+        )
 
     def create_analysis_datasets(self, analysis, datasets):
         objects = [
@@ -88,9 +93,9 @@ class AnalysisSerializer(serializers.ModelSerializer):
         self.create_analysis_datasets(instance, datasets)
         return instance
 
-    def update_analysis_datasets(self, analysis, datasets, isUser):
+    def update_analysis_datasets(self, analysis, datasets, is_user):
         # get existing objects queryset
-        if isUser:
+        if is_user:
             existing = analysis.analysis_user_datasets
         else:
             existing = analysis.analysis_encode_datasets
@@ -121,6 +126,8 @@ class AnalysisSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """
+        In addition to default update, make changes to analysis datasets.
+
         Only call `update_analysis_datasets` if any changes were made to the
         models. Note that this requires the complete list for `user_datasets`
         or `encode_datasets`, as anything not in the list will be deleted.
