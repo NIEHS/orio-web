@@ -3,6 +3,7 @@ from django import template
 register = template.Library()
 
 
+@register.filter(is_safe=True)
 def filesize(value):
     """
     Return human-readable filesize string.
@@ -22,5 +23,3 @@ def filesize(value):
         value = value / 1073741824.0
         ext = 'gb'
     return '%s %s' % (str(round(value, 2)), ext)
-
-register.filter('filesize', filesize)
