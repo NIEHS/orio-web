@@ -68,9 +68,15 @@ class ManageData(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['feature_lists'] = models.FeatureList.objects.filter(owner=self.request.user)
-        context['sort_vectors'] = models.SortVector.objects.filter(owner=self.request.user)
-        context['user_datasets'] = models.UserDataset.objects.filter(owner=self.request.user)
+        context['feature_lists'] = models.FeatureList.objects\
+            .filter(owner=self.request.user)\
+            .select_related('genome_assembly')
+        context['sort_vectors'] = models.SortVector.objects\
+            .filter(owner=self.request.user)\
+            .select_related('feature_list')
+        context['user_datasets'] = models.UserDataset.objects\
+            .filter(owner=self.request.user)\
+            .select_related('genome_assembly')
         return context
 
 
