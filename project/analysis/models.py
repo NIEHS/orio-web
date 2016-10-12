@@ -1051,7 +1051,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                 else:
                     if val > _max:
                         _max = val
-                    elif val < _min:
+                    if val < _min:
                         _min = val
 
             box_plot_values[key] = {
@@ -1070,7 +1070,12 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             for j, c_2 in enumerate(clusters[i:]):
                 clust_1 = cluster_values[c_1]
                 clust_2 = cluster_values[c_2]
-                statistic, p = stats.mannwhitneyu(clust_1, clust_2)
+
+                try:
+                    statistic, p = stats.mannwhitneyu(clust_1, clust_2)
+                except ValueError:
+                    p = 1
+
                 p_values[i][i + j] = p
                 p_values[i + j][i] = p
 
