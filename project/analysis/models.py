@@ -30,7 +30,7 @@ from django.template.loader import render_to_string
 from utils.models import ReadOnlyFileSystemStorage, get_random_filename, DynamicFilePathField
 from async_messages import messages
 
-from .import tasks
+from .import managers, tasks
 
 from orio.matrix import BedMatrix
 from orio.matrixByMatrix import MatrixByMatrix
@@ -645,6 +645,7 @@ class GenomicBinSettings(models.Model):
 
 
 class Analysis(ValidationMixin, GenomicBinSettings):
+    objects = managers.AnalysisManager()
     UPLOAD_TO = 'analysis/'
 
     owner = models.ForeignKey(
@@ -694,14 +695,6 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
     def __str__(self):
         return self.name
-
-    @classmethod
-    def running(cls, owner):
-        return cls.objects.filter(end_time__isnull=True, owner=owner)
-
-    @classmethod
-    def complete(cls, owner):
-        return cls.objects.filter(end_time__isnull=False, owner=owner)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)

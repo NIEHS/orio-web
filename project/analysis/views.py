@@ -58,8 +58,8 @@ class Dashboard(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['analysis_running'] = models.Analysis.running(self.request.user)
-        context['analysis_complete'] = models.Analysis.complete(self.request.user)
+        context['analysis_running'] = models.Analysis.objects.running(self.request.user)
+        context['analysis_complete'] = models.Analysis.objects.complete(self.request.user)
         return context
 
 
