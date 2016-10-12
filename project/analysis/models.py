@@ -1071,8 +1071,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                 clust_1 = cluster_values[c_1]
                 clust_2 = cluster_values[c_2]
                 statistic, p = stats.mannwhitneyu(clust_1, clust_2)
-                p_values[i][i+j] = p
-                p_values[i+j][i] = p
+                p_values[i][i + j] = p
+                p_values[i + j][i] = p
 
         mann_whitney_results = {
             'clusters': clusters,
@@ -1151,7 +1151,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                 display_values.append(fc_vectors[member])
 
         display_values = numpy.array(display_values, dtype=numpy.float)
-        display_values = display_values/upper_quartile
+        display_values = display_values / upper_quartile
         display_values = numpy.nan_to_num(display_values)
 
         ncols = len(display_values[0])
@@ -1487,7 +1487,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
 
         flcm_data = numpy.loadtxt(
             self.matrix.path, delimiter='\t', skiprows=1,
-            usecols=range(1, ncols+1))
+            usecols=range(1, ncols + 1))
 
         if analysis_sort and sort_matrix_id:
             raise ValueError('Two sort procedures specifed')
