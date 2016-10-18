@@ -1449,7 +1449,6 @@ class FeatureListCountMatrix(GenomicBinSettings):
             stranded_bigwigs=dataset.is_stranded,
             stranded_bed=analysis.feature_list.stranded,
             chrom_sizes=analysis.genome_assembly.chromosome_size_file,
-            temp_dir=None,
         )
 
         return cls.objects.create(
