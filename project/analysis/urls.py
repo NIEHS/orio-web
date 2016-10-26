@@ -46,28 +46,28 @@ urlpatterns = [
         views.AnalysisCreate.as_view(),
         name='analysis_create'),
 
-    url(r'^analysis/(?P<pk>\d+)/$',
+    url(r'^analysis/(?P<pk>\d+)-(?P<slug>[\w-]+)/$',
         views.AnalysisDetail.as_view(),
         name='analysis'),
 
-    url(r'^analysis/(?P<pk>\d+)/update/$',
+    url(r'^analysis/(?P<pk>\d+)-(?P<slug>[\w-]+)/update/$',
         views.AnalysisUpdate.as_view(),
         name='analysis_update'),
 
-    # analysis non-CRUD
-    url(r'^analysis/(?P<pk>\d+)/delete/$',
+    url(r'^analysis/(?P<pk>\d+)-(?P<slug>[\w-]+)/delete/$',
         views.AnalysisDelete.as_view(),
         name='analysis_delete'),
 
-    url(r'^analysis/(?P<pk>\d+)/visual/$',
+    # analysis non-CRUD
+    url(r'^analysis/(?P<pk>\d+)-(?P<slug>[\w-]+)/visual/$',
         views.AnalysisVisual.as_view(),
         name='analysis_visual'),
 
-    url(r'^analysis/(?P<pk>\d+)/zip/$',
+    url(r'^analysis/(?P<pk>\d+)-(?P<slug>[\w-]+)/zip/$',
         views.AnalysisZip.as_view(),
         name='analysis_zip'),
 
-    url(r'^analysis/(?P<pk>\d+)/execute/$',
+    url(r'^analysis/(?P<pk>\d+)-(?P<slug>[\w-]+)/execute/$',
         views.AnalysisExecute.as_view(),
         name='analysis_execute'),
 
@@ -76,15 +76,15 @@ urlpatterns = [
         views.UserDatasetCreate.as_view(),
         name='user_dataset_create'),
 
-    url(r'^user-dataset/(?P<pk>\d+)/$',
+    url(r'^user-dataset/(?P<pk>\d+)-(?P<slug>[\w-]+)/$',
         views.UserDatasetDetail.as_view(),
         name='user_dataset'),
 
-    url(r'^user-dataset/(?P<pk>\d+)/update/$',
+    url(r'^user-dataset/(?P<pk>\d+)-(?P<slug>[\w-]+)/update/$',
         views.UserDatasetUpdate.as_view(),
         name='user_dataset_update'),
 
-    url(r'^user-dataset/(?P<pk>\d+)/delete/$',
+    url(r'^user-dataset/(?P<pk>\d+)-(?P<slug>[\w-]+)/delete/$',
         views.UserDatasetDelete.as_view(),
         name='user_dataset_delete'),
 
@@ -98,15 +98,15 @@ urlpatterns = [
         views.FeatureListCreate.as_view(),
         name='feature_list_create'),
 
-    url(r'^feature-list/(?P<pk>\d+)/$',
+    url(r'^feature-list/(?P<pk>\d+)-(?P<slug>[\w-]+)/$',
         views.FeatureListDetail.as_view(),
         name='feature_list'),
 
-    url(r'^feature-list/(?P<pk>\d+)/update/$',
+    url(r'^feature-list/(?P<pk>\d+)-(?P<slug>[\w-]+)/update/$',
         views.FeatureListUpdate.as_view(),
         name='feature_list_update'),
 
-    url(r'^feature-list/(?P<pk>\d+)/delete/$',
+    url(r'^feature-list/(?P<pk>\d+)-(?P<slug>[\w-]+)/delete/$',
         views.FeatureListDelete.as_view(),
         name='feature_list_delete'),
 
@@ -115,15 +115,15 @@ urlpatterns = [
         views.SortVectorCreate.as_view(),
         name='sort_vector_create'),
 
-    url(r'^sort-vector/(?P<pk>\d+)/$',
+    url(r'^sort-vector/(?P<pk>\d+)-(?P<slug>[\w-]+)/$',
         views.SortVectorDetail.as_view(),
         name='sort_vector'),
 
-    url(r'^sort-vector/(?P<pk>\d+)/update/$',
+    url(r'^sort-vector/(?P<pk>\d+)-(?P<slug>[\w-]+)/update/$',
         views.SortVectorUpdate.as_view(),
         name='sort_vector_update'),
 
-    url(r'^sort-vector/(?P<pk>\d+)/delete/$',
+    url(r'^sort-vector/(?P<pk>\d+)-(?P<slug>[\w-]+)/delete/$',
         views.SortVectorDelete.as_view(),
         name='sort_vector_delete'),
 

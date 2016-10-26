@@ -1,7 +1,6 @@
 from django import forms
 from django.core.urlresolvers import reverse
-from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm,\
-         SetPasswordForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm
 
 from crispy_forms import layout as cfl
 from crispy_forms import bootstrap as cfb
@@ -15,9 +14,7 @@ PASSWORD_HELP = 'Must have at least 8 characters'
 
 
 def check_password(pw):
-    """
-    Ensure password meets any complexity requirements.
-    """
+    """Ensure password meets complexity requirements."""
     if len(pw) < 8:
         raise forms.ValidationError(PASSWORD_HELP)
 
@@ -37,10 +34,10 @@ class RegistrationForm(forms.ModelForm):
         fields = ('email', )
 
     def __init__(self, *args, **kwargs):
-        super(RegistrationForm, self).__init__(*args, **kwargs)
-        self.helper = self.setHelper()
+        super().__init__(*args, **kwargs)
+        self.helper = self.set_helper()
 
-    def setHelper(self):
+    def set_helper(self):
         buttons = cfb.FormActions(
             cfl.Submit('login', 'Create account'),
             cfl.HTML(
@@ -76,7 +73,7 @@ class RegistrationForm(forms.ModelForm):
         return pw
 
     def save(self, commit=True):
-        user = super(RegistrationForm, self).save(commit=False)
+        user = super().save(commit=False)
         user.set_password(self.cleaned_data['password1'])
         if commit:
             user.save()
@@ -86,11 +83,11 @@ class RegistrationForm(forms.ModelForm):
 class LoginForm(AuthenticationForm):
 
     def __init__(self, *args, **kwargs):
-        super(LoginForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['password'].widget.attrs['autocomplete'] = 'off'
-        self.helper = self.setHelper()
+        self.helper = self.set_helper()
 
-    def setHelper(self):
+    def set_helper(self):
         buttons = cfb.FormActions(
             cfl.Submit('login', 'Login'),
             cfl.HTML(
@@ -116,10 +113,10 @@ class LoginForm(AuthenticationForm):
 class ResetPasswordEmailForm(PasswordResetForm):
 
     def __init__(self, *args, **kwargs):
-        super(ResetPasswordEmailForm, self).__init__(*args, **kwargs)
-        self.helper = self.setHelper()
+        super().__init__(*args, **kwargs)
+        self.helper = self.set_helper()
 
-    def setHelper(self):
+    def set_helper(self):
         help_text = """
             Forgotten your password, or creating a new
             account? Enter your email address below, and we'll email
@@ -143,18 +140,18 @@ class ResetPasswordEmailForm(PasswordResetForm):
 class ResetPasswordForm(SetPasswordForm):
 
     def __init__(self, *args, **kwargs):
-        super(ResetPasswordForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['new_password1'].help_text = PASSWORD_HELP
         self.fields['new_password1'].widget.attrs['autocomplete'] = 'off'
         self.fields['new_password2'].widget.attrs['autocomplete'] = 'off'
-        self.helper = self.setHelper()
+        self.helper = self.set_helper()
 
     def clean_new_password1(self):
         pw = self.cleaned_data['new_password1']
         check_password(pw)
         return pw
 
-    def setHelper(self):
+    def set_helper(self):
         help_text = u"""
             Please enter your new password twice so we can verify you
             typed it in correctly.

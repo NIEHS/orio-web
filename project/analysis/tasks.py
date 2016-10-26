@@ -9,9 +9,15 @@ from django.utils import timezone
 logger = get_task_logger(__name__)
 
 
+@task()
+def raise_error():
+    """DEBUG task added to ensure that celery errors are handled correctly."""
+    raise NotImplementedError('Successful raising of error')
+
+
 @task(bind=True)
 def execute_analysis(self, analysis_id, silent):
-    # run all feature-list count matrix in parallel
+    """Run all feature-list count matrix in parallel."""
     EncodeDataset = apps.get_model('analysis', 'EncodeDataset')
     analysis = apps.get_model('analysis', 'Analysis').objects.get(id=analysis_id)
     ads_qs = analysis.analysisdatasets_set.all()\
@@ -33,11 +39,11 @@ def execute_analysis(self, analysis_id, silent):
 
 
 @task()
-def execute_count_matrix(analysis_id, ads_id, isEncode, dataset_id):
-    # execute each count matrix
+def execute_count_matrix(analysis_id, ads_id, is_encode, dataset_id):
+    """Execute each count matrix."""
     analysis = apps.get_model('analysis', 'Analysis').objects.get(id=analysis_id)
     ads = apps.get_model('analysis', 'AnalysisDatasets').objects.get(id=ads_id)
-    if isEncode:
+    if is_encode:
         dataset = apps.get_model('analysis', 'EncodeDataset').objects.get(id=dataset_id)
     else:
         dataset = apps.get_model('analysis', 'UserDataset').objects.get(id=dataset_id)
@@ -48,7 +54,7 @@ def execute_count_matrix(analysis_id, ads_id, isEncode, dataset_id):
 
 @task()
 def execute_matrix_combination(analysis_id, silent):
-    # save results from matrix combination
+    """Save results from matrix combination."""
     analysis = apps.get_model('analysis', 'Analysis').objects.get(id=analysis_id)
     analysis.output = analysis.execute_mat2mat()
     analysis.end_time = timezone.now()

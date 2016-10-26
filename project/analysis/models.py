@@ -12,6 +12,7 @@ import pandas as pd
 import math
 import numpy
 from scipy import stats, ndimage
+from collections import defaultdict
 
 from django.db import models
 from django.conf import settings
@@ -26,11 +27,10 @@ from django.utils.timezone import now
 from django.utils.text import slugify
 from django.template.loader import render_to_string
 
-from utils.models import ReadOnlyFileSystemStorage, get_random_filename, \
-    DynamicFilePathField
+from utils.models import ReadOnlyFileSystemStorage, get_random_filename, DynamicFilePathField
 from async_messages import messages
 
-from .import tasks
+from .import managers, tasks
 
 from orio.matrix import BedMatrix
 from orio.matrixByMatrix import MatrixByMatrix
@@ -49,6 +49,8 @@ class Dataset(models.Model):
         related_name='%(class)s',)
     name = models.CharField(
         max_length=128)
+    slug = models.CharField(
+        max_length=128)
     description = models.TextField(
         blank=True)
     uuid = models.UUIDField(
@@ -58,7 +60,9 @@ class Dataset(models.Model):
         default=False)
     validated = models.BooleanField(
         default=False)
-    validation_notes = models.TextField(
+    validation_errors = models.TextField(
+        blank=True)
+    validation_warnings = models.TextField(
         blank=True)
     created = models.DateTimeField(
         auto_now_add=True)
@@ -70,6 +74,10 @@ class Dataset(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def get_form_cancel_url(self):
         if self.id:
@@ -93,6 +101,11 @@ class GenomeAssembly(models.Model):
         max_length=128,
         path=get_data_path,
         recursive=False)
+    annotation_file = DynamicFilePathField(
+        unique=True,
+        max_length=128,
+        path=get_data_path,
+        recursive=False)
 
     class Meta:
         verbose_name_plural = 'genome assemblies'
@@ -101,7 +114,7 @@ class GenomeAssembly(models.Model):
         return self.name
 
 
-class ValidationMixin(object):
+class ValidationMixin:
 
     def validate(self):
         # return tuple (is_valid: bool, validation_text: str)
@@ -110,7 +123,7 @@ class ValidationMixin(object):
     def validate_and_save(self):
         is_valid, text = self.validate()
         self.validated = is_valid
-        self.validation_notes = self.scrub_validation_text(text)
+        self.validation_errors = self.scrub_validation_text(text)
         self.send_validation_message()
         self.save()
 
@@ -196,7 +209,7 @@ class DatasetDownload(models.Model):
         logger.info('Setting filename to {}'.format(fn))
 
         # set filename to object
-        self.data.name = fn[len(settings.USERDATA_PATH)+1:]
+        self.data.name = fn[len(settings.USERDATA_PATH) + 1:]
 
         # write a temporary file prevent-overwriting file
         with open(fn, 'w') as f:
@@ -299,22 +312,22 @@ class GenomicDataset(Dataset):
 
 class UserDataset(ValidationMixin, GenomicDataset):
     DATA_TYPES = (
-        ('Cage',        'Cage'),
-        ('ChiaPet',     'ChiaPet'),
-        ('ChipSeq',     'ChipSeq'),
-        ('DnaseDgf',    'DnaseDgf'),
-        ('DnaseSeq',    'DnaseSeq'),
-        ('FaireSeq',    'FaireSeq'),
-        ('Mapability',  'Mapability'),
-        ('Nucleosome',  'Nucleosome'),
-        ('Orchid',      'Orchid'),
-        ('RepliChip',   'RepliChip'),
-        ('RepliSeq',    'RepliSeq'),
-        ('RipSeq',      'RipSeq'),
-        ('RnaPet',      'RnaPet'),
-        ('RnaSeq',      'RnaSeq'),
-        ('SmartSeq',    'SmartSeq'),
-        ('Other',       'Other (describe in "description" field)'),
+        ('Cage', 'Cage'),
+        ('ChiaPet', 'ChiaPet'),
+        ('ChipSeq', 'ChipSeq'),
+        ('DnaseDgf', 'DnaseDgf'),
+        ('DnaseSeq', 'DnaseSeq'),
+        ('FaireSeq', 'FaireSeq'),
+        ('Mapability', 'Mapability'),
+        ('Nucleosome', 'Nucleosome'),
+        ('Orchid', 'Orchid'),
+        ('RepliChip', 'RepliChip'),
+        ('RepliSeq', 'RepliSeq'),
+        ('RipSeq', 'RipSeq'),
+        ('RnaPet', 'RnaPet'),
+        ('RnaSeq', 'RnaSeq'),
+        ('SmartSeq', 'SmartSeq'),
+        ('Other', 'Other (describe in "description" field)'),
     )
 
     data_type = models.CharField(
@@ -351,7 +364,7 @@ class UserDataset(ValidationMixin, GenomicDataset):
         success_code = DatasetDownload.FINISHED_SUCCESS
         if self.is_stranded:
             return self.plus.status_code == success_code and \
-                   self.minus.status_code == success_code
+                self.minus.status_code == success_code
         else:
             return self.ambiguous.status_code == success_code
 
@@ -361,19 +374,22 @@ class UserDataset(ValidationMixin, GenomicDataset):
         return cls.objects.filter(owner=user, validated=True)
 
     def get_absolute_url(self):
-        return reverse('analysis:user_dataset', args=[self.pk, ])
+        return reverse('analysis:user_dataset',
+                       args=[self.pk, self.slug])
+
+    def get_update_url(self):
+        return reverse('analysis:user_dataset_update',
+                       args=[self.pk, self.slug])
+
+    def get_delete_url(self):
+        return reverse('analysis:user_dataset_delete',
+                       args=[self.pk, self.slug])
 
     def get_bigwig_paths(self):
         if self.is_stranded:
             return [self.plus.data.path, self.minus.data.path]
         else:
             return [self.ambiguous.data.path]
-
-    def get_update_url(self):
-        return reverse('analysis:user_dataset_update', args=[self.pk, ])
-
-    def get_delete_url(self):
-        return reverse('analysis:user_dataset_delete', args=[self.pk, ])
 
     def validate_and_save(self):
         # wait until all files are downloaded before attempting validation
@@ -517,13 +533,16 @@ class FeatureList(ValidationMixin, Dataset):
         ))
 
     def get_absolute_url(self):
-        return reverse('analysis:feature_list', args=[self.pk, ])
+        return reverse('analysis:feature_list',
+                       args=[self.pk, self.slug])
 
     def get_update_url(self):
-        return reverse('analysis:feature_list_update', args=[self.pk, ])
+        return reverse('analysis:feature_list_update',
+                       args=[self.pk, self.slug])
 
     def get_delete_url(self):
-        return reverse('analysis:feature_list_delete', args=[self.pk, ])
+        return reverse('analysis:feature_list_delete',
+                       args=[self.pk, self.slug])
 
     def validate(self):
         validator = validators.FeatureListValidator(
@@ -536,7 +555,7 @@ class FeatureList(ValidationMixin, Dataset):
 class SortVector(ValidationMixin, Dataset):
     feature_list = models.ForeignKey(
         FeatureList)
-    vector = models.FileField(
+    dataset = models.FileField(
         max_length=256)
 
     @classmethod
@@ -555,18 +574,21 @@ class SortVector(ValidationMixin, Dataset):
         ))
 
     def get_absolute_url(self):
-        return reverse('analysis:sort_vector', args=[self.pk, ])
+        return reverse('analysis:sort_vector',
+                       args=[self.pk, self.slug])
 
     def get_update_url(self):
-        return reverse('analysis:sort_vector_update', args=[self.pk, ])
+        return reverse('analysis:sort_vector_update',
+                       args=[self.pk, self.slug])
 
     def get_delete_url(self):
-        return reverse('analysis:sort_vector_delete', args=[self.pk, ])
+        return reverse('analysis:sort_vector_delete',
+                       args=[self.pk, self.slug])
 
     def validate(self):
         validator = validators.SortVectorValidator(
             self.feature_list.dataset.path,
-            self.vector.path)
+            self.dataset.path)
         validator.validate()
         return validator.is_valid, validator.display_errors()
 
@@ -623,11 +645,14 @@ class GenomicBinSettings(models.Model):
 
 
 class Analysis(ValidationMixin, GenomicBinSettings):
+    objects = managers.AnalysisManager()
     UPLOAD_TO = 'analysis/'
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL)
     name = models.CharField(
+        max_length=128)
+    slug = models.CharField(
         max_length=128)
     description = models.TextField(
         blank=True)
@@ -645,7 +670,9 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         null=True)
     validated = models.BooleanField(
         default=False)
-    validation_notes = models.TextField(
+    validation_errors = models.TextField(
+        blank=True)
+    validation_warnings = models.TextField(
         blank=True)
     start_time = models.DateTimeField(
         null=True)
@@ -669,13 +696,9 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     def __str__(self):
         return self.name
 
-    @classmethod
-    def running(cls, owner):
-        return cls.objects.filter(end_time__isnull=True, owner=owner)
-
-    @classmethod
-    def complete(cls, owner):
-        return cls.objects.filter(end_time__isnull=False, owner=owner)
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def validate(self):
         validator = validators.AnalysisValidator(
@@ -691,13 +714,16 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         return validator.is_valid, validator.display_errors()
 
     def get_absolute_url(self):
-        return reverse('analysis:analysis', args=[self.pk, ])
+        return reverse('analysis:analysis',
+                       args=[self.pk, self.slug])
 
     def get_execute_url(self):
-        return reverse('analysis:analysis_execute', args=[self.pk, ])
+        return reverse('analysis:analysis_execute',
+                       args=[self.pk, self.slug])
 
     def get_visuals_url(self):
-        return reverse('analysis:analysis_visual', args=[self.pk, ])
+        return reverse('analysis:analysis_visual',
+                       args=[self.pk, self.slug])
 
     def get_form_cancel_url(self):
         if self.id:
@@ -706,16 +732,21 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             return reverse('analysis:dashboard')
 
     def get_update_url(self):
-        return reverse('analysis:analysis_update', args=[self.pk, ])
+        return reverse('analysis:analysis_update',
+                       args=[self.pk, self.slug])
 
     def get_delete_url(self):
-        return reverse('analysis:analysis_delete', args=[self.pk, ])
+        return reverse('analysis:analysis_delete',
+                       args=[self.pk, self.slug])
 
     def get_zip_url(self):
-        return reverse('analysis:analysis_zip', args=[self.pk, ])
+        return reverse('analysis:analysis_zip',
+                       args=[self.pk, self.slug])
 
-    def is_reset_required(self, dsIds):
+    def is_reset_required(self, ids):
         """
+        Determine if analysis reset is required (requires re-computation).
+
         If certain settings have changed, reset validation and output results.
         This method should be called from a changed form-instance, before
         saving.
@@ -741,7 +772,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                     break
 
             dbIds = set(dbObj.analysisdatasets_set.values_list('dataset_id', flat=True))
-            formIds = set(dsIds)
+            formIds = set(ids)
             if dbIds != formIds:
                 reset = True
         logger.info('Analysis reset required: %s' % reset)
@@ -750,7 +781,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     def reset_analysis_object(self):
         formObj = self
         formObj.validated = False
-        formObj.validation_notes = ''
+        formObj.validation_errors = ''
+        formObj.validation_warnings = ''
         formObj.output = None
         formObj.start_time = None
         formObj.end_time = None
@@ -761,7 +793,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         n = float(self.datasets.count())
         workers = 10
         base = 300
-        matrices = math.ceil(n/workers) * 90
+        matrices = math.ceil(n / workers) * 90
         agg = 120 + math.log10(n)**2 * 60
         return base + matrices + agg
 
@@ -844,10 +876,12 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
         sv = None
         if self.sort_vector:
-            sv = self.sort_vector.vector.path
+            sv = self.sort_vector.dataset.path
 
         mm = MatrixByMatrix(
+            feature_bed=self.feature_list.dataset.path,
             matrix_list=matrix_list,
+            annotation=self.genome_assembly.annotation_file,
             window_start=self.bin_start,
             bin_number=self.bin_number,
             bin_size=self.bin_size,
@@ -888,7 +922,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             sv = cache.get(key)
             if sv is None:
                 sv = pd.read_csv(
-                    self.sort_vector.vector.path, sep='\t', header=None
+                    self.sort_vector.dataset.path, sep='\t', header=None
                 )
                 cache.set(key, sv)
         return sv
@@ -927,6 +961,11 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             'bin_parameters': output['bin_parameters'],
         }
 
+    def get_fc_vectors_ngs_list(self):
+        if not self.output:
+            return False
+        return self.output_json['fc_vectors']['col_names']
+
     def get_analysis_overview_init(self):
         if not self.output:
             return False
@@ -961,12 +1000,91 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         return data
 
     def get_feature_clustering_overview_init(self):
+        centroids = self.output_json['fc_centroids']
+
+        upper_quartile = numpy.array(self.output_json['fc_vectors']['q3'],
+                                     dtype=numpy.float)
+        for k in centroids:
+            for cluster in centroids[k]:
+                centroids[k][cluster] = numpy.nan_to_num(
+                    numpy.array(centroids[k][cluster], dtype=numpy.float) /
+                    upper_quartile)
+
         data = {
             'dendrogram': self.output_json['dsc_dendrogram'],
             'matrix_names': self.matrices['names'],
-            'fcCentroids': self.output_json['fc_centroids'],
+            'fcCentroids': centroids,
         }
         return data
+
+    def get_clust_boxplot_values(self, k, col_index):
+        box_plot_values = dict()
+        cluster_values = defaultdict(list)
+
+        vectors = self.output_json['fc_vectors']['vectors']
+
+        for cluster, features in \
+                self.output_json['fc_clusters'][str(k)].items():
+            for feature in features:
+                cluster_values[cluster].append(vectors[feature][col_index])
+                cluster_values['all'].append(vectors[feature][col_index])
+
+        for key, _list in cluster_values.items():
+            _array = numpy.array(_list, dtype=numpy.float)
+
+            q1 = numpy.percentile(_array, 25)
+            q2 = numpy.percentile(_array, 50)
+            q3 = numpy.percentile(_array, 75)
+
+            iqr = q3 - q1
+
+            lower = q1 - 1.5 * iqr
+            upper = q3 + 1.5 * iqr
+
+            outliers = []
+            _max = float('-inf')
+            _min = float('inf')
+
+            for val in numpy.nditer(_array):
+                if val < lower or val > upper:
+                    outliers.append(val)
+                else:
+                    if val > _max:
+                        _max = val
+                    if val < _min:
+                        _min = val
+
+            box_plot_values[key] = {
+                'q1': q1,
+                'q2': q2,
+                'q3': q3,
+                'min': _min,
+                'max': _max,
+                'outliers': outliers,
+            }
+
+        clusters = list(sorted(cluster_values.keys()))
+        p_values = numpy.empty((len(clusters), len(clusters)))
+
+        for i, c_1 in enumerate(clusters):
+            for j, c_2 in enumerate(clusters[i:]):
+                clust_1 = cluster_values[c_1]
+                clust_2 = cluster_values[c_2]
+
+                try:
+                    statistic, p = stats.mannwhitneyu(clust_1, clust_2)
+                except ValueError:
+                    p = 1
+
+                p_values[i][i + j] = p
+                p_values[i + j][i] = p
+
+        mann_whitney_results = {
+            'clusters': clusters,
+            'p_values': p_values,
+        }
+
+        return box_plot_values, mann_whitney_results
 
     def get_dsc_full_row_value(self, row_name):
         if not self.output:
@@ -984,13 +1102,40 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                  d['row_name'] == row_name)
         return self.output_json['dsc_full_data']['rows'][i]['row_id']
 
-    def get_features_in_cluster(self, k_value, cluster):
+    def get_cluster_members(self, k, cluster):
+        entry_list = []
+        gene_list = []
+
+        # READ FEATURE LIST
+        feature_to_line = dict()
+        count = 0
+        total_valid_lines = BedMatrix.countValidBedLines(self.feature_list.dataset.path)
+
+        with open(self.feature_list.dataset.path) as f:
+            for line in f:
+                if not BedMatrix.checkHeader(line):
+                    bed_fields = len(line.strip().split())
+
+                    name = None
+                    if bed_fields >= 4:  # Contains name information?
+                        name = line.strip().split()[3]
+                    if name is None or name in BedMatrix.DUMMY_VALUES:
+                        name = BedMatrix.generateFeatureName(
+                            "feature", count, total_valid_lines)
+                    count += 1
+
+                    feature_to_line[name] = line.strip()
+
+        # GET GENE ASSOCIATIONS FROM JSON
         if not self.output:
             return False
-        features = ','.join(
-            self.output_json['fc_clusters'][str(k_value)][str(cluster)]
-        )
-        return features
+        feature_to_gene = self.output_json['feature_to_gene']
+
+        # CREATE ENTRY LINES AND GENE LISTS, RETURN ZIPPED
+        for feature in self.output_json['fc_clusters'][str(k)][str(cluster)]:
+            entry_list.append(feature_to_line[feature])
+            gene_list.append(feature_to_gene[feature])
+        return(zip(entry_list, gene_list))
 
     def get_feature_data(self, feature_name):
         if not self.output:
@@ -1000,6 +1145,8 @@ class Analysis(ValidationMixin, GenomicBinSettings):
     def get_k_clust_heatmap(self, k_value, dim_x, dim_y):
         fc_vectors = self.output_json['fc_vectors']['vectors']
         fc_clusters = self.output_json['fc_clusters'][str(k_value)]
+        upper_quartile = numpy.array(
+            self.output_json['fc_vectors']['q3'], dtype=numpy.float)
 
         display_values = []
         cluster_sizes = dict()
@@ -1008,18 +1155,20 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             for member in fc_clusters[cluster]:
                 display_values.append(fc_vectors[member])
 
-        display_values = numpy.array(display_values)
-        display_values = display_values.astype(float)
+        display_values = numpy.array(display_values, dtype=numpy.float)
+        display_values = display_values / upper_quartile
+        display_values = numpy.nan_to_num(display_values)
 
         ncols = len(display_values[0])
         nrows = len(display_values)
 
         if ncols > dim_x:
-            zoom_x = dim_x/ncols
+            zoom_x = dim_x / ncols
         else:
             zoom_x = 1
+
         if nrows > dim_y:
-            zoom_y = dim_y/nrows
+            zoom_y = dim_y / nrows
         else:
             zoom_y = 1
 
@@ -1047,7 +1196,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         values = list(flcm.count_matrix.df['All bins'])
         quartiles = [[], [], [], []]
         for i, index in enumerate(sort_order):
-            quartiles[math.floor(4*i/n)].append(values[index])
+            quartiles[math.floor(4 * i / n)].append(values[index])
 
         stat, cv, sig = stats.anderson_ksamp(quartiles)
         return {
@@ -1065,7 +1214,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         n = len(flcm.count_matrix.df['All bins'])
         quartiles = [[], [], [], []]
         for i, value in enumerate(flcm.count_matrix.df['All bins']):
-            quartiles[math.floor(4*i/n)].append(value)
+            quartiles[math.floor(4 * i / n)].append(value)
 
         stat, cv, sig = stats.anderson_ksamp(quartiles)
         return {
@@ -1093,7 +1242,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         values = list(flcm.count_matrix.df['All bins'])
         quartiles = [[], [], [], []]
         for i, index in enumerate(sort_order):
-            quartiles[math.floor(4*i/n)].append(values[index])
+            quartiles[math.floor(4 * i / n)].append(values[index])
 
         stat, cv, sig = stats.anderson_ksamp(quartiles)
         return {
@@ -1162,10 +1311,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         return xDf.join(yDf).to_csv()
 
     def create_zip(self):
-        """
-        Create a zip file of output, specifically designed to recreate analysis
-        or to load analysis onto local development computers.
-        """
+        """Return zip of output results and all intermediate files."""
         f = io.BytesIO()
         with zipfile.ZipFile(f, mode='w',
                              compression=zipfile.ZIP_DEFLATED) as z:
@@ -1175,7 +1321,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
             # write sort vector
             if self.sort_vector:
-                z.write(self.sort_vector.vector.path, arcname='sort_vector.txt')
+                z.write(self.sort_vector.dataset.path, arcname='sort_vector.txt')
 
             # write output JSON
             if self.output:
@@ -1263,7 +1409,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
             df.rename(columns={'Unnamed: 0': 'label'}, inplace=True)
             df.set_index('label', inplace=True, drop=True)
             df.insert(0, self.ALL_BINS, df.sum(axis=1))
-            size = round(df.memory_usage(index=True).sum()/(1024*1024), 2)
+            size = round(df.memory_usage(index=True).sum() / (1024 * 1024), 2)
             logger.info('Setting cache: {} ({}mb)'.format(key, size))
             cache.set(key, df)
 
@@ -1301,7 +1447,8 @@ class FeatureListCountMatrix(GenomicBinSettings):
             bin_size=analysis.bin_size,
             opposite_strand_fn=None,
             stranded_bigwigs=dataset.is_stranded,
-            stranded_bed=analysis.feature_list.stranded
+            stranded_bed=analysis.feature_list.stranded,
+            chrom_sizes=analysis.genome_assembly.chromosome_size_file,
         )
 
         return cls.objects.create(
@@ -1344,7 +1491,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
 
         flcm_data = numpy.loadtxt(
             self.matrix.path, delimiter='\t', skiprows=1,
-            usecols=range(1, ncols+1))
+            usecols=range(1, ncols + 1))
 
         if analysis_sort and sort_matrix_id:
             raise ValueError('Two sort procedures specifed')
@@ -1365,7 +1512,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
                 ncols = len(f.readline().split('\t')[1:])
             sort_data = numpy.loadtxt(
                 sort_matrix.matrix.path, delimiter='\t', skiprows=1,
-                usecols=range(1, ncols+1)
+                usecols=range(1, ncols + 1)
             )
             for i in numpy.argsort(numpy.sum(sort_data, axis=1))[::-1]:
                 sorted_flcm.append(flcm_data[i])
@@ -1379,10 +1526,11 @@ class FeatureListCountMatrix(GenomicBinSettings):
 
         zoom_x = 1
         if nrows > dim_x:
-            zoom_x = dim_x/nrows
+            zoom_x = dim_x / nrows
+
         zoom_y = 1
         if ncols > dim_y:
-            zoom_y = dim_y/ncols
+            zoom_y = dim_y / ncols
 
         quartiles = numpy.array_split(sorted_flcm, 4)
         quartile_averages = []
@@ -1402,27 +1550,37 @@ class FeatureListCountMatrix(GenomicBinSettings):
                               stats.anderson_ksamp(quartile_vector_sums)):
             ad_results[key] = value
 
-        zoomed_data = ndimage.zoom(
-            sorted_flcm, (zoom_y, zoom_x), order=5, prefilter=False)
+        kruskalwallis = stats.mstats.kruskalwallis(
+            quartile_vector_sums[0],
+            quartile_vector_sums[1],
+            quartile_vector_sums[2],
+            quartile_vector_sums[3],
+        )
+        kw_results = dict()
+        for key, value in zip(['test_statistic', 'pvalue'], kruskalwallis):
+            kw_results[key] = value
+
+        zoomed_data = ndimage.zoom(sorted_flcm, (zoom_y, zoom_x), order=5, prefilter=False)
         smoothed_data = ndimage.median_filter(zoomed_data, size=(1, 5))
 
-        return {
-            'bin_labels': bin_labels,
-            'quartile_averages': quartile_averages,
-            'bin_averages': numpy.mean(sorted_flcm, axis=0),
-            'norm_val': {
-                'lower_quartile': numpy.percentile(smoothed_data, 25),
-                'median': numpy.percentile(smoothed_data, 50),
-                'upper_quartile': numpy.percentile(smoothed_data, 75),
-                'max': numpy.max(smoothed_data),
-                'min': numpy.min(smoothed_data),
-                'average': numpy.mean(smoothed_data),
-                'stddev': numpy.std(smoothed_data),
-                'variance': numpy.var(smoothed_data),
-            },
-            'smoothed_data': smoothed_data,
-            'ad_results': ad_results,
-        }
+        return dict(
+            bin_labels=bin_labels,
+            quartile_averages=quartile_averages,
+            bin_averages=numpy.mean(sorted_flcm, axis=0),
+            norm_val=dict(
+                lower_quartile=numpy.percentile(smoothed_data, 25),
+                median=numpy.percentile(smoothed_data, 50),
+                upper_quartile=numpy.percentile(smoothed_data, 75),
+                max=numpy.max(smoothed_data),
+                min=numpy.min(smoothed_data),
+                average=numpy.mean(smoothed_data),
+                stddev=numpy.std(smoothed_data),
+                variance=numpy.var(smoothed_data),
+            ),
+            smoothed_data=smoothed_data,
+            ad_results=ad_results,
+            kw_results=kw_results,
+        )
 
 
 def get_temporary_download_path(instance, filename):

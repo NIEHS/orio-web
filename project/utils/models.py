@@ -40,10 +40,10 @@ class DynamicFilePathField(FilePathField):
             self.pathfunc, self.path = self.path, self.path()
         self.allow_files, self.allow_folders = allow_files, allow_folders
         kwargs['max_length'] = kwargs.get('max_length', 100)
-        super(FilePathField, self).__init__(verbose_name, name, **kwargs)
+        super().__init__(verbose_name, name, **kwargs)
 
     def deconstruct(self):
-        name, path, args, kwargs = super(DynamicFilePathField, self).deconstruct()
+        name, path, args, kwargs = super().deconstruct()
         if hasattr(self, "pathfunc"):
             kwargs['path'] = self.pathfunc
         return name, path, args, kwargs

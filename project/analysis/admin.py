@@ -1,11 +1,12 @@
 from django.contrib import admin
 
 from . import models
+from utils.admin import pretty_json
 
 
 class GenomeAssemblyAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'chromosome_size_file',
+        'name', 'chromosome_size_file', 'annotation_file',
     )
     search_fields = ('name', )
 
@@ -35,6 +36,13 @@ class EncodeDatasetAdmin(admin.ModelAdmin):
     search_fields = (
         'name',
     )
+
+    readonly_fields = ('data_prettified',)
+
+    def data_prettified(self, instance):
+        return pretty_json(instance.extra_content)
+
+    data_prettified.short_description = 'Prettified extra content'
 
 
 class FeatureListAdmin(admin.ModelAdmin):

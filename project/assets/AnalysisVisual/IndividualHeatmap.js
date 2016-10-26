@@ -51,9 +51,9 @@ class IndividualHeatmap {
         };
     }
 
-    displayQuartilePValue(p) {
+    displayQuartilePValue(ad_p, kw_p) {
         this.modal_body.find('#quartile_pval').remove();
-        $(`<p id="quartile_pval">p-value = ${p.toExponential(2)}</p>`)
+        $(`<p id="quartile_pval">AD p-value = ${ad_p.toExponential(2)}<br>KW p-value = ${kw_p.toExponential(2)}</p>`)
             .css({
                 position: 'absolute',
                 left: 0.11 * this.modal_dim.w,
@@ -426,7 +426,7 @@ class IndividualHeatmap {
 
         this.modal_body.find('#heatmap_canvas').remove();
 
-        $('<canvas id="heatmap_canvas"></canvas>')
+        $('<canvas id="heatmap_canvas">')
             .prop({
                 'height': this.heatmap_dim.h,
                 'width': this.heatmap_dim.w,
@@ -503,7 +503,8 @@ class IndividualHeatmap {
                 this.drawHeatmapHeader(data.bin_labels);
                 this.drawMetaPlot(data.bin_averages, data.bin_labels);
                 this.drawQuartiles(data.quartile_averages, data.bin_labels);
-                this.displayQuartilePValue(data.ad_results.pvalue);
+                this.displayQuartilePValue(data.ad_results.pvalue,
+                                           data.kw_results.pvalue);
             };
 
         this.loadingSpinner.fadeIn();

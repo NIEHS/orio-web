@@ -17,8 +17,14 @@
 <table class='table table-condensed'>
     <tbody>
         <tr>
-            <th style='width: 25%'>Description</th>
-            <td style='width: 75%'>{{object.description}}</td>
+            <th style='width: 20%'>Description</th>
+            <td style='width: 80%'>
+                {% if object.description %}
+                    {{object.description}}
+                {% else %}
+                    <i>&lt;none&gt;</i>
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <th>Public</th>
@@ -28,9 +34,7 @@
             <th>Validated</th>
             <td>{{object.validated|fabool}}</td>
         </tr>
-        {% if object.validation_notes %}
-            {% include 'analysis/_validation_notes.html' %}
-        {% endif %}
+        {% include 'analysis/_validation_notes.html' %}
         <tr>
             <th>Dataset type</th>
             <td>{{object.data_type}}</td>

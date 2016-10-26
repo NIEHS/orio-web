@@ -1,1 +1,1 @@
-from django_project.settings.dev import *
+from django_project.settings.dev import *  # noqa

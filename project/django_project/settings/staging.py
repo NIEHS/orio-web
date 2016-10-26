@@ -1,4 +1,4 @@
-from django_project.settings.base import *
+from django_project.settings.base import *  # noqa
 
 DEBUG = bool(os.environ.get('DJANGO_FORCE_DEBUG', 'False') == 'True')
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split('|')
@@ -6,7 +6,7 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split('|')
 _admin_names = os.getenv('DJANGO_ADMIN_NAMES', '')
 _admin_emails = os.getenv('DJANGO_ADMIN_EMAILS', '')
 if (len(_admin_names) > 0 and len(_admin_emails) > 0):
-    ADMINS = zip(_admin_names.split('|'), _admin_emails.split('|'))
+    ADMINS = list(zip(_admin_names.split('|'), _admin_emails.split('|')))
 MANAGERS = ADMINS
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')

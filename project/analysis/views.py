@@ -1,13 +1,15 @@
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages import get_messages
 from django.core.urlresolvers import reverse_lazy
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, CreateView, UpdateView, \
-        DetailView, DeleteView, ListView, View
+    DetailView, DeleteView, View
 
 from utils.views import UserCanEdit, UserCanView, \
-    AddUserToFormMixin, MessageMixin
+    AddUserToFormMixin, MessageMixin, NeverCacheFormMixin
 from . import models, forms, tasks
 
 
@@ -17,7 +19,7 @@ class Home(TemplateView):
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated():
             return HttpResponseRedirect(reverse_lazy('analysis:dashboard'))
-        return super(Home, self).get(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)
 
 
 class About(TemplateView):
@@ -38,10 +40,16 @@ class ShortPollMessages(View):
         })
 
 
-class CeleryTester(Home):
+# ensure errors are raised appropriately
+class CeleryErrorTester(Home):
+
+    @method_decorator(staff_member_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request, *args, **kwargs):
-        tasks.debug_task.delay()
-        return super().get(request, *args, **kwargs)
+        tasks.raise_error.delay()
+        return HttpResponseRedirect(reverse_lazy('home'))
 
 
 # Dashboard CRUD views
@@ -50,8 +58,8 @@ class Dashboard(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['analysis_running'] = models.Analysis.running(self.request.user)
-        context['analysis_complete'] = models.Analysis.complete(self.request.user)
+        context['analysis_running'] = models.Analysis.objects.running(self.request.user)
+        context['analysis_complete'] = models.Analysis.objects.complete(self.request.user)
         return context
 
 
@@ -60,13 +68,19 @@ class ManageData(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['feature_lists'] = models.FeatureList.objects.filter(owner=self.request.user)
-        context['sort_vectors'] = models.SortVector.objects.filter(owner=self.request.user)
-        context['user_datasets'] = models.UserDataset.objects.filter(owner=self.request.user)
+        context['feature_lists'] = models.FeatureList.objects\
+            .filter(owner=self.request.user)\
+            .select_related('genome_assembly')
+        context['sort_vectors'] = models.SortVector.objects\
+            .filter(owner=self.request.user)\
+            .select_related('feature_list')
+        context['user_datasets'] = models.UserDataset.objects\
+            .filter(owner=self.request.user)\
+            .select_related('genome_assembly')
         return context
 
 
-class ValidatedSuccessMixin(object):
+class ValidatedSuccessMixin:
     def get_success_url(self):
         self.object.validate_and_save()
         if self.object.validated:
@@ -80,14 +94,14 @@ class UserDatasetDetail(UserCanView, DetailView):
     model = models.UserDataset
 
 
-class UserDatasetCreate(ValidatedSuccessMixin, MessageMixin,
-                        AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class UserDatasetCreate(NeverCacheFormMixin, ValidatedSuccessMixin, MessageMixin,
+                        AddUserToFormMixin, CreateView):
     model = models.UserDataset
     form_class = forms.UserDatasetForm
     success_message = 'User dataset created; datasets will begin downloading.'
 
 
-class UserDatasetUpdate(ValidatedSuccessMixin, MessageMixin,
+class UserDatasetUpdate(NeverCacheFormMixin, ValidatedSuccessMixin, MessageMixin,
                         UserCanEdit, UpdateView):
     model = models.UserDataset
     form_class = forms.UserDatasetForm
@@ -120,13 +134,14 @@ class FeatureListDetail(UserCanView, DetailView):
     model = models.FeatureList
 
 
-class FeatureListCreate(ValidatedSuccessMixin, AddUserToFormMixin,
-                        LoginRequiredMixin, CreateView):
+class FeatureListCreate(NeverCacheFormMixin, ValidatedSuccessMixin,
+                        AddUserToFormMixin, CreateView):
     model = models.FeatureList
     form_class = forms.FeatureListForm
 
 
-class FeatureListUpdate(ValidatedSuccessMixin, UserCanEdit, UpdateView):
+class FeatureListUpdate(NeverCacheFormMixin, ValidatedSuccessMixin,
+                        UserCanEdit, UpdateView):
     model = models.FeatureList
     form_class = forms.FeatureListForm
 
@@ -142,13 +157,14 @@ class SortVectorDetail(UserCanView, DetailView):
     model = models.SortVector
 
 
-class SortVectorCreate(ValidatedSuccessMixin, AddUserToFormMixin,
-                       LoginRequiredMixin, CreateView):
+class SortVectorCreate(NeverCacheFormMixin, ValidatedSuccessMixin,
+                       AddUserToFormMixin, CreateView):
     model = models.SortVector
     form_class = forms.SortVectorForm
 
 
-class SortVectorUpdate(ValidatedSuccessMixin, UserCanEdit, UpdateView):
+class SortVectorUpdate(NeverCacheFormMixin, ValidatedSuccessMixin,
+                       UserCanEdit, UpdateView):
     model = models.SortVector
     form_class = forms.SortVectorForm
 
@@ -164,7 +180,7 @@ class AnalysisDetail(UserCanView, DetailView):
     model = models.Analysis
 
 
-class AnalysisCreate(AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class AnalysisCreate(NeverCacheFormMixin, AddUserToFormMixin, CreateView):
     model = models.Analysis
     form_class = forms.AnalysisForm
     success_url = reverse_lazy('analysis:dashboard')
@@ -183,7 +199,7 @@ class AnalysisCreate(AddUserToFormMixin, LoginRequiredMixin, CreateView):
         return context
 
 
-class AnalysisUpdate(UserCanEdit, UpdateView):
+class AnalysisUpdate(NeverCacheFormMixin, UserCanEdit, UpdateView):
     model = models.Analysis
     form_class = forms.AnalysisForm
 
@@ -209,9 +225,6 @@ class AnalysisDelete(MessageMixin, UserCanEdit, DeleteView):
 
 # analysis non-CRUD
 class AnalysisVisual(UserCanView, DetailView):
-    """
-    Temporary view used for visual testing
-    """
     model = models.Analysis
     template_name = 'analysis/analysis_visual.html'
 
