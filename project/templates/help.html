@@ -5,14 +5,21 @@
 
 {% block mid_content %}
 
-<h1>help.</h1>
+<h1>Help</h1>
 <p>
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
-cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+ORIO help resources are available below.
 </p>
+<p>
+The ORIO manual provides a detailed description of ORIO analysis and functions.  The "Getting Started" guide is aimed at first-time users and uses examples to describe how ORIO may be used to integrate whole genome data.
+</p>
+
+<ul>
+    <li>
+        <a href="{% url "manual" %}">Manual</a>
+    </li>
+    <li>
+        <a href="{% url "gettingstarted" %}">Getting Started</a>
+    </li>
+</ul>
 
 {% endblock mid_content %}

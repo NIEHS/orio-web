@@ -8,6 +8,14 @@ from analysis import views
 
 urlpatterns = [
 
+    url(r'^manual/$',
+        views.HelpManual.as_view(),
+        name='manual'),
+
+    url(r'^getting_started/$',
+        views.GettingStarted.as_view(),
+        name='gettingstarted'),
+
     url(r'^$',
         views.Home.as_view(),
         name='home'),

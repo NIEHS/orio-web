@@ -30,6 +30,14 @@ class Help(TemplateView):
     template_name = 'help.html'
 
 
+class HelpManual(TemplateView):
+    template_name = 'manual.html'
+
+
+class GettingStarted(TemplateView):
+    template_name = 'getting_started.html'
+
+
 class ShortPollMessages(View):
     def get(self, request, *args, **kwargs):
         return JsonResponse({
