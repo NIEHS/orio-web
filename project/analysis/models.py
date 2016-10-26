@@ -114,7 +114,7 @@ class GenomeAssembly(models.Model):
         return self.name
 
 
-class ValidationMixin(object):
+class ValidationMixin:
 
     def validate(self):
         # return tuple (is_valid: bool, validation_text: str)

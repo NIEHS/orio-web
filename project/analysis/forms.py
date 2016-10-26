@@ -10,7 +10,7 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
-class BaseFormMixin(object):
+class BaseFormMixin:
     """Form mixin to generate basic layout and set owner if available."""
 
     CREATE_LEGEND = None

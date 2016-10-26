@@ -13,7 +13,7 @@ class NoPagination(pagination.PageNumberPagination):
     page_size = None
 
 
-class SiteMixin(object):
+class SiteMixin:
     """Sitewide default authentication, permissions, filtering, and pagination."""
 
     pagination_class = StandardResultsSetPagination

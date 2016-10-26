@@ -32,7 +32,7 @@ class NeverCacheFormMixin:
         return super().dispatch(*args, **kwargs)
 
 
-class SlugIDMixin(object):
+class SlugIDMixin:
 
     def get_object(self, queryset=None):
         if queryset is None:
@@ -80,7 +80,7 @@ class AddUserToFormMixin(LoginRequiredMixin):
         return kwargs
 
 
-class MessageMixin(object):
+class MessageMixin:
 
     def send_message(self):
         if self.success_message:

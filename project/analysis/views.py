@@ -80,7 +80,7 @@ class ManageData(LoginRequiredMixin, TemplateView):
         return context
 
 
-class ValidatedSuccessMixin(object):
+class ValidatedSuccessMixin:
     def get_success_url(self):
         self.object.validate_and_save()
         if self.object.validated:
