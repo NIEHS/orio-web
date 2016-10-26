@@ -19,7 +19,7 @@ class Home(TemplateView):
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated():
             return HttpResponseRedirect(reverse_lazy('analysis:dashboard'))
-        return super(Home, self).get(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)
 
 
 class About(TemplateView):

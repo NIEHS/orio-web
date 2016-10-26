@@ -34,7 +34,7 @@ class RegistrationForm(forms.ModelForm):
         fields = ('email', )
 
     def __init__(self, *args, **kwargs):
-        super(RegistrationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.helper = self.set_helper()
 
     def set_helper(self):
@@ -73,7 +73,7 @@ class RegistrationForm(forms.ModelForm):
         return pw
 
     def save(self, commit=True):
-        user = super(RegistrationForm, self).save(commit=False)
+        user = super().save(commit=False)
         user.set_password(self.cleaned_data['password1'])
         if commit:
             user.save()
@@ -83,7 +83,7 @@ class RegistrationForm(forms.ModelForm):
 class LoginForm(AuthenticationForm):
 
     def __init__(self, *args, **kwargs):
-        super(LoginForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['password'].widget.attrs['autocomplete'] = 'off'
         self.helper = self.set_helper()
 
@@ -113,7 +113,7 @@ class LoginForm(AuthenticationForm):
 class ResetPasswordEmailForm(PasswordResetForm):
 
     def __init__(self, *args, **kwargs):
-        super(ResetPasswordEmailForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.helper = self.set_helper()
 
     def set_helper(self):
@@ -140,7 +140,7 @@ class ResetPasswordEmailForm(PasswordResetForm):
 class ResetPasswordForm(SetPasswordForm):
 
     def __init__(self, *args, **kwargs):
-        super(ResetPasswordForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['new_password1'].help_text = PASSWORD_HELP
         self.fields['new_password1'].widget.attrs['autocomplete'] = 'off'
         self.fields['new_password2'].widget.attrs['autocomplete'] = 'off'

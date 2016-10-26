@@ -67,7 +67,7 @@ class UserCanView(SlugIDMixin, object):
         return obj
 
     def get_context_data(self, **kwargs):
-        context = super(UserCanView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['user_can_edit'] = self.object.user_can_edit(self.request.user)
         return context
 
@@ -89,8 +89,8 @@ class MessageMixin:
 
     def delete(self, request, *args, **kwargs):
         self.send_message()
-        return super(MessageMixin, self).delete(request, *args, **kwargs)
+        return super().delete(request, *args, **kwargs)
 
     def form_valid(self, form):
         self.send_message()
-        return super(MessageMixin, self).form_valid(form)
+        return super().form_valid(form)
