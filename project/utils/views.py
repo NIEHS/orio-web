@@ -7,6 +7,7 @@ from django.http import Http404
 from django.utils.cache import add_never_cache_headers
 from django.utils.decorators import available_attrs, method_decorator
 from django.utils.translation import ugettext as _
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 def never_cache(view_func):
@@ -71,7 +72,7 @@ class UserCanView(SlugIDMixin, object):
         return context
 
 
-class AddUserToFormMixin(object):
+class AddUserToFormMixin(LoginRequiredMixin):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

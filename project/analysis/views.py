@@ -135,7 +135,7 @@ class FeatureListDetail(UserCanView, DetailView):
 
 
 class FeatureListCreate(NeverCacheFormMixin, ValidatedSuccessMixin,
-                        AddUserToFormMixin, LoginRequiredMixin, CreateView):
+                        AddUserToFormMixin, CreateView):
     model = models.FeatureList
     form_class = forms.FeatureListForm
 
@@ -158,7 +158,7 @@ class SortVectorDetail(UserCanView, DetailView):
 
 
 class SortVectorCreate(NeverCacheFormMixin, ValidatedSuccessMixin,
-                       AddUserToFormMixin, LoginRequiredMixin, CreateView):
+                       AddUserToFormMixin, CreateView):
     model = models.SortVector
     form_class = forms.SortVectorForm
 
@@ -180,8 +180,7 @@ class AnalysisDetail(UserCanView, DetailView):
     model = models.Analysis
 
 
-class AnalysisCreate(NeverCacheFormMixin, AddUserToFormMixin,
-                     LoginRequiredMixin, CreateView):
+class AnalysisCreate(NeverCacheFormMixin, AddUserToFormMixin, CreateView):
     model = models.Analysis
     form_class = forms.AnalysisForm
     success_url = reverse_lazy('analysis:dashboard')
