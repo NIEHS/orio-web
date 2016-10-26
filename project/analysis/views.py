@@ -9,7 +9,7 @@ from django.views.generic import TemplateView, CreateView, UpdateView, \
     DetailView, DeleteView, View
 
 from utils.views import UserCanEdit, UserCanView, \
-    AddUserToFormMixin, MessageMixin
+    AddUserToFormMixin, MessageMixin, NeverCacheFormMixin
 from . import models, forms, tasks
 
 
@@ -94,14 +94,14 @@ class UserDatasetDetail(UserCanView, DetailView):
     model = models.UserDataset
 
 
-class UserDatasetCreate(ValidatedSuccessMixin, MessageMixin,
-                        AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class UserDatasetCreate(NeverCacheFormMixin, ValidatedSuccessMixin, MessageMixin,
+                        AddUserToFormMixin, CreateView):
     model = models.UserDataset
     form_class = forms.UserDatasetForm
     success_message = 'User dataset created; datasets will begin downloading.'
 
 
-class UserDatasetUpdate(ValidatedSuccessMixin, MessageMixin,
+class UserDatasetUpdate(NeverCacheFormMixin, ValidatedSuccessMixin, MessageMixin,
                         UserCanEdit, UpdateView):
     model = models.UserDataset
     form_class = forms.UserDatasetForm
@@ -134,13 +134,14 @@ class FeatureListDetail(UserCanView, DetailView):
     model = models.FeatureList
 
 
-class FeatureListCreate(ValidatedSuccessMixin, AddUserToFormMixin,
-                        LoginRequiredMixin, CreateView):
+class FeatureListCreate(NeverCacheFormMixin, ValidatedSuccessMixin,
+                        AddUserToFormMixin, LoginRequiredMixin, CreateView):
     model = models.FeatureList
     form_class = forms.FeatureListForm
 
 
-class FeatureListUpdate(ValidatedSuccessMixin, UserCanEdit, UpdateView):
+class FeatureListUpdate(NeverCacheFormMixin, ValidatedSuccessMixin,
+                        UserCanEdit, UpdateView):
     model = models.FeatureList
     form_class = forms.FeatureListForm
 
@@ -156,13 +157,14 @@ class SortVectorDetail(UserCanView, DetailView):
     model = models.SortVector
 
 
-class SortVectorCreate(ValidatedSuccessMixin, AddUserToFormMixin,
-                       LoginRequiredMixin, CreateView):
+class SortVectorCreate(NeverCacheFormMixin, ValidatedSuccessMixin,
+                       AddUserToFormMixin, LoginRequiredMixin, CreateView):
     model = models.SortVector
     form_class = forms.SortVectorForm
 
 
-class SortVectorUpdate(ValidatedSuccessMixin, UserCanEdit, UpdateView):
+class SortVectorUpdate(NeverCacheFormMixin, ValidatedSuccessMixin,
+                       UserCanEdit, UpdateView):
     model = models.SortVector
     form_class = forms.SortVectorForm
 
@@ -178,7 +180,8 @@ class AnalysisDetail(UserCanView, DetailView):
     model = models.Analysis
 
 
-class AnalysisCreate(AddUserToFormMixin, LoginRequiredMixin, CreateView):
+class AnalysisCreate(NeverCacheFormMixin, AddUserToFormMixin,
+                     LoginRequiredMixin, CreateView):
     model = models.Analysis
     form_class = forms.AnalysisForm
     success_url = reverse_lazy('analysis:dashboard')
@@ -197,7 +200,7 @@ class AnalysisCreate(AddUserToFormMixin, LoginRequiredMixin, CreateView):
         return context
 
 
-class AnalysisUpdate(UserCanEdit, UpdateView):
+class AnalysisUpdate(NeverCacheFormMixin, UserCanEdit, UpdateView):
     model = models.Analysis
     form_class = forms.AnalysisForm
 

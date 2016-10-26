@@ -5,7 +5,7 @@ from django.core.exceptions import PermissionDenied
 from functools import wraps
 from django.http import Http404
 from django.utils.cache import add_never_cache_headers
-from django.utils.decorators import available_attrs
+from django.utils.decorators import available_attrs, method_decorator
 from django.utils.translation import ugettext as _
 
 
@@ -22,6 +22,13 @@ def never_cache(view_func):
         return response
 
     return _wrapped_view_func
+
+
+class NeverCacheFormMixin:
+
+    @method_decorator(never_cache)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
 
 
 class SlugIDMixin(object):
