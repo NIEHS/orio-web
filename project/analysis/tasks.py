@@ -4,6 +4,7 @@ from celery.decorators import task, periodic_task
 from celery import group, chain
 from django.apps import apps
 from django.utils import timezone
+from django.core.exceptions import ObjectDoesNotExist
 
 
 logger = get_task_logger(__name__)
@@ -41,21 +42,35 @@ def execute_analysis(self, analysis_id, silent):
 @task()
 def execute_count_matrix(analysis_id, ads_id, is_encode, dataset_id):
     """Execute each count matrix."""
-    analysis = apps.get_model('analysis', 'Analysis').objects.get(id=analysis_id)
-    ads = apps.get_model('analysis', 'AnalysisDatasets').objects.get(id=ads_id)
-    if is_encode:
-        dataset = apps.get_model('analysis', 'EncodeDataset').objects.get(id=dataset_id)
-    else:
-        dataset = apps.get_model('analysis', 'UserDataset').objects.get(id=dataset_id)
+
+    try:
+        analysis = apps.get_model('analysis', 'Analysis').objects.get(id=analysis_id)
+        ads = apps.get_model('analysis', 'AnalysisDatasets').objects.get(id=ads_id)
+        if is_encode:
+            dataset = apps.get_model('analysis', 'EncodeDataset').objects.get(id=dataset_id)
+        else:
+            dataset = apps.get_model('analysis', 'UserDataset').objects.get(id=dataset_id)
+    except ObjectDoesNotExist:
+        return
+
     FeatureListCountMatrix = apps.get_model('analysis', 'FeatureListCountMatrix')
     ads.count_matrix = FeatureListCountMatrix.execute(analysis, dataset)
-    ads.save()
+
+    try:
+        apps.get_model('analysis', 'Analysis').objects.get(id=analysis_id)
+    except ObjectDoesNotExist:
+        return
+    else:
+        ads.save()
 
 
 @task()
 def execute_matrix_combination(analysis_id, silent):
     """Save results from matrix combination."""
-    analysis = apps.get_model('analysis', 'Analysis').objects.get(id=analysis_id)
+    try:
+        analysis = apps.get_model('analysis', 'Analysis').objects.get(id=analysis_id)
+    except ObjectDoesNotExist:
+        return
     analysis.output = analysis.execute_mat2mat()
     analysis.end_time = timezone.now()
     analysis.save()
