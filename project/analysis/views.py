@@ -8,13 +8,15 @@ from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, CreateView, UpdateView, \
     DetailView, DeleteView, View
 
+from staticpages.views import PageTemplateMixin
 from utils.views import UserCanEdit, UserCanView, \
     AddUserToFormMixin, MessageMixin, NeverCacheFormMixin
 from . import models, forms, tasks
 
 
-class Home(TemplateView):
-    template_name = 'niehs/base.html'
+class Home(PageTemplateMixin, TemplateView):
+    template_name = 'analysis/home.html'
+    template_object_name = 'home'
 
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated():
