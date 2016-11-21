@@ -22,10 +22,6 @@ class Home(TemplateView):
         return super().get(request, *args, **kwargs)
 
 
-class About(TemplateView):
-    template_name = 'about.html'
-
-
 class Help(TemplateView):
     template_name = 'help.html'
 
