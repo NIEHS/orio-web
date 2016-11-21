@@ -1,25 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}ORIO | Help{% endblock %}
+{% block title %}ORIO | Manual{% endblock %}
 
 
 {% block mid_content %}
-
-<h1>Help</h1>
-<p>
-ORIO help resources are available below.
-</p>
-<p>
-The ORIO manual provides a detailed description of ORIO analysis and functions.  The "Getting Started" guide is aimed at first-time users and uses examples to describe how ORIO may be used to integrate whole genome data.
-</p>
-
-<ul>
-    <li>
-        <a href="{% url "manual" %}">Manual</a>
-    </li>
-    <li>
-        <a href="{% url "gettingstarted" %}">Getting Started</a>
-    </li>
-</ul>
-
+{% include 'staticpages/_render_template.html' %}
 {% endblock mid_content %}

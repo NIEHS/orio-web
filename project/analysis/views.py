@@ -24,16 +24,14 @@ class Home(PageTemplateMixin, TemplateView):
         return super().get(request, *args, **kwargs)
 
 
-class Help(TemplateView):
+class Help(PageTemplateMixin, TemplateView):
     template_name = 'help.html'
+    template_object_name = 'help'
 
 
-class HelpManual(TemplateView):
-    template_name = 'manual.html'
-
-
-class GettingStarted(TemplateView):
-    template_name = 'getting_started.html'
+class Quickstart(PageTemplateMixin, TemplateView):
+    template_name = 'quickstart.html'
+    template_object_name = 'quickstart'
 
 
 class ShortPollMessages(View):

@@ -19,8 +19,8 @@
           <i class="fa fa-fixed fa-envelope-o"></i>&nbsp;Contact us</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
-        <li><a href="{% url 'gettingstarted' %}">Getting started</a></li>
-        <li><a href="{% url 'manual' %}">Help</a></li>
+        <li><a href="{% url 'quickstart' %}">Getting started</a></li>
+        <li><a href="{% url 'help' %}">Help</a></li>
         {% if not user.is_authenticated %}
             <li><a href="{% url 'user:login' %}">Log in</a></li>
         {% else %}
