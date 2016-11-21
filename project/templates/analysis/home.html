@@ -1,7 +1,17 @@
 {% extends "niehs/base.html" %}
 
-{% block title %}{{template.title}} | ORIO{% endblock %}
+{% block title %}Home | ORIO{% endblock %}
 
 {% block mid_content %}
 {% include 'staticpages/_render_template.html' %}
+
+<h3>Want to get started?</h3>
+<ul>
+    <li>
+        <a href="{% url 'user:login' %}">Login</a>
+    </li>
+    <li>
+        <a href="{% url 'user:register' %}">Register</a>
+    </li>
+</ul>
 {% endblock mid_content %}

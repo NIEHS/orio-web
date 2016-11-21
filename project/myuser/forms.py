@@ -94,13 +94,13 @@ class LoginForm(AuthenticationForm):
                 '<a role="button" class="btn btn-default" href="{}">Cancel</a>'
                 .format(reverse('home'))),
             cfl.HTML('<br><br>'),
-            cfl.HTML(
-                '<a href="{0}">Forgot your password?</a><br>'
-                .format(reverse('user:password_reset'))),
-            cfl.HTML(
-                '<a href="{0}">Create an account</a><br>'
-                .format(reverse('user:register'))),
-        )
+            cfl.HTML("""
+            <ul>
+                <li><a href="{0}">Forgot your password?</a></li>
+                <li><a href="{1}">Create an account</a></li>
+            </ul>
+            """.format(reverse('user:password_reset'), reverse('user:register'))
+        ))
         helper = BaseFormHelper(
             self,
             horizontal=False,
