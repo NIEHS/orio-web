@@ -105,6 +105,7 @@ INSTALLED_APPS = (
     # Custom apps
     'utils',
     'myuser',
+    'staticpages',
     'analysis',
 )
 

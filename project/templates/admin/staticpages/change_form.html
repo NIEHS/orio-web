@@ -1,0 +1,20 @@
+{% extends "admin/change_form.html" %}
+
+{% load static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link href="https://cdn.quilljs.com/1.1.5/quill.snow.css" rel="stylesheet">
+{% endblock extrastyle %}
+
+
+{% block extrahead %}
+    {{ block.super }}
+    <script src="https://cdn.quilljs.com/1.1.5/quill.js"></script>
+{% endblock extrahead %}
+
+
+{% block admin_change_form_document_ready %}
+     {{block.super}}
+     <script type="text/javascript" src="{% static 'js/quillify.js' %}"></script>
+{% endblock %}
