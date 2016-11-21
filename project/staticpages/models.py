@@ -5,7 +5,9 @@ from django.db import models
 
 class Page(models.Model):
     lookup_name = models.CharField(
-        max_length=32)
+        max_length=32,
+        db_index=True,
+        unique=True)
     title = models.CharField(
         default='Change me!',
         max_length=128)
@@ -18,3 +20,6 @@ class Page(models.Model):
 
     class Meta:
         ordering = ('id', )
+
+    def __str__(self):
+        return self.lookup_name
