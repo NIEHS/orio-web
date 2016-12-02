@@ -163,11 +163,6 @@ class AnalysisViewset(AnalysisObjectMixin, viewsets.ModelViewSet):
         return Response(object.get_ks_by_user_vector(matrix_id))
 
     @detail_route(methods=['get'])
-    def plot(self, request, pk=None):
-        object = self.get_object()
-        return Response(object.get_summary_plot())
-
-    @detail_route(methods=['get'])
     def analysis_overview(self, request, pk=None):
         object = self.get_object()
         return Response(object.get_analysis_overview_init())
