@@ -940,27 +940,6 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
         return {'names': names, 'ids': ids}
 
-    def get_summary_plot(self):
-        if not self.output:
-            return False
-        output = self.output_json
-        return {
-            'dendrogram': output['dendrogram'],
-            'max_abs_correlation_values': output['max_abs_correlation_values'],
-            'cluster_members': output['cluster_members'],
-            'correlation_matrix': output['correlation_matrix'],
-            'matrix_ids': output['matrix_ids'],
-            'matrix_names': output['matrix_names'],
-            'cluster_medoids': output['cluster_medoids'],
-            'feature_clusters': output['feature_clusters'],
-            'feature_vectors': output['feature_vectors'],
-            'feature_columns': output['feature_columns'],
-            'feature_names': output['feature_names'],
-            'feature_cluster_members': output['feature_cluster_members'],
-            'sort_vector': output['sort_vector'],
-            'bin_parameters': output['bin_parameters'],
-        }
-
     def get_fc_vectors_ngs_list(self):
         if not self.output:
             return False
