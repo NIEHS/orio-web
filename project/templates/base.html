@@ -23,6 +23,13 @@
     {% endif %}
     <link rel="stylesheet" type="text/css" media="all" href="{{STATIC_URL}}css/site.css">
     {% block extra_css %}{% endblock extra_css %}
+    {% if not debug %}
+        {% comment %}
+            Enable site analytics: https://github.com/digital-analytics-program/gov-wide-code/
+        {% endcomment %}
+        <script async id="_fed_an_ua_tag" charset="utf-8"
+            src="{{STATIC_URL}}js/ufa.min.js?agency=HHS&subagency=NIH"></script>
+    {% endif %}
 </head>
 <body id="{% block body_id %}{% endblock body_id %}" class="{% block body_class %}{% endblock body_class %}">
     <div id='wrap'>

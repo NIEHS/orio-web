@@ -15,6 +15,7 @@ project/templates/niehs/menu.html
 project/.cache/*
 project/node_modules/*
 project/static/bundles*
+project/static/js/ufa.min.js
 project/webpack-stats.json
 project/django_project/settings/local.py
 
