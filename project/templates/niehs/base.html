@@ -11,6 +11,13 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
         {% include "niehs/assets.html" %}
         <link rel="stylesheet" href="{{STATIC_URL}}/css/niehs.css">
+        {% if not debug %}
+            {% comment %}
+                Enable site analytics: https://github.com/digital-analytics-program/gov-wide-code/
+            {% endcomment %}
+            <script async id="_fed_an_ua_tag" charset="utf-8"
+                src="{{STATIC_URL}}js/ufa.min.js?agency=HHS&subagency=NIH"></script>
+        {% endif %}
     </head>
 
     <body data-site-type="//www.niehs.nih.gov">
