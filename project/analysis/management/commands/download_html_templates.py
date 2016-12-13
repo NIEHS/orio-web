@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-import copy
 import os
 
 from django.conf import settings
@@ -31,22 +30,25 @@ class Command(BaseCommand):
         # resources w/ tags missing. Therefore, we do a simple replace
         text = text\
             .replace('src="/resources', 'src="{}/resources'.format(self.root))\
+            .replace('href="/resources', 'href="//{}/resources'.format(self.root))\
             .replace('href="/index.cfm', 'href="//{}/index.cfm'.format(self.root))\
             .replace('href="/about', 'href="{}/about'.format(self.root))
         return text
 
     def get_menu(self):
-        # get menu from similar tool
-        url = 'http://tools.niehs.nih.gov/maps/index.cfm'
+        # dogfooding
+        url = 'https://www.niehs.nih.gov/research/resources/databases/orio/'
         resp = requests.get(url)
 
         # parse html and extract only menu
         soup = BeautifulSoup(resp.text, "html.parser")
         menu = soup.find(id="menu")
 
-        # relabel one option
-        selected = menu.find('li', class_='this active').find('span')
-        selected.string = "ORIO"
+        # absolutify links
+        for a in menu.findAll('a'):
+            href = a.attrs['href']
+            if href[0] == '/':
+                a.attrs['href'] = self.root + href
 
         # write to file
         path = os.path.join(self.base, 'templates', 'niehs', 'menu.html')
@@ -62,13 +64,17 @@ class Command(BaseCommand):
 
     def download(self):
         urls = [
-            'http://www.niehs.nih.gov/components/pullheaderfooter.cfc?method=getHeaderCode',  # noqa
-            'http://www.niehs.nih.gov/components/pullheaderfooter.cfc?method=getFooterCode',  # noqa
-            'http://www.niehs.nih.gov/components/pullheaderfooter.cfc?method=getAssets',  # noqa
+            'http://www.niehs.nih.gov/components/layout.cfc?method=headerasset',
+            'http://www.niehs.nih.gov/components/layout.cfc?method=headermeta',
+            'http://www.niehs.nih.gov/components/layout.cfc?method=header&active=research',
+            'http://www.niehs.nih.gov/components/layout.cfc?method=footer',
+            'http://www.niehs.nih.gov/components/layout.cfc?method=footerasset',
         ]
-        self.write_html_file(urls[0], 'header.html')
-        self.write_html_file(urls[1], 'footer.html')
-        self.write_html_file(urls[2], 'assets.html')
+        self.write_html_file(urls[0], 'headerasset.html')
+        self.write_html_file(urls[1], 'headermeta.html')
+        self.write_html_file(urls[2], 'header.html')
+        self.write_html_file(urls[3], 'footer.html')
+        self.write_html_file(urls[4], 'footerasset.html')
         self.get_menu()
 
     def file_exists(self):

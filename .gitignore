@@ -8,8 +8,10 @@ public
 notebooks/.ipynb_checkpoints/*
 
 project/templates/niehs/header.html
+project/templates/niehs/headermeta.html
+project/templates/niehs/headerasset.html
 project/templates/niehs/footer.html
-project/templates/niehs/assets.html
+project/templates/niehs/footerasset.html
 project/templates/niehs/menu.html
 
 project/.cache/*
