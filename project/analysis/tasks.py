@@ -87,9 +87,9 @@ def download_dataset(id_):
 
 
 @task()
-def analysis_zip(id_):
+def analysis_zip(id_, to_email_address):
     analysis = gm('Analysis').objects.get(id=id_)
-    analysis.create_zip()
+    analysis.create_zip(to_email_address)
 
 
 @periodic_task(run_every=timedelta(hours=1))

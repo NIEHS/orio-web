@@ -1,4 +1,4 @@
-Hi {{object.owner}},
+Hello fellow ORIO user,
 
 Your analysis zip file is available at http://{{domain}}{{tf.file.url}}.
 

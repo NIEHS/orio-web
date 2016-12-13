@@ -30,7 +30,11 @@
             {% endif %}
             <li class="dropdown-header">Viewing options</li>
             <li><a href='{{object.get_visuals_url}}'><i class="fa fa-bar-chart fa-fw"></i> View visualization</a></li>
-            <li><a href='{{object.get_zip_url}}'><i class="fa fa-download fa-fw"></i> Download zip</a></li>
+            {% if user.is_authenticated %}
+                <li><a href='{{object.get_zip_url}}'><i class="fa fa-download fa-fw"></i> Download zip</a></li>
+            {% else %}
+                <li class="disabled"><a href='#'><i class="fa fa-download fa-fw"></i> Download zip (requires login)</a></li>
+            {% endif %}
         </ul>
     </div>
 </h2>

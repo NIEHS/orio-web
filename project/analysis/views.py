@@ -255,6 +255,7 @@ class AnalysisZip(MessageMixin, UserCanView, DetailView):
 
     def get(self, request, *args, **kwargs):
         object = self.get_object()
-        tasks.analysis_zip.delay(object.id)
+        to_email_address = self.request.user.email
+        tasks.analysis_zip.delay(object.id, to_email_address)
         self.send_message()
         return HttpResponseRedirect(object.get_absolute_url())

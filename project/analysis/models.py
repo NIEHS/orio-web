@@ -1289,7 +1289,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
 
         return xDf.join(yDf).to_csv()
 
-    def create_zip(self):
+    def create_zip(self, to_email_address):
         """Return zip of output results and all intermediate files."""
         f = io.BytesIO()
         with zipfile.ZipFile(f, mode='w',
@@ -1312,7 +1312,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                         'count_matrix/{}.txt'.format(ds.display_name))
 
         tf = self._save_zip_download(f)
-        self._send_zip_email(tf)
+        self._send_zip_email(tf, to_email_address)
 
     def _save_zip_download(self, zipfile):
         zipfile.seek(0)
@@ -1323,7 +1323,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
         tf.save()
         return tf
 
-    def _send_zip_email(self, download):
+    def _send_zip_email(self, download, to_email_address):
         context = {
             'object': self,
             'tf': download,
@@ -1334,7 +1334,7 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             message=render_to_string(
                 'analysis/analysis_zip_email.txt', context),
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[self.owner.email],
+            recipient_list=[to_email_address],
             html_message=render_to_string(
                 'analysis/analysis_zip_email.html', context)
         )
