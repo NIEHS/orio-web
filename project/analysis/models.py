@@ -1051,7 +1051,11 @@ class Analysis(ValidationMixin, GenomicBinSettings):
                 clust_2 = cluster_values[c_2]
 
                 try:
-                    statistic, p = stats.mannwhitneyu(clust_1, clust_2)
+                    statistic, p = stats.mannwhitneyu(
+                        clust_1,
+                        clust_2,
+                        alternative='two-sided'
+                    )
                 except ValueError:
                     p = 1
 
