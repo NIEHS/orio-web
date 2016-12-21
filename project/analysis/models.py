@@ -547,7 +547,8 @@ class FeatureList(ValidationMixin, Dataset):
     def validate(self):
         validator = validators.FeatureListValidator(
             self.dataset.path,
-            self.genome_assembly.chromosome_size_file)
+            self.genome_assembly.chromosome_size_file,
+            self.stranded)
         validator.validate()
         return validator.is_valid, validator.display_errors()
 
