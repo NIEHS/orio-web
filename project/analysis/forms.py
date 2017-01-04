@@ -92,6 +92,22 @@ class UserDatasetForm(BaseFormMixin, forms.ModelForm):
                 if self.instance.minus is None \
                 else self.instance.minus.url
 
+            NO_EDIT_HELP = \
+                'URL cannot be changed after dataset creation'
+
+            self.fields['stranded'].disabled = True
+            self.fields['stranded'].help_text = \
+                'Strand cannot be updated after dataset creation'
+            self.fields['url_ambiguous'].disabled = True
+            self.fields['url_ambiguous'].help_text = NO_EDIT_HELP
+            self.fields['url_plus'].disabled = True
+            self.fields['url_plus'].help_text = NO_EDIT_HELP
+            self.fields['url_minus'].disabled = True
+            self.fields['url_minus'].help_text = NO_EDIT_HELP
+            self.fields['genome_assembly'].disabled = True
+            self.fields['genome_assembly'].help_text = \
+                'Genome assembly cannot be updated after dataset creation'
+
     def check_url_validity(self, url):
         is_ok, status = models.DatasetDownload.check_valid_url(url)
         if not is_ok:
@@ -161,6 +177,19 @@ class FeatureListForm(BaseFormMixin, forms.ModelForm):
             'validated', 'validation_errors', 'validation_warnings',
         )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.id:
+            self.fields['dataset'].disabled = True
+            self.fields['dataset'].help_text = \
+                'Dataset cannot be changed after feature list creation'
+            self.fields['genome_assembly'].disabled = True
+            self.fields['genome_assembly'].help_text = \
+                'Genome assembly cannot be updated after feature list creation'
+            self.fields['stranded'].disabled = True
+            self.fields['stranded'].help_text = \
+                'Strand cannot be updated after feature list creation'
+
 
 class SortVectorForm(BaseFormMixin, forms.ModelForm):
     CREATE_LEGEND = 'Create sort vector'
@@ -176,6 +205,14 @@ class SortVectorForm(BaseFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['feature_list'].queryset = \
             models.FeatureList.usable(self.instance.owner)
+
+        if self.instance.id:
+            self.fields['dataset'].disabled = True
+            self.fields['dataset'].help_text = \
+                'Dataset cannot be changed after sort vector creation'
+            self.fields['feature_list'].disabled = True
+            self.fields['feature_list'].help_text = \
+                'Feature list cannot be changed after sort vector creation'
 
 
 class DatasetField(forms.CharField):
@@ -236,7 +273,8 @@ class AnalysisForm(BaseFormMixin, forms.ModelForm):
         if commit:
             dsIds = self.fields['datasets_json']\
                 .get_dataset_ids(self.cleaned_data['datasets_json'])
-            self.execute_reset_required = self.instance.is_reset_required(dsIds)
+            self.execute_reset_required = \
+                self.instance.is_reset_required(dsIds)
             if self.execute_reset_required:
                 self.instance.reset_analysis_object()
         return super().save(commit=commit)
