@@ -44,10 +44,18 @@ class ClusterDetailBody extends React.Component {
     }
 
     componentDidMount(){
+
+        if (typeof MouseEvent !== 'function') { // For IE
+            var evt = document.createEvent("MouseEvent");
+            evt.initMouseEvent("click",true,true,window,0,0,0,0,0,false,false,false,false,0,null);
+        } else {
+            var evt = new MouseEvent('click', {bubbles: true});
+        }
+
         $(this.refs.tabs)
             .find('a:first')
             .get(0)
-            .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+            .dispatchEvent(evt);
     }
 
     handleDownloadFeaturesClick(){
