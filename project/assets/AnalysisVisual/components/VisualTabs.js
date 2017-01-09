@@ -9,6 +9,8 @@ import AnalysisOverview from '../AnalysisOverview';
 import IndividualOverview from '../IndividualOverview';
 import FeatureClusteringOverview from '../FeatureClusteringOverview';
 
+import h from 'utils/helpers';
+
 
 class VisualTabs extends React.Component {
 
@@ -31,7 +33,7 @@ class VisualTabs extends React.Component {
         $(this.refs.tabs)
             .find('a:first')
             .get(0)
-            .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+            .dispatchEvent(h.createMouseEvent());
     }
 
     handleTabClick(e){

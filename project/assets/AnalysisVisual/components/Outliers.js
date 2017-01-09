@@ -18,7 +18,6 @@ class Outliers extends React.Component {
                 cx={this.props.x(key) + 0.5 * cell_width + jitter()}
                 cy={this.props.y(d)}
                 r={Math.max(0.01 * cell_width, 4)}
-                fill="none"
                 stroke={color}
                 fill={color}
                 style={{opacity: 0.30}}>

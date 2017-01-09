@@ -87,6 +87,19 @@ var helpers = {
     deepCopy(object){
         return JSON.parse(JSON.stringify(object));
     },
+    createMouseEvent(){
+        let evt;
+        if (typeof MouseEvent !== 'function') {
+            // IE11
+            evt = document.createEvent('MouseEvent');
+            evt.initMouseEvent(
+                'click', true, true, window, 0, 0, 0, 0, 0,
+                false, false, false, false, 0, null);
+        } else {
+            evt = new MouseEvent('click', {bubbles: true});
+        }
+        return evt
+    }
 };
 
 export default helpers;

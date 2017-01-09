@@ -1,4 +1,5 @@
 import moment from 'moment';
+import './utils/polyfills'
 
 import VisualRoot from 'AnalysisVisual/main';
 import AnalysisFormRoot from 'AnalysisForm/main';

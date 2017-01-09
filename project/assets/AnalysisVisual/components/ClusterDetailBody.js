@@ -6,6 +6,8 @@ import {saveAs} from 'filesaver.js';
 import Loader from './Loader';
 import ClusterQuant from './ClusterQuant';
 
+import h from 'utils/helpers';
+
 
 class ClusterDetailBody extends React.Component {
 
@@ -47,7 +49,7 @@ class ClusterDetailBody extends React.Component {
         $(this.refs.tabs)
             .find('a:first')
             .get(0)
-            .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+            .dispatchEvent(h.createMouseEvent());
     }
 
     handleDownloadFeaturesClick(){
