@@ -9,6 +9,8 @@ import AnalysisOverview from '../AnalysisOverview';
 import IndividualOverview from '../IndividualOverview';
 import FeatureClusteringOverview from '../FeatureClusteringOverview';
 
+import h from 'utils/helpers';
+
 
 class VisualTabs extends React.Component {
 
@@ -28,17 +30,10 @@ class VisualTabs extends React.Component {
         this.individual_overview = new IndividualOverview(dc2),
         this.feature_clust_overview = new FeatureClusteringOverview(fc);
 
-        if (typeof MouseEvent !== 'function') { // For IE
-            var evt = document.createEvent("MouseEvent");
-            evt.initMouseEvent("click",true,true,window,0,0,0,0,0,false,false,false,false,0,null);
-        } else {
-            var evt = new MouseEvent('click', {bubbles: true});
-        }
-
         $(this.refs.tabs)
             .find('a:first')
             .get(0)
-            .dispatchEvent(evt);
+            .dispatchEvent(h.createMouseEvent());
     }
 
     handleTabClick(e){
