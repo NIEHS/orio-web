@@ -16,7 +16,8 @@
     <span>{{object.name}}</span>
     <div class='dropdown pull-right'>
         {% if object.is_complete %}
-            <a class='btn btn-primary' href="{{object.get_visuals_url}}" ><i class="fa fa-bar-chart"></i> View visualization</a>
+            <a class='btn btn-primary' href="{{object.get_visuals_url}}" >
+                <i class="fa fa-bar-chart"></i> View visualization</a>
         {% endif %}
 
         <button class='btn btn-primary dropdown-toggle' type='button' data-toggle='dropdown'>
@@ -25,15 +26,28 @@
         <ul class='dropdown-menu'>
             {% if user_can_edit %}
             <li class="dropdown-header">Editing options</li>
-            <li><a href='{{object.get_update_url}}'><i class="fa fa-edit fa-fw"></i> Update</a></li>
-            <li><a href='{{object.get_delete_url}}'><i class="fa fa-trash fa-fw"></i> Delete</a></li>
+            <li><a href='{{object.get_update_url}}'>
+                <i class="fa fa-edit fa-fw"></i> Update</a></li>
+            <li><a href='{{object.get_delete_url}}'>
+                <i class="fa fa-trash fa-fw"></i> Delete</a></li>
             {% endif %}
             <li class="dropdown-header">Viewing options</li>
-            <li><a href='{{object.get_visuals_url}}'><i class="fa fa-bar-chart fa-fw"></i> View visualization</a></li>
-            {% if user.is_authenticated %}
-                <li><a href='{{object.get_zip_url}}'><i class="fa fa-download fa-fw"></i> Download zip</a></li>
+            {% if object.is_complete %}
+                <li><a href='{{object.get_visuals_url}}'>
+                    <i class="fa fa-bar-chart fa-fw"></i> View visualization</a></li>
             {% else %}
-                <li class="disabled"><a href='#'><i class="fa fa-download fa-fw"></i> Download zip (requires login)</a></li>
+                <li class="disabled"><a href='#'>
+                    <i class="fa fa-bar-chart fa-fw"></i> View visualization (analysis incomplete)</a></li>
+            {% endif %}
+            {% if user.is_authenticated and object.is_complete %}
+                <li><a href='{{object.get_zip_url}}'>
+                    <i class="fa fa-download fa-fw"></i> Download zip</a></li>
+            {% elif user.is_authenticated %}
+                <li class="disabled"><a href='#'>
+                    <i class="fa fa-download fa-fw"></i> Download zip (analysis incomplete)</a></li>
+            {% else %}
+                <li class="disabled"><a href='#'>
+                    <i class="fa fa-download fa-fw"></i> Download zip (requires login)</a></li>
             {% endif %}
         </ul>
     </div>
