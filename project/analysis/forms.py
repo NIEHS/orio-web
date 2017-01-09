@@ -92,8 +92,7 @@ class UserDatasetForm(BaseFormMixin, forms.ModelForm):
                 if self.instance.minus is None \
                 else self.instance.minus.url
 
-            NO_EDIT_HELP = \
-                'URL cannot be changed after dataset creation'
+            NO_EDIT_HELP = 'URL cannot be changed after dataset creation'
 
             self.fields['stranded'].disabled = True
             self.fields['stranded'].help_text = \
