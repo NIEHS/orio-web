@@ -59,9 +59,6 @@ class BoxPlot extends React.Component {
             .scale(x)
             .orient('bottom');
 
-        if (typeof Math.log10 !== 'function') { // For IE
-            Math.log10 = function (x) { return Math.log(x) / Math.LN10; };
-        }
         var yAxis = d3.svg.axis()
             .scale(y)
             .orient('left')

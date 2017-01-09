@@ -118,10 +118,6 @@ class SortVectorScatterplotModal {
             .clamp(true)
             .nice();
 
-        if (typeof Math.log10 !== 'function') { // For IE
-            Math.log10 = function (x) { return Math.log(x) / Math.LN10; };
-        }
-
         xAxis = d3.svg.axis()
             .scale(x)
             .orient('bottom')
