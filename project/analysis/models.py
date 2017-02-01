@@ -1466,7 +1466,7 @@ class FeatureListCountMatrix(GenomicBinSettings):
             cache.set(key, obj)
         return obj
 
-    def get_sorted_data(self, dim_x, dim_y, analysis_sort, sort_matrix_id):
+    def get_sorted_data(self, dim_x, dim_y, analysis_sort, sort_matrix_id, analysis_id):
         # TODO: refactor so we don't load self.matrix.path twice; cache?
         # TODO: move to orio instead of orio-web?
         with open(self.matrix.path, 'r') as f:
@@ -1482,8 +1482,8 @@ class FeatureListCountMatrix(GenomicBinSettings):
 
         elif analysis_sort:
             sorted_flcm = []
-            sort_list = self.analysisdatasets_set.get()\
-                .analysis.sort_vector_df.as_matrix(columns=[1])
+            analysis = Analysis.objects.get(id=analysis_id)
+            sort_list = analysis.sort_vector_df.as_matrix(columns=[1])
             for i in numpy.argsort(sort_list.flatten())[::-1]:
                 sorted_flcm.append(flcm_data[i])
             sorted_flcm = numpy.array(sorted_flcm)

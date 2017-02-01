@@ -266,13 +266,14 @@ class FeatureListCountMatrixViewset(AnalysisObjectMixin, viewsets.ReadOnlyModelV
         dim_y = try_int(self.request.GET.get('dim_y'))
         analysis_sort = (self.request.GET.get('analysis_sort') == '1')
         sort_matrix_id = self.request.GET.get('sort_id')
+        analysis_id = self.request.GET.get('analysis_id')
         if (self.request.GET.get('sort_id') == '0'):
             sort_matrix_id = None
 
         # TODO: throw errors if values aren't given or are not numeric?
         object = self.get_object()
         return Response(object.get_sorted_data(
-            dim_x, dim_y, analysis_sort, sort_matrix_id
+            dim_x, dim_y, analysis_sort, sort_matrix_id, analysis_id
         ))
 
     def get_serializer_class(self):
