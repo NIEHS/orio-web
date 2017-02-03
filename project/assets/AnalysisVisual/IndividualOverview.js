@@ -234,7 +234,8 @@ class IndividualOverview {
                     name,
                     modalTitle,
                     modalBody,
-                    window.sort_vector
+                    window.sort_vector,
+                    window.analysisObjectID,
                 );
                 individual_heatmap.render();
             };

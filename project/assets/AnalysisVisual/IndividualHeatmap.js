@@ -7,7 +7,7 @@ import Loader from './Loader';
 
 class IndividualHeatmap {
 
-    constructor (id, matrix_names, matrix_ids, heatmap_name, modal_title, modal_body, sort_vector) {
+    constructor (id, matrix_names, matrix_ids, heatmap_name, modal_title, modal_body, sort_vector, analysis_id) {
         this.id = id;
         this.matrix_names = matrix_names;
         this.matrix_ids = matrix_ids;
@@ -16,6 +16,7 @@ class IndividualHeatmap {
         this.modal_body = modal_body;
         this.selected_sort = null;
         this.sort_vector = sort_vector;
+        this.analysis_id = analysis_id;
 
         this.matrices = _.zip(this.matrix_ids, this.matrix_names);
 
@@ -490,13 +491,13 @@ class IndividualHeatmap {
         this.renderSorted(this.heatmap_dim.w, this.heatmap_dim.h, 0, 0);
     }
 
-    sortedURL(id, dim_x, dim_y, analysis_sort, sort_id) {
+    sortedURL(id, dim_x, dim_y, analysis_sort, sort_id, analysis_id) {
         return `/dashboard/api/feature-list-count-matrix/${id}/sorted_render/?` +
-                $.param({dim_x, dim_y, analysis_sort, sort_id});
+                $.param({dim_x, dim_y, analysis_sort, sort_id, analysis_id});
     }
 
     renderSorted(dim_x, dim_y, analysis_sort, sort_id) {
-        var url = this.sortedURL(this.id, dim_x, dim_y, analysis_sort, sort_id),
+        var url = this.sortedURL(this.id, dim_x, dim_y, analysis_sort, sort_id, this.analysis_id),
             cb = function(data) {
                 this.loadingSpinner.fadeOut();
                 this.drawHeatmap(data.smoothed_data, data.norm_val, dim_x, dim_y);

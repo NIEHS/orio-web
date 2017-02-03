@@ -7,7 +7,7 @@ from rest_framework.decorators import detail_route
 from rest_framework.exceptions import NotAcceptable
 
 from utils.api import SiteMixin, AnalysisObjectMixin, NoPagination, PlainTextRenderer
-from utils.base import try_int
+from utils.base import try_int, is_none
 
 from . import models, serializers
 
@@ -265,14 +265,17 @@ class FeatureListCountMatrixViewset(AnalysisObjectMixin, viewsets.ReadOnlyModelV
         dim_x = try_int(self.request.GET.get('dim_x'))
         dim_y = try_int(self.request.GET.get('dim_y'))
         analysis_sort = (self.request.GET.get('analysis_sort') == '1')
+        analysis_id = try_int(self.request.GET.get('analysis_id'))
         sort_matrix_id = self.request.GET.get('sort_id')
         if (self.request.GET.get('sort_id') == '0'):
             sort_matrix_id = None
 
-        # TODO: throw errors if values aren't given or are not numeric?
+        if any(filter(is_none, [dim_x, dim_y, analysis_id])):
+            raise NotAcceptable('`dim_x`, `dim_y`, and `analysis_id` are required parameters')
+
         object = self.get_object()
         return Response(object.get_sorted_data(
-            dim_x, dim_y, analysis_sort, sort_matrix_id
+            dim_x, dim_y, analysis_sort, sort_matrix_id, analysis_id
         ))
 
     def get_serializer_class(self):
