@@ -4,3 +4,7 @@ def try_int(val, default=None):
         return int(val)
     except (ValueError, TypeError):
         return default
+
+
+def is_none(val):
+    return val is None
