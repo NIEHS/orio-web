@@ -217,4 +217,5 @@ WEBPACK_LOADER = {
     }
 }
 
+# assume phantomJS is available on PATH; else change to absolute location
 PHANTOMJS_PATH = 'phantomjs'

@@ -22,6 +22,7 @@ Requires the following software before beginning:
 - Python 3.4+
 - PostgreSQL 9.4+
 - Python virtualenv and virtualenvwrapper
+- PhantomJS 2.1+
 
 Create a new python virtual environment, we'll use the virtual environment name `orio-web` throughout the documentation. If you have [virtualenvwrapper](https://pypi.python.org/pypi/virtualenvwrapper/) installed, you can create a new environment using the command below (note that this requires you to specify the path for python 3, which is not the default python with many installations):
 
