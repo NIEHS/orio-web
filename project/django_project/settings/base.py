@@ -107,6 +107,7 @@ INSTALLED_APPS = (
     'myuser',
     'staticpages',
     'analysis',
+    'phantom',
 )
 
 AUTH_USER_MODEL = 'myuser.User'
@@ -215,3 +216,5 @@ WEBPACK_LOADER = {
         'IGNORE': ['.+\.hot-update.js', '.+\.map']
     }
 }
+
+PHANTOMJS_PATH = 'phantomjs'
