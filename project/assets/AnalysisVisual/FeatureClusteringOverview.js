@@ -70,6 +70,13 @@ class FeatureClusteringOverview{
             }
         }
 
+        // convert canvas to img
+        let img = $('<img>')
+        img.width = heatmap.width();
+        img.height = heatmap.height();
+        img.attr('src', heatmap.get(0).toDataURL());
+        heatmap.after(img).remove();
+
         var height = heatmap_col_tooltips.height(),
             width = heatmap_col_tooltips.width() - window.clustHeatmapOffset.left,
             col_number = data['col_names'].length;

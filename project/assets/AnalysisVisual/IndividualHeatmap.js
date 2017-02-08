@@ -427,21 +427,20 @@ class IndividualHeatmap {
 
         this.modal_body.find('#heatmap_canvas').remove();
 
-        $('<canvas id="heatmap_canvas">')
-            .prop({
-                'height': this.heatmap_dim.h,
-                'width': this.heatmap_dim.w,
-            })
-            .css({
+        var canvas_css = {
                 'position': 'absolute',
                 'left': this.heatmap_dim.x,
                 'top': this.heatmap_dim.y,
-            })
-            .appendTo(this.modal_body);
+            },
+            canvas = $('<canvas id="heatmap_canvas">')
+                .prop({
+                    'height': this.heatmap_dim.h,
+                    'width': this.heatmap_dim.w,
+                })
+                .css(canvas_css)
+                .appendTo(this.modal_body);
 
-        var context = document.getElementById('heatmap_canvas')
-            .getContext('2d');
-
+        var context = canvas.get(0).getContext('2d');
         var scale_y = dim_y > data.length ? dim_y/data.length : 1;
         var scale_x = dim_x > data[0].length ? dim_x/data[0].length: 1;
 
@@ -466,6 +465,13 @@ class IndividualHeatmap {
                 context.fillRect(j,i,1,1);
             }
         }
+
+        // convert canvas to img
+        let img = $('<img>').css(canvas_css);
+        img.width = canvas.width();
+        img.height = canvas.height();
+        img.attr('src', canvas.get(0).toDataURL());
+        canvas.after(img).remove();
     }
 
     renderLoader(){
