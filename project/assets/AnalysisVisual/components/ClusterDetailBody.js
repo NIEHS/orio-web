@@ -4,6 +4,7 @@ import React from 'react';
 import {saveAs} from 'filesaver.js';
 
 import Loader from './Loader';
+import SaveAsImage from './SaveAsImage';
 import ClusterQuant from './ClusterQuant';
 
 import h from 'utils/helpers';
@@ -137,6 +138,9 @@ class ClusterDetailBody extends React.Component {
                         analysis_id={this.props.analysis_id}
                         k={this.props.k}
                         cluster_id={this.props.cluster_id}/>
+                    <div style={{float: 'right', marginRight: 75}}>
+                        <SaveAsImage selector={'#clusterQuant'} />
+                    </div>
                 </div>
             </div>
         </div>;

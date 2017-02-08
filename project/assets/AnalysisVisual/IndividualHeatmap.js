@@ -2,12 +2,17 @@ import $ from 'jquery';
 import d3 from 'd3';
 import _ from 'underscore';
 
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+import SaveAsImage from './components/SaveAsImage';
 import Loader from './Loader';
 
 
 class IndividualHeatmap {
 
-    constructor (id, matrix_names, matrix_ids, heatmap_name, modal_title, modal_body, sort_vector, analysis_id) {
+    constructor (id, matrix_names, matrix_ids, heatmap_name,
+                 modal_title, modal_body, sort_vector, analysis_id) {
         this.id = id;
         this.matrix_names = matrix_names;
         this.matrix_ids = matrix_ids;
@@ -50,6 +55,17 @@ class IndividualHeatmap {
             h: 0.15 * this.modal_dim.h,
             w: 0.335 * this.modal_dim.w,
         };
+
+        this.renderDownloadBtn();
+    }
+
+    renderDownloadBtn(){
+        let dl = $('<div>').css({
+            float: 'right',
+            'margin-right': '20px',
+            'margin-top': '-40px',
+        }).insertAfter(this.modal_body);
+        ReactDOM.render(<SaveAsImage content={this.modal_body} />, dl.get(0));
     }
 
     displayQuartilePValue(ad_p, kw_p) {

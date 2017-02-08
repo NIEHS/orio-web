@@ -5,6 +5,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 import Loader from './Loader';
+import SaveAsImage from './components/SaveAsImage';
 
 
 class ScatterplotModal {
@@ -50,7 +51,10 @@ class ScatterplotModal {
                             </div>
                         </form>
                     </div>
-                    <div id="visual"></div>
+                    <div id="scmvisual"></div>
+                    <div style={{float: 'right', marginRight: 50}}>
+                        <SaveAsImage selector={'#scmvisual'} dropup={true} />
+                    </div>
                 </div>
             );
         };
@@ -74,7 +78,7 @@ class ScatterplotModal {
     }
 
     renderLoader(){
-        var par = this.modal_body.find('#visual');
+        var par = this.modal_body.find('#scmvisual');
         new Loader(par);
         this.loadingSpinner = par.find('.loadingSpinner');
         this.loadingSpinner.css({
@@ -104,7 +108,7 @@ class ScatterplotModal {
         // DOM objects
         var $parent = this.modal_body,
             $form = this.modal_body.find('#inputForm'),
-            $visual = this.modal_body.find('#visual');
+            $visual = this.modal_body.find('#scmvisual');
 
         // constants
         var margin = {top: 20, right: 40, bottom: 50, left: 80},
