@@ -4,28 +4,38 @@ import React from 'react';
 
 class SaveAsImage extends React.Component {
 
+    constructor(){
+        super();
+        this.handlePngSubmit = this.handlePngSubmit.bind(this);
+        this.handlePdfSubmit = this.handlePdfSubmit.bind(this);
+    }
+
     getJqueryElement(){
         return (this.props.content)?
             $(this.props.content):
             $(this.props.selector);
     }
 
-    handlePngSubmit(){
+    handlePngSubmit(e){
+        e.preventDefault();
         let $el = this.getJqueryElement();
         this.refs.content.value = $el.html();
-        this.refs.width.value = $el.width() * 1.05;
-        this.refs.height.value = $el.height() * 1.05;
+        this.refs.width.value = parseInt($el.width() * 1.05);
+        this.refs.height.value = parseInt($el.height() * 1.05);
         this.refs.format.value = 'png';
         this.refs.form.submit();
+        return false;
     }
 
-    handlePdfSubmit(){
+    handlePdfSubmit(e){
+        e.preventDefault();
         let $el = this.getJqueryElement();
         this.refs.content.value = $el.html();
-        this.refs.width.value = $el.width() * 1.05;
-        this.refs.height.value = $el.height() * 1.05;
+        this.refs.width.value = parseInt($el.width() * 1.05);
+        this.refs.height.value = parseInt($el.height() * 1.05);
         this.refs.format.value = 'pdf';
         this.refs.form.submit();
+        return false;
     }
 
     render(){
@@ -47,9 +57,9 @@ class SaveAsImage extends React.Component {
                 <i className='fa fa-download'></i>
                 </button>
                 <ul className="dropdown-menu" style={{minWidth: 0}}>
-                    <li><a href='#' onClick={this.handlePngSubmit.bind(this)}>
+                    <li><a href='#' onClick={this.handlePngSubmit}>
                         <i className='fa fa-fixed fa-file-image-o'></i> PNG</a></li>
-                    <li><a href='#' onClick={this.handlePdfSubmit.bind(this)}>
+                    <li><a href='#' onClick={this.handlePdfSubmit}>
                         <i className='fa fa-fixed fa-file-pdf-o'></i> PDF</a></li>
                 </ul>
             </div>
