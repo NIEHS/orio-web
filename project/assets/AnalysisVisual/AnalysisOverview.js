@@ -3,12 +3,15 @@ import $ from 'jquery';
 import d3 from 'd3';
 import {interpolateInferno} from 'd3-scale';
 import {interpolateRdYlBu} from 'd3-scale-chromatic';
+import React from 'react';
+import ReactDOM from 'react-dom';
 
 import {heatmapColorScale} from './utils';
 import ScatterplotModal from './ScatterplotModal';
 import SortVectorScatterplotModal from './SortVectorScatterplotModal';
 import HeatmapLegend from './HeatmapLegend';
 import Loader from './Loader';
+import SaveAsImage from './components/SaveAsImage';
 
 
 class AnalysisOverview{
@@ -19,6 +22,17 @@ class AnalysisOverview{
         this.analysisOverviewInitURL = function(id) {
             return (`/dashboard/api/analysis/${id}/analysis_overview/`);
         };
+
+        this.renderDownloadBtn();
+    }
+
+    renderDownloadBtn(){
+        let dl = $('<div>').css({
+            float: 'right',
+            'padding-top': '5px',
+        }).insertAfter(this.el);
+
+        ReactDOM.render(<SaveAsImage content={this.el.get(0)} />, dl.get(0));
     }
 
     renderContainers(){
@@ -75,6 +89,7 @@ class AnalysisOverview{
                 height: '20%',
                 width: '20%',
             }).appendTo(this.el);
+
     }
 
     drawHeatmap(data) {

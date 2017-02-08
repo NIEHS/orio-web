@@ -113,7 +113,7 @@ class ClusterQuant extends React.Component {
     render() {
         var width = $('#ind_heatmap_modal_body').width() - 30;
         return (
-            <div className="container-fluid">
+            <div id='clusterQuant' className="container-fluid">
                 {this.renderSelector()}
                 {this.renderCharts(width)}
             </div>

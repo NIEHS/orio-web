@@ -31,6 +31,10 @@ urlpatterns = [
         include('myuser.urls',
                 namespace='user')),
 
+    url(r'^phantom/',
+        include('phantom.urls',
+                namespace='phantom')),
+
     url(r'^task-error/$',
         views.CeleryErrorTester.as_view(),
         name='celery'),

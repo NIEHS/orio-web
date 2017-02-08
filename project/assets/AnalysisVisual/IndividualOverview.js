@@ -1,9 +1,12 @@
 import _ from 'underscore';
 import $ from 'jquery';
 import d3 from 'd3';
+import React from 'react';
+import ReactDOM from 'react-dom';
 import {interpolateInferno} from 'd3-scale';
 import {interpolateRdYlBu} from 'd3-scale-chromatic';
 
+import SaveAsImage from './components/SaveAsImage';
 import {heatmapColorScale} from './utils';
 import HeatmapLegend from './HeatmapLegend';
 import IndividualHeatmap from './IndividualHeatmap';
@@ -15,6 +18,15 @@ class IndividualOverview {
     constructor(el, analysis_id) {
         this.el = el;
         this.id = window.analysisObjectID;
+        this.renderDownloadBtn();
+    }
+
+    renderDownloadBtn(){
+        let dl = $('<div>').css({
+            float: 'left',
+            'padding-top': '5px',
+        }).insertAfter(this.el);
+        ReactDOM.render(<SaveAsImage content={this.el.get(0)} />, dl.get(0));
     }
 
     individualOverviewInitURL(id) {

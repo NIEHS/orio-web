@@ -1,11 +1,13 @@
 import $ from 'jquery';
 import d3 from 'd3';
+import React from 'react';
+import ReactDOM from 'react-dom';
 
 import Loader from './Loader';
+import SaveAsImage from './components/SaveAsImage';
 import FeatureClusterDetailModal from './FeatureClusterDetailModal';
 import {interpolateRdYlBu} from 'd3-scale-chromatic';
 import {interpolateSpectral} from 'd3-scale-chromatic';
-
 import {heatmapColorScale} from './utils';
 
 
@@ -16,6 +18,15 @@ class FeatureClusteringOverview{
         this.id = window.analysisObjectID;
         this.colors = this.getColors();
         window.clustHeatmapOffset = {left:60};
+        this.renderDownloadBtn();
+    }
+
+    renderDownloadBtn(){
+        let dl = $('<div>').css({
+            float: 'right',
+            'padding-top': '5px',
+        }).insertAfter(this.el);
+        ReactDOM.render(<SaveAsImage content={this.el.get(0)} />, dl.get(0));
     }
 
     getColors(){
@@ -69,6 +80,13 @@ class FeatureClusteringOverview{
                 context.fillRect(j,i,1,1);
             }
         }
+
+        // convert canvas to img
+        let img = $('<img>')
+        img.width = heatmap.width();
+        img.height = heatmap.height();
+        img.attr('src', heatmap.get(0).toDataURL());
+        heatmap.after(img).remove();
 
         var height = heatmap_col_tooltips.height(),
             width = heatmap_col_tooltips.width() - window.clustHeatmapOffset.left,
