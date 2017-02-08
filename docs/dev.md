@@ -148,6 +148,17 @@ Start the javascript bundler in another terminal window:
 
 Navigate to [localhost:9000](http://127.0.0.1:9000/), and start developing!
 
+## Using the bundled development environment
+
+For quicker development, ORIO includes a Makefile command which creates a [tmux](https://tmux.github.io/)
+terminal for opening all required tabs for development. To execute, use the command:
+
+    make dev
+
+You can modify the tmux environment by creating a local copy:
+
+    cp bin/dev.sh bin/dev.local.sh
+
 # Additional optional commands
 
 ## Using celery task manager

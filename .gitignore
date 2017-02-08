@@ -2,7 +2,6 @@
 *.py[co]
 *.djcache
 celerybeat-schedule
-tmux.sh
 public
 *celerybeat.pid
 notebooks/.ipynb_checkpoints/*
@@ -22,3 +21,5 @@ project/webpack-stats.json
 project/django_project/settings/local.py
 
 data/*
+
+bin/*local.sh
