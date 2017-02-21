@@ -4,6 +4,7 @@ import d3 from 'd3';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import SaveAsImage from './components/SaveAsImage';
 
 class SortVectorScatterplotModal {
 
@@ -15,6 +16,8 @@ class SortVectorScatterplotModal {
         this.namey = namey;
         this.modal_title = modal_title;
         this.modal_body = modal_body;
+
+        this.renderDownloadBtn();
     }
 
     binNamesUrl() {
@@ -41,7 +44,7 @@ class SortVectorScatterplotModal {
             return (
                 <div>
                     <div id="inputForm" className="form-group">
-                        <label>Select bin</label>
+                        <label className="png-remove">Select bin</label>
                         <select className="form-control" id="selector">
                         </select>
                     </div>
@@ -232,6 +235,15 @@ class SortVectorScatterplotModal {
             x: +d.x,
             y: +d.y,
         };
+    }
+
+    renderDownloadBtn(){
+        let dl = $('<div class="download-button">').css({
+            float: 'right',
+            'margin-right': '20px',
+            'margin-top': '-40px',
+        }).insertAfter(this.modal_body);
+        ReactDOM.render(<SaveAsImage content={this.modal_body} />, dl.get(0));
     }
 
     render() {

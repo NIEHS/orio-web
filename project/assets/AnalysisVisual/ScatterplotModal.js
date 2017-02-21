@@ -17,6 +17,8 @@ class ScatterplotModal {
         this.namey = namey;
         this.modal_title = modal_title;
         this.modal_body = modal_body;
+
+        this.renderDownloadBtn();
     }
 
     binNamesUrl() {
@@ -45,16 +47,13 @@ class ScatterplotModal {
                 <div id="inputForm" className='container-fluid'>
                     <div className='row well well-sm'>
                         <form className="form-horizontal">
-                            <label className='col-sm-3 control-label'>Select bin:</label>
+                            <label className='col-sm-3 control-label png-remove'>Select bin:</label>
                             <div className='col-sm-9'>
                                 <select className="form-control" id="selector"></select>
                             </div>
                         </form>
                     </div>
                     <div id="scmvisual"></div>
-                    <div style={{float: 'right', marginRight: 50}}>
-                        <SaveAsImage selector={'#scmvisual'} dropup={true} />
-                    </div>
                 </div>
             );
         };
@@ -245,6 +244,15 @@ class ScatterplotModal {
             x: +d.x,
             y: +d.y,
         };
+    }
+
+    renderDownloadBtn(){
+        let dl = $('<div class="download-button">').css({
+            float: 'right',
+            'margin-right': '20px',
+            'margin-top': '-40px',
+        }).insertAfter(this.modal_body);
+        ReactDOM.render(<SaveAsImage content={this.modal_body} />, dl.get(0));
     }
 
     render() {

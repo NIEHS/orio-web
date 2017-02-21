@@ -27,7 +27,7 @@ class AnalysisOverview{
     }
 
     renderDownloadBtn(){
-        let dl = $('<div>').css({
+        let dl = $('<div class="download-button">').css({
             float: 'right',
             'padding-top': '5px',
         }).insertAfter(this.el);

@@ -17,6 +17,9 @@ class ClusterDetailBody extends React.Component {
         this.handleDownloadFeaturesClick = this.handleDownloadFeaturesClick.bind(this);
         this.handleDownloadGenesClick = this.handleDownloadGenesClick.bind(this);
 
+        // remove any download buttons
+        $('.download-button').remove();
+
         // set initial state
         this.state = {
             featuresCount: null,

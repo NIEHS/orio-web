@@ -20,7 +20,7 @@ class HeatmapLegend {
             width = this.$parent.width(),
             legend_lines = heatmapColorScale.ticks(5),
             gradient = heatmapColorScale.ticks(20),
-            cellWidth = width/gradient.length,
+            cellWidth = 0.8*width/gradient.length,
             svg;
 
         svg = d3.select(this.$parent.get(0))
@@ -42,7 +42,7 @@ class HeatmapLegend {
             .append('rect')
             .attr('width', cellWidth)
             .attr('height', 0.15 * height)
-            .attr('x', (d, i) => i*cellWidth)
+            .attr('x', (d, i) => 0.1*width + i*cellWidth)
             .attr('y', 0.5 * height)
             .attr('fill', (d) => interpolateRdYlBu(heatmapColorScale(-d)))
             .each(function(d){
@@ -58,8 +58,8 @@ class HeatmapLegend {
             .data(legend_lines)
             .enter()
             .append('line')
-            .attr('x1', (d, i)=>i*0.25*width)
-            .attr('x2', (d, i)=>i*0.25*width)
+            .attr('x1', (d, i)=> 0.11*width + i*0.25*0.78*width)
+            .attr('x2', (d, i)=> 0.11*width + i*0.25*0.78*width)
             .attr('y1', 0.45 * height)
             .attr('y2', 0.5 * height)
             .style('stroke', 'black')
@@ -71,7 +71,7 @@ class HeatmapLegend {
             .enter()
             .append('text')
             .text((d) => d)
-            .attr('x', (d, i) => i*0.25*width)
+            .attr('x', (d, i) => 0.11*width + i*0.25*0.78*width)
             .attr('y', 0.4*height)
             .attr('font-family', 'sans-serif')
             .attr('font-size', '12px')

@@ -16,26 +16,44 @@ class SaveAsImage extends React.Component {
             $(this.props.selector);
     }
 
-    handlePngSubmit(e){
+    handleSubmit(e, type) {
         e.preventDefault();
         let $el = this.getJqueryElement();
-        this.refs.content.value = $el.html();
-        this.refs.width.value = parseInt($el.width() * 1.05);
-        this.refs.height.value = parseInt($el.height() * 1.05);
-        this.refs.format.value = 'png';
+        var $clone = $el.clone();
+        $clone.css('visibility', 'hidden');
+        $clone.insertAfter($el);
+        if ($clone.find('#correlation_plot').length) {
+            var $target = $($clone.find('#correlation_plot')[0]);
+        } else {
+            $clone.find('select').each(function() {
+                this.remove();
+            });
+            $clone.find('input').each(function() {
+                this.remove();
+            });
+            $clone.find('button').each(function() {
+                this.remove();
+            });
+            $clone.find('.png-remove').each(function() {
+                this.remove();
+            });
+            var $target = $clone;
+        }
+        this.refs.content.value = $($target).html();
+        this.refs.width.value = parseInt($target.width() * 1.08);
+        this.refs.height.value = parseInt($target.height() * 1.08);
+        this.refs.format.value = type;
         this.refs.form.submit();
+        $clone.remove();
         return false;
     }
 
+    handlePngSubmit(e){
+        this.handleSubmit(e, 'png');
+    }
+
     handlePdfSubmit(e){
-        e.preventDefault();
-        let $el = this.getJqueryElement();
-        this.refs.content.value = $el.html();
-        this.refs.width.value = parseInt($el.width() * 1.05);
-        this.refs.height.value = parseInt($el.height() * 1.05);
-        this.refs.format.value = 'pdf';
-        this.refs.form.submit();
-        return false;
+        this.handleSubmit(e, 'pdf');
     }
 
     render(){
@@ -68,7 +86,7 @@ class SaveAsImage extends React.Component {
 }
 
 SaveAsImage.propTypes = {
-    content: React.PropTypes.instanceOf(window.HTMLElement),
+    content: React.PropTypes.object,
     selector: React.PropTypes.string,
     dropup: React.PropTypes.bool,
 };
