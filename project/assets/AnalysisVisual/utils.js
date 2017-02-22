@@ -12,6 +12,14 @@ let getMaxContainerHeight = function(el){
     return height - elTop - footerHeight;
 };
 
+let displayPValue = function(val){
+    if (val > 0.99) {
+        val = 1;
+    }
+    var float = parseFloat(val).toPrecision(2);
+    return (float < 2.2e-16) ? ('< 2.2e-16') : ('' + float);
+};
 
 export {heatmapColorScale};
 export {getMaxContainerHeight};
+export {displayPValue};
