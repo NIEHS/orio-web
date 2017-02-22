@@ -8,6 +8,9 @@ import ReactDOM from 'react-dom';
 import SaveAsImage from './components/SaveAsImage';
 import Loader from './Loader';
 
+import {
+    displayPValue,
+} from './utils';
 
 class IndividualHeatmap {
 
@@ -70,7 +73,7 @@ class IndividualHeatmap {
 
     displayQuartilePValue(ad_p, kw_p) {
         this.modal_body.find('#quartile_pval').remove();
-        $(`<p id="quartile_pval">AD p-value = ${ad_p.toExponential(2)}<br>KW p-value = ${kw_p.toExponential(2)}</p>`)
+        $(`<p id="quartile_pval">AD p-value: ${displayPValue(ad_p)}<br>KW p-value: ${displayPValue(kw_p)}</p>`)
             .css({
                 position: 'absolute',
                 left: 0.11 * this.modal_dim.w,

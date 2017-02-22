@@ -1,6 +1,9 @@
 import _ from 'underscore';
 import React from 'react';
 
+import {
+    displayPValue,
+} from '../utils';
 
 class PValueTable extends React.Component {
 
@@ -13,7 +16,7 @@ class PValueTable extends React.Component {
     }
 
     renderRowTd(d, i){
-        return <td key={i}>{parseFloat(d).toPrecision(2)}</td>;
+        return <td key={i}>{displayPValue(d)}</td>;
     }
 
     renderRow(d, i){
