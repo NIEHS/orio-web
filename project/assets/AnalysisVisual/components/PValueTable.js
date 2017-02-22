@@ -4,6 +4,11 @@ import React from 'react';
 
 class PValueTable extends React.Component {
 
+    displayPValue(val){
+        var float = parseFloat(val);
+        return (float < 2.2e-16) ? ('< 2.2e-16') : ('' + float.toPrecision(2));
+    }
+
     getHeaderText(d){
         return parseInt(d)? `Cluster #${d}`: d;
     }
@@ -13,7 +18,7 @@ class PValueTable extends React.Component {
     }
 
     renderRowTd(d, i){
-        return <td key={i}>{parseFloat(d).toPrecision(2)}</td>;
+        return <td key={i}>{this.displayPValue(d)}</td>;
     }
 
     renderRow(d, i){

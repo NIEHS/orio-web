@@ -70,7 +70,9 @@ class IndividualHeatmap {
 
     displayQuartilePValue(ad_p, kw_p) {
         this.modal_body.find('#quartile_pval').remove();
-        $(`<p id="quartile_pval">AD p-value = ${ad_p.toExponential(2)}<br>KW p-value = ${kw_p.toExponential(2)}</p>`)
+        var ad_display = (ad_p < 2.2e-16) ? ' < 2.2e-16': ' = ' + ad_p.toExponential(2);
+        var kw_display = (kw_p < 2.2e-16) ? ' < 2.2e-16': ' = ' + kw_p.toExponential(2);
+        $(`<p id="quartile_pval">AD p-value${ad_display}<br>KW p-value${kw_display}</p>`)
             .css({
                 position: 'absolute',
                 left: 0.11 * this.modal_dim.w,
