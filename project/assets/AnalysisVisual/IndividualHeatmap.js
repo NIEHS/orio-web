@@ -63,12 +63,17 @@ class IndividualHeatmap {
     }
 
     renderDownloadBtn(){
-        let dl = $('<div class="download-button">').css({
+        let el = $('<div>').css({
             float: 'right',
             'margin-right': '20px',
             'margin-top': '-40px',
         }).insertAfter(this.modal_body);
-        ReactDOM.render(<SaveAsImage content={this.modal_body} />, dl.get(0));
+        this.downloadBtnContainer = el.get(0);
+        ReactDOM.render(<SaveAsImage content={this.modal_body} />, this.downloadBtnContainer);
+    }
+
+    unrender(){
+        ReactDOM.unmountComponentAtNode(this.downloadBtnContainer);
     }
 
     displayQuartilePValue(ad_p, kw_p) {

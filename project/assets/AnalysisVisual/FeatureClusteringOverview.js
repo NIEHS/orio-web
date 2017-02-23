@@ -22,7 +22,7 @@ class FeatureClusteringOverview{
     }
 
     renderDownloadBtn(){
-        let dl = $('<div class="download-button">').css({
+        let dl = $('<div>').css({
             float: 'right',
             'padding-top': '5px',
         }).insertAfter(this.el);

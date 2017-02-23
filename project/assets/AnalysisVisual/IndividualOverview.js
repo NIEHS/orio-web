@@ -22,7 +22,7 @@ class IndividualOverview {
     }
 
     renderDownloadBtn(){
-        let dl = $('<div class="download-button">').css({
+        let dl = $('<div>').css({
             float: 'right',
             'padding-top': '5px',
         }).insertAfter(this.el);
@@ -235,12 +235,13 @@ class IndividualOverview {
         var name = this.el.find('#select_list').find('option:selected').text(),
             modalTitle = $('#ind_heatmap_modal_title'),
             modalBody = $('#ind_heatmap_modal_body'),
+            heatmap,
             onModalShowing = function(){
                 modalTitle.html('');
                 modalBody.html('');
             },
             onModalShown = function(){
-                var individual_heatmap = new IndividualHeatmap(
+                heatmap = new IndividualHeatmap(
                     window.name_to_id[name],
                     window.matrix_names,
                     window.matrix_ids,
@@ -250,12 +251,16 @@ class IndividualOverview {
                     window.sort_vector,
                     window.analysisObjectID,
                 );
-                individual_heatmap.render();
+                heatmap.render();
+            },
+            onModalHidden = function(){
+                heatmap.unrender();
             };
 
         $('#flcModal')
             .one('show.bs.modal', onModalShowing)
             .one('shown.bs.modal', onModalShown)
+            .one('hidden.bs.modal', onModalHidden)
             .modal('show');
     }
 
