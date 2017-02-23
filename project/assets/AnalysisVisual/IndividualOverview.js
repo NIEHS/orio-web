@@ -148,7 +148,7 @@ class IndividualOverview {
             .attr('dy', '-6px');
 
         graph.append('text')
-            .text('Spearman\'s \u03C1')
+            .text("Spearman's ρ")
             .attr('transform', 'rotate(-90)' )
             .attr('dx', -height * 0.4)
             .attr('dy', '50px');
@@ -265,7 +265,7 @@ class IndividualOverview {
     }
 
     renderLegend() {
-        let hl = new HeatmapLegend(this.legend, 'Spearman\'s \u03C1');
+        let hl = new HeatmapLegend(this.legend, "Spearman's ρ");
         hl.render();
     }
 
