@@ -4,6 +4,7 @@ import d3 from 'd3';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import SaveAsImage from './components/SaveAsImage';
 
 class SortVectorScatterplotModal {
 
@@ -41,11 +42,14 @@ class SortVectorScatterplotModal {
             return (
                 <div>
                     <div id="inputForm" className="form-group">
-                        <label>Select bin</label>
+                        <label className="png-remove">Select bin</label>
                         <select className="form-control" id="selector">
                         </select>
                     </div>
                     <div id="visual"></div>
+                    <div style={{float: 'right', marginRight: 50}}>
+                        <SaveAsImage selector={'#visual'} dropup={true} />
+                    </div>
                 </div>
             );
         };

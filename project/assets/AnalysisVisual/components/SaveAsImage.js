@@ -16,26 +16,38 @@ class SaveAsImage extends React.Component {
             $(this.props.selector);
     }
 
-    handlePngSubmit(e){
+    handleSubmit(e, type) {
+        // Make a clone of the element, removing all input buttons and anything
+        // with the png-remove class. Then, submit a form with the html content
+        // from the new element, and then remove after submitting. We append
+        // to the DOM in order to get the height/width of the rendered elements.
         e.preventDefault();
-        let $el = this.getJqueryElement();
-        this.refs.content.value = $el.html();
-        this.refs.width.value = parseInt($el.width() * 1.05);
-        this.refs.height.value = parseInt($el.height() * 1.05);
-        this.refs.format.value = 'png';
+        let $el = this.getJqueryElement(),
+            $clone = $el.clone()
+            .css('visibility', 'hidden')
+            .insertAfter($el);
+
+        $clone.find('select,input,button,.png-remove').each(function() {
+            this.remove();
+        });
+
+        this.refs.content.value = $clone.html();
+        this.refs.width.value = parseInt($clone.width() * 1.08);
+        this.refs.height.value = parseInt($clone.height() * 1.08);
+        this.refs.format.value = type;
         this.refs.form.submit();
+
+        $clone.remove();
+
         return false;
     }
 
+    handlePngSubmit(e){
+        this.handleSubmit(e, 'png');
+    }
+
     handlePdfSubmit(e){
-        e.preventDefault();
-        let $el = this.getJqueryElement();
-        this.refs.content.value = $el.html();
-        this.refs.width.value = parseInt($el.width() * 1.05);
-        this.refs.height.value = parseInt($el.height() * 1.05);
-        this.refs.format.value = 'pdf';
-        this.refs.form.submit();
-        return false;
+        this.handleSubmit(e, 'pdf');
     }
 
     render(){

@@ -546,8 +546,8 @@ class FeatureClusteringOverview{
             .data(legend_text)
             .enter()
             .append('line')
-            .attr('x1', (d, i)=>i*1*width)
-            .attr('x2', (d, i)=>i*1*width)
+            .attr('x1', (d, i)=>0.02*width + i*0.96*width)
+            .attr('x2', (d, i)=>0.02*width + i*0.96*width)
             .attr('y1', 0.45 * height)
             .attr('y2', 0.5 * height)
             .style('stroke', 'black')
@@ -564,7 +564,7 @@ class FeatureClusteringOverview{
             .attr('font-family', 'sans-serif')
             .attr('font-size', '12px')
             .attr('fill', 'black')
-            .style('text-anchor', 'middle');
+            .style('text-anchor', (i) => (i == 0) ? ('start') : ('end'));
     }
 
     drawCentroidPlotLegend(k) {
@@ -676,11 +676,11 @@ class FeatureClusteringOverview{
         this.legend = $('<div id="heatmap_legend" class="layouts">')
             .css({
                 position: 'absolute',
-                left: window.clustHeatmapOffset.left + 0.15 * (this.el.width() - window.clustHeatmapOffset.left),
+                left: window.clustHeatmapOffset.left + 0.10 * (this.el.width() - window.clustHeatmapOffset.left),
                 top: '82%',
                 overflow: 'visible',
                 height: '20%',
-                width: 0.20 * (this.el.width() - window.clustHeatmapOffset.left),
+                width: 0.25 * (this.el.width() - window.clustHeatmapOffset.left),
             }).appendTo(this.el);
 
         this.graph = $('<div id="graph" class="layouts">')
@@ -692,7 +692,7 @@ class FeatureClusteringOverview{
                 top: '16%',
             }).appendTo(this.el);
 
-        this.select_list_div = $('<div align="right" id="k_prompt" class="layouts">')
+        this.select_list_div = $('<div align="right" id="k_prompt" class="layouts png-remove">')
             .css({
                 height: '8%',
                 width: '100px',
@@ -735,7 +735,7 @@ class FeatureClusteringOverview{
                 width: '40%',
             }).appendTo(this.el);
 
-        this.clust_select_list_div = $('<div align="right" id="cluster_prompt" class="layouts">')
+        this.clust_select_list_div = $('<div align="right" id="cluster_prompt" class="layouts png-remove">')
             .css({
                 height: '8%',
                 width: '100px',

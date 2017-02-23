@@ -45,7 +45,7 @@ class ScatterplotModal {
                 <div id="inputForm" className='container-fluid'>
                     <div className='row well well-sm'>
                         <form className="form-horizontal">
-                            <label className='col-sm-3 control-label'>Select bin:</label>
+                            <label className='col-sm-3 control-label png-remove'>Select bin:</label>
                             <div className='col-sm-9'>
                                 <select className="form-control" id="selector"></select>
                             </div>

@@ -290,7 +290,7 @@ class AnalysisOverview{
     }
 
     drawLegend() {
-        let hl = new HeatmapLegend(this.legend, 'Spearman\'s \u03C1');
+        let hl = new HeatmapLegend(this.legend, "Spearman's ρ");
         hl.render();
     }
 

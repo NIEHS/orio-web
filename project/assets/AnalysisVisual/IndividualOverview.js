@@ -23,10 +23,10 @@ class IndividualOverview {
 
     renderDownloadBtn(){
         let dl = $('<div>').css({
-            float: 'left',
+            float: 'right',
             'padding-top': '5px',
         }).insertAfter(this.el);
-        ReactDOM.render(<SaveAsImage content={this.el.get(0)} />, dl.get(0));
+        ReactDOM.render(<SaveAsImage selector={'#correlation_plot'} />, dl.get(0));
     }
 
     individualOverviewInitURL(id) {
@@ -85,12 +85,9 @@ class IndividualOverview {
     renderCorrelations(selected, row_data){
         var cp = this.el.find('#correlation_plot'),
             num = row_data.length - 1,
-            entry_length = 50,
             margin = {top: 10, right: 10, bottom: 0, left: 20},
-            offset = {top: 0, right: 10, bottom: 160, left: 100},
-            width = (num*entry_length > cp.width())
-                ? (num*entry_length - margin.left - margin.right)
-                : (cp.width() - margin.left - margin.right),
+            offset = {top: 0, right: 20, bottom: 160, left: 100},
+            width = cp.width() - margin.left - margin.right,
             height = cp.height();
 
         this.removeLoader();
@@ -147,7 +144,7 @@ class IndividualOverview {
             .attr('dy', '-6px');
 
         graph.append('text')
-            .text('Spearman\'s \u03C1')
+            .text("Spearman's ρ")
             .attr('transform', 'rotate(-90)' )
             .attr('dx', -height * 0.4)
             .attr('dy', '50px');
@@ -189,7 +186,7 @@ class IndividualOverview {
             .append('rect')
             .style('fill', (d) => interpolateRdYlBu(heatmapColorScale(-d[1])))
             .attr('x', (d) => x(d[0]) + 2)
-            .attr('width', x.rangeBand() - 4)
+            .attr('width', x.rangeBand() - 1)
             .attr('y', (d) => y(Math.max(0, d[1])))
             .attr('height', (d) => Math.abs(y(0) - y(d[1])))
             .each(function(d){
@@ -234,12 +231,13 @@ class IndividualOverview {
         var name = this.el.find('#select_list').find('option:selected').text(),
             modalTitle = $('#ind_heatmap_modal_title'),
             modalBody = $('#ind_heatmap_modal_body'),
+            heatmap,
             onModalShowing = function(){
                 modalTitle.html('');
                 modalBody.html('');
             },
             onModalShown = function(){
-                var individual_heatmap = new IndividualHeatmap(
+                heatmap = new IndividualHeatmap(
                     window.name_to_id[name],
                     window.matrix_names,
                     window.matrix_ids,
@@ -249,17 +247,21 @@ class IndividualOverview {
                     window.sort_vector,
                     window.analysisObjectID,
                 );
-                individual_heatmap.render();
+                heatmap.render();
+            },
+            onModalHidden = function(){
+                heatmap.unrender();
             };
 
         $('#flcModal')
             .one('show.bs.modal', onModalShowing)
             .one('shown.bs.modal', onModalShown)
+            .one('hidden.bs.modal', onModalHidden)
             .modal('show');
     }
 
     renderLegend() {
-        let hl = new HeatmapLegend(this.legend, 'Spearman\'s \u03C1');
+        let hl = new HeatmapLegend(this.legend, "Spearman's ρ");
         hl.render();
     }
 

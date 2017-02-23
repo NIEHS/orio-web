@@ -54,7 +54,7 @@ class IndividualHeatmap {
         };
         this.sort_dim = {
             x: 0.05 * this.modal_dim.w,
-            y: 0.68 * this.modal_dim.h,
+            y: 0.72 * this.modal_dim.h,
             h: 0.15 * this.modal_dim.h,
             w: 0.335 * this.modal_dim.w,
         };
@@ -63,12 +63,17 @@ class IndividualHeatmap {
     }
 
     renderDownloadBtn(){
-        let dl = $('<div>').css({
+        let el = $('<div>').css({
             float: 'right',
             'margin-right': '20px',
             'margin-top': '-40px',
         }).insertAfter(this.modal_body);
-        ReactDOM.render(<SaveAsImage content={this.modal_body} />, dl.get(0));
+        this.downloadBtnContainer = el.get(0);
+        ReactDOM.render(<SaveAsImage content={this.modal_body} />, this.downloadBtnContainer);
+    }
+
+    unrender(){
+        ReactDOM.unmountComponentAtNode(this.downloadBtnContainer);
     }
 
     displayQuartilePValue(ad_p, kw_p) {
@@ -88,11 +93,11 @@ class IndividualHeatmap {
         //Remove heatmap div if there; append heatmap div
         this.modal_body.find('#select_list').remove();
 
-        $('<h4>')
+        $('<h4 class="png-remove">')
             .text('Feature list order')
             .css({
                 position: 'absolute',
-                top: this.sort_dim.y - 0.05 * this.modal_dim.h,
+                top: this.sort_dim.y - 0.06 * this.modal_dim.h,
                 left: this.sort_dim.x,
             })
             .appendTo(this.modal_body);
@@ -385,9 +390,9 @@ class IndividualHeatmap {
         var heatmap_header = $('<div id=\'heatmap_header\'></div>')
             .css({
                 'height': this.heatmap_dim.y,
-                'width': this.heatmap_dim.w,
+                'width': this.heatmap_dim.w + 0.2*this.heatmap_dim.w,
                 'position': 'absolute',
-                'left': this.heatmap_dim.x,
+                'left': this.heatmap_dim.x - 0.1*this.heatmap_dim.w,
                 'top': 0,
             })
             .appendTo(modal_body);
@@ -403,8 +408,8 @@ class IndividualHeatmap {
             .style('overflow', 'visible');
 
         var header_lines = [
-            {text: range_start, position: 0},
-            {text: range_end, position: heatmap_header.width()},
+            {text: range_start, position: 0.1*this.heatmap_dim.w},
+            {text: range_end, position: heatmap_header.width() - 0.1*this.heatmap_dim.w},
             {text: '0', position: zero_position},
         ];
 
@@ -421,8 +426,8 @@ class IndividualHeatmap {
             .style('stroke-width', 1);
 
         svg.append('line')
-            .attr('x1', 0)
-            .attr('x2', heatmap_header.width())
+            .attr('x1', 0.1*this.heatmap_dim.w)
+            .attr('x2', heatmap_header.width() - 0.1*this.heatmap_dim.w)
             .attr('y1', 0.9*heatmap_header.height())
             .attr('y2', 0.9*heatmap_header.height())
             .style('stroke', 'black')
