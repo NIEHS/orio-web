@@ -17,30 +17,28 @@ class SaveAsImage extends React.Component {
     }
 
     handleSubmit(e, type) {
+        // Make a clone of the element, removing all input buttons and anything
+        // with the png-remove class. Then, submit a form with the html content
+        // from the new element, and then remove after submitting. We append
+        // to the DOM in order to get the height/width of the rendered elements.
         e.preventDefault();
-        let $el = this.getJqueryElement();
-        var $clone = $el.clone();
-        $clone.css('visibility', 'hidden');
-        $clone.insertAfter($el);
-            $clone.find('select').each(function() {
-                this.remove();
-            });
-            $clone.find('input').each(function() {
-                this.remove();
-            });
-            $clone.find('button').each(function() {
-                this.remove();
-            });
-            $clone.find('.png-remove').each(function() {
-                this.remove();
-            });
-            var $target = $clone;
-        this.refs.content.value = $($target).html();
-        this.refs.width.value = parseInt($target.width() * 1.08);
-        this.refs.height.value = parseInt($target.height() * 1.08);
+        let $el = this.getJqueryElement(),
+            $clone = $el.clone()
+            .css('visibility', 'hidden')
+            .insertAfter($el);
+
+        $clone.find('select,input,button,.png-remove').each(function() {
+            this.remove();
+        });
+
+        this.refs.content.value = $clone.html();
+        this.refs.width.value = parseInt($clone.width() * 1.08);
+        this.refs.height.value = parseInt($clone.height() * 1.08);
         this.refs.format.value = type;
         this.refs.form.submit();
+
         $clone.remove();
+
         return false;
     }
 
@@ -82,7 +80,7 @@ class SaveAsImage extends React.Component {
 }
 
 SaveAsImage.propTypes = {
-    content: React.PropTypes.object,
+    content: React.PropTypes.instanceOf(window.HTMLElement),
     selector: React.PropTypes.string,
     dropup: React.PropTypes.bool,
 };
