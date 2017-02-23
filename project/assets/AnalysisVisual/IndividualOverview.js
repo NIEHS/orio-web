@@ -26,7 +26,7 @@ class IndividualOverview {
             float: 'right',
             'padding-top': '5px',
         }).insertAfter(this.el);
-        ReactDOM.render(<SaveAsImage content={this.el.get(0)} />, dl.get(0));
+        ReactDOM.render(<SaveAsImage selector={'#correlation_plot'} />, dl.get(0));
     }
 
     individualOverviewInitURL(id) {
@@ -85,12 +85,8 @@ class IndividualOverview {
     renderCorrelations(selected, row_data){
         var cp = this.el.find('#correlation_plot'),
             num = row_data.length - 1,
-            // entry_length = 20,
             margin = {top: 10, right: 10, bottom: 0, left: 20},
             offset = {top: 0, right: 20, bottom: 160, left: 100},
-            // width = (num*entry_length > cp.width())
-            //     ? (num*entry_length - margin.left - margin.right)
-            //     : (cp.width() - margin.left - margin.right),
             width = cp.width() - margin.left - margin.right,
             height = cp.height();
 

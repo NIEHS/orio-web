@@ -22,9 +22,6 @@ class SaveAsImage extends React.Component {
         var $clone = $el.clone();
         $clone.css('visibility', 'hidden');
         $clone.insertAfter($el);
-        if ($clone.find('#correlation_plot').length) {
-            var $target = $($clone.find('#correlation_plot')[0]);
-        } else {
             $clone.find('select').each(function() {
                 this.remove();
             });
@@ -38,7 +35,6 @@ class SaveAsImage extends React.Component {
                 this.remove();
             });
             var $target = $clone;
-        }
         this.refs.content.value = $($target).html();
         this.refs.width.value = parseInt($target.width() * 1.08);
         this.refs.height.value = parseInt($target.height() * 1.08);
