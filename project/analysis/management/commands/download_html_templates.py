@@ -44,12 +44,6 @@ class Command(BaseCommand):
         soup = BeautifulSoup(resp.text, "html.parser")
         menu = soup.find(id="menu")
 
-        # absolutify links
-        for a in menu.findAll('a'):
-            href = a.attrs['href']
-            if href[0] == '/':
-                a.attrs['href'] = self.root + href
-
         # write to file
         path = os.path.join(self.base, 'templates', 'niehs', 'menu.html')
         with open(path, 'w') as f:
