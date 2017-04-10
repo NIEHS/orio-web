@@ -36,13 +36,40 @@ class Command(BaseCommand):
         return text
 
     def get_menu(self):
-        # dogfooding
-        url = 'https://www.niehs.nih.gov/research/resources/databases/orio/'
-        resp = requests.get(url)
+        url = '//www.niehs.nih.gov/research/resources/databases/alu/index.cfm'
+        resp = requests.get('https:' + url)
 
         # parse html and extract only menu
-        soup = BeautifulSoup(resp.text, "html.parser")
-        menu = soup.find(id="menu")
+        text = resp.text
+
+        soup = BeautifulSoup(text, 'html.parser')
+        menu = soup.find(id='menu')
+
+        # absolutify links
+        for a in menu.findAll('a'):
+            href = a.attrs['href']
+            if href[0] == '/':
+                a.attrs['href'] = self.root + href
+
+        # replace orio link w/ orio span
+        orio = menu.find('a', {'href': '//www.niehs.nih.gov/research/resources/databases/orio/index.cfm'}).parent
+        if orio is None:
+            raise ValueError('Expected to find ORIO; not found')
+
+        # replace alu link with alu span
+        alu = menu.find('li', {'class': 'this active'})
+        if alu is None:
+            raise ValueError('Expected to find ALU; not found')
+
+        orio.replace_with(BeautifulSoup('''<li class="this active">
+            <span>Online Resource for Integrative Omics (ORIO)</span>
+        </li>
+        '''.format(url), 'html.parser'))
+
+        alu.replace_with(BeautifulSoup('''<li class="active">
+            <a href="{}/research/resources/databases/alu/index.cfm">Alu Pairs Database</a>
+        </li>
+        '''.format(url), 'html.parser'))
 
         # write to file
         path = os.path.join(self.base, 'templates', 'niehs', 'menu.html')
