@@ -2,6 +2,8 @@
 
 {% load render_bundle from webpack_loader %}
 
+{% block title %}{{object.name}} - Visualization{% endblock %}
+
 {% block extra_css %}
     <link rel="stylesheet" type="text/css" media="all"
           href="{{STATIC_URL}}css/visuals.css">
