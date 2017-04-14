@@ -105,13 +105,23 @@
         </tr>
         <tr>
             <th>Feature list</th>
-            <td><a href="{{object.feature_list.get_absolute_url}}">{{object.feature_list|safe}}</a></td>
+            <td>
+                {% if is_owner %}
+                <a href="{{object.feature_list.get_absolute_url}}">{{object.feature_list|safe}}</a>
+                {% else %}
+                <span>{{object.feature_list|safe}}</span>
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <th>Sort vector</th>
             <td>
                 {% if object.sort_vector %}
-                <a href="{{object.sort_vector.get_absolute_url}}">{{object.sort_vector|safe}}</a>
+                    {% if is_owner %}
+                    <a href="{{object.sort_vector.get_absolute_url}}">{{object.sort_vector|safe}}</a>
+                    {% else %}
+                    <span>{{object.sort_vector|safe}}</span>
+                    {% endif %}
                 {% else %}
                 <span><i>&lt;none&gt;</i></span>
                 {% endif %}
@@ -123,7 +133,11 @@
                 {% if object.analysis_user_datasets %}
                 <ul>
                     {% for ds in object.analysis_user_datasets %}
+                        {% if is_owner %}
                         <li><a href="{{ds.dataset.subclass.get_absolute_url}}">{{ds.display_name}}</a></li>
+                        {% else %}
+                        <li><span>{{ds.display_name}}</span></li>
+                        {% endif %}
                     {% endfor %}
                 </ul>
                 {% else %}

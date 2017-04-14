@@ -183,6 +183,11 @@ class SortVectorDelete(MessageMixin, UserCanEdit, DeleteView):
 class AnalysisDetail(UserCanView, DetailView):
     model = models.Analysis
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_owner'] = self.request.user == self.object.owner
+        return context
+
 
 class AnalysisCreate(NeverCacheFormMixin, AddUserToFormMixin, CreateView):
     model = models.Analysis
