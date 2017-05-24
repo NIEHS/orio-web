@@ -53,7 +53,7 @@ class BaseFormMixin:
 
 class UserDatasetForm(BaseFormMixin, forms.ModelForm):
     CREATE_LEGEND = 'Create user dataset'
-    URL_HELP = 'URL for downloading user-dataset, must be publicly available without authentication.'  # noqa
+    URL_HELP = 'URL for downloading user-dataset, must be publicly available without authentication using the http or https protocol.'  # noqa
 
     url_ambiguous = forms.URLField(
         required=False,

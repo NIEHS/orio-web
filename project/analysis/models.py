@@ -227,6 +227,8 @@ class DatasetDownload(models.Model):
             resp = requests.head(url)
         except requests.exceptions.ConnectionError:
             return False, '{} not found.'.format(url)
+        except requests.exceptions.InvalidSchema:
+            return False, '{} must be available via HTTP or HTTPS.'.format(url)
         else:
             return resp.ok, "{}: {}".format(resp.status_code, resp.reason)
 
