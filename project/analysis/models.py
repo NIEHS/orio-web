@@ -23,6 +23,7 @@ from django.core.urlresolvers import reverse
 from django.core.files.base import ContentFile
 from django.contrib.sites.models import Site
 from django.contrib.postgres.fields import JSONField
+from django.forms.models import model_to_dict
 from django.utils.timezone import now
 from django.utils.text import slugify
 from django.template.loader import render_to_string
@@ -227,6 +228,8 @@ class DatasetDownload(models.Model):
             resp = requests.head(url)
         except requests.exceptions.ConnectionError:
             return False, '{} not found.'.format(url)
+        except requests.exceptions.InvalidSchema:
+            return False, '{} must be available via HTTP or HTTPS.'.format(url)
         else:
             return resp.ok, "{}: {}".format(resp.status_code, resp.reason)
 
@@ -308,6 +311,15 @@ class GenomicDataset(Dataset):
     @property
     def is_stranded(self):
         raise NotImplementedError('Abstract method')
+
+    def to_dict(self):
+        # Useful for debugging
+        return {
+            'id': self.id,
+            'name': self.name,
+            'stranded': self.is_stranded,
+            'bigwigs': self.get_bigwig_paths(),
+        }
 
 
 class UserDataset(ValidationMixin, GenomicDataset):
@@ -826,6 +838,18 @@ class Analysis(ValidationMixin, GenomicBinSettings):
             "userDatasets": uds,
             "encodeDatasets": eds,
         })
+
+    def to_dict(self):
+        # Useful for debugging
+        d = model_to_dict(self)
+        d.pop('datasets')
+        d.pop('output')
+        d['feature_list_path'] = self.feature_list.dataset.path
+        if self.sort_vector:
+            d['sort_vector_path'] = self.sort_vector.dataset.path
+        d['user_datasets'] = [ds.to_dict() for ds in self.user_datasets]
+        d['encode_datasets'] = [ds.to_dict() for ds in self.encode_datasets]
+        return d
 
     class Meta:
         verbose_name_plural = 'Analyses'
