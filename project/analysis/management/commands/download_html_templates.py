@@ -85,11 +85,11 @@ class Command(BaseCommand):
 
     def download(self):
         urls = [
-            'http://www.niehs.nih.gov/components/layout.cfc?method=headerasset',
-            'http://www.niehs.nih.gov/components/layout.cfc?method=headermeta',
-            'http://www.niehs.nih.gov/components/layout.cfc?method=header&active=research',
-            'http://www.niehs.nih.gov/components/layout.cfc?method=footer',
-            'http://www.niehs.nih.gov/components/layout.cfc?method=footerasset',
+            'https://www.niehs.nih.gov/components/layout/layout.cfc?method=headerasset',
+            'https://www.niehs.nih.gov/components/layout/layout.cfc?method=headermeta',
+            'https://www.niehs.nih.gov/components/layout/layout.cfc?method=header&active=research',
+            'https://www.niehs.nih.gov/components/layout/layout.cfc?method=footer',
+            'https://www.niehs.nih.gov/components/layout/layout.cfc?method=footerasset',
         ]
         self.write_html_file(urls[0], 'headerasset.html')
         self.write_html_file(urls[1], 'headermeta.html')
