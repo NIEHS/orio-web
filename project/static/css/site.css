@@ -91,12 +91,12 @@ body {
 
 
 /* add exit link for any external links */
-a[href^="http"], a[href^="https"] {
+/*a[href^="http"], a[href^="https"] {
     background-image: url("/static/img/exit.gif");
     background-position: right;
     background-repeat: no-repeat;
     padding-right: 15px;
-}
+}*/
 
 
 /* HTML error context */
