@@ -1,9 +1,65 @@
-{% extends "niehs/base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Home | ORIO{% endblock %}
 
 {% block mid_content %}
-{% include 'staticpages/_render_template.html' %}
+
+<h2>ORIO: Online Resource for Integrative Omics</h2>
+
+<p>
+ORIO (Online Resource for Integrative Omics) is a platform for integration of
+whole genome data accessible to life scientists with minimal computational
+expertise. ORIO is implemented in a modern web framework that intuitively
+organizes data and analysis results. All features are accessible using its web
+interface; environmental health scientists and other users may upload data,
+set-up analyses, and view results all through an interactive GUI. ORIO hosts
+4,506 human and mouse datasets from the ENCODE research project, providing a
+point of access for life scientists to contextualize their own data within a
+rigorously controlled consortial dataset. Statistical tests are also implemented
+next to dynamic displays of analysis results, allowing transitions from
+discovery-based to hypothesis-based inquiries. ORIO was consciously designed to
+make minimal assumptions about data during analysis, allowing its applications
+to a variety of experiment types and study designs.
+</p>
+
+<h3>Citation</h3>
+
+<p>
+ORIO has been published in <a href=https://doi.org/10.1093/nar/gkx270>Lavender et al. 2017</a>
+<span class="glyphicon glyphicon-new-window"></span>.
+</p>
+
+<p>
+To cite in your publications:
+</p>
+
+<p>
+Lavender CA, Shapiro AJ, Burkholder AB, Bennett BD, Adelman K, Fargo DC. ORIO
+(Online Resource for Integrative Omics): a web-based platform for rapid
+integration of next generation sequencing data. Nucleic Acids Res. 2017 Jun 2;
+45 (10): 5678-5690. doi: 10.1093/nar/gkx270.
+</p>
+
+<h3>Example functionality</h3>
+
+<p>
+To show what ORIO has to offer, we've created five different examples. Details
+on each are described in the <a href=https://doi.org/10.1093/nar/gkx270>companion manuscript</a>
+<span class="glyphicon glyphicon-new-window"></span>.
+</p>
+
+<p>
+<a href=https://orio.niehs.nih.gov/dashboard/analysis/889-sample-validation-of-chip-seq-data/>Vignette 1</a>:
+    Validation of experimental ChIP-seq data<br>
+<a href=https://orio.niehs.nih.gov/dashboard/analysis/850-sample-integration-over-chip-seq-peaks/>Vignette 2</a>:
+    Characterization of ChIP-seq peaks by other NGS data<br>
+<a href=https://orio.niehs.nih.gov/dashboard/analysis/853-sample-correlation-with-gene-expression/>Vignette 3</a>:
+    Correlation of gene expression with histone modification data<br>
+<a href=https://orio.niehs.nih.gov/dashboard/analysis/842-sample-recapitulation-of-cell-lineages/>Vignette 4</a>:
+    Recapitulation of cell lineages using NGS data<br>
+<a href=https://orio.niehs.nih.gov/dashboard/analysis/855-sample-characterization-of-enhancers-and-promoters/>Vignette 5</a>:
+    Investigation of genome-wide transcription<br>
+</p>
 
 <h3>Want to get started?</h3>
 <ul>
@@ -14,4 +70,5 @@
         <a href="{% url 'user:register' %}">Register</a>
     </li>
 </ul>
+
 {% endblock mid_content %}
