@@ -26,3 +26,5 @@ bin/*local.sh
 
 .idea
 .venv
+.python-version
+project/package-lock.json
